@@ -1,6 +1,6 @@
 # StockHub AI Development Workflow
 
-Status: active governance; milestone 1 start gate is currently closed
+Status: active governance; milestone 1 start gate is open after verified Cover closure
 
 ## Purpose
 
