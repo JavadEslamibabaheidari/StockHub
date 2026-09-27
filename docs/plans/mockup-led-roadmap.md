@@ -1,6 +1,6 @@
 # StockHub Mockup-Led Roadmap
 
-Status: roadmap structure approved; Access spec issues created
+Status: roadmap structure approved; architecture baseline drafted; Access spec issues created
 
 ## Source of truth
 
@@ -85,7 +85,26 @@ Implementation can begin only after:
 
 - the roadmap/spec is approved;
 - current milestone issues have clear acceptance criteria;
+- the architecture baseline and ADRs in `docs/decisions/` are reviewed and
+  merged;
+- module boundaries, extraction rules, messaging abstractions, inventory
+  correctness, authentication, caching, testing, and deployment decisions are
+  resolved as described by the architecture baseline;
 - implementation-blocking product and architecture decisions are resolved or
   explicitly deferred out of scope;
 - GitHub milestone and issue state matches this roadmap; and
 - the project board is available or its access gap is recorded.
+
+## Architecture checkpoint
+
+The current agreed direction is an extraction-ready modular monolith. Modules
+run in one application initially, but each module owns its domain, persistence
+boundary, contracts, and tests so it can later move to a separate repository
+and deployable service. Messaging is technology-agnostic: the initial runtime
+uses in-process mediation behind shared abstractions, with an outbox boundary
+for future Kafka or RabbitMQ transport. Redis is an optional infrastructure
+adapter and is not a source of truth for inventory or reservations.
+
+The architecture baseline and ADRs are drafted locally. GitHub synchronization
+and the required PR are pending because the current workspace does not contain
+a usable Git checkout and GitHub API access is unavailable.
