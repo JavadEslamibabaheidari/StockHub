@@ -17,10 +17,8 @@ changes.
 
 - admin enforcement enabled;
 - strict required status checks;
-- required status check: `repository-sanity`;
-- one approving pull-request review;
-- stale review dismissal;
-- last pusher cannot approve their own final push;
+- required status check: `Repository sanity`;
+- pull request required, with no approving review required;
 - required conversation resolution;
 - required linear history;
 - disabled force pushes;
@@ -45,14 +43,14 @@ roadmap/spec is approved.
 
 ## CI policy
 
-The current `repository-sanity` workflow is a temporary baseline for repository
+The current `Repository sanity` workflow is a temporary baseline for repository
 health before application scaffolding exists.
 
 Once frontend and backend scaffolding exist:
 
 - frontend and backend must have separate CI pipelines;
 - branch protection must require both frontend and backend checks;
-- `repository-sanity` may remain as a lightweight repository-health check;
+- `Repository sanity` may remain as a lightweight repository-health check;
 - each PR must trigger CI for changed code and any shared contracts it affects;
 - app checks must include build, lint/format, tests, and any generated-artifact
   validation that the chosen stack requires.
@@ -69,7 +67,7 @@ shape is:
 
 That PR must also update branch protection so the required checks include the
 separate frontend and backend CI jobs. Do not leave branch protection requiring
-only `repository-sanity` after real app code exists.
+only `Repository sanity` after real app code exists.
 
 ## CD policy
 
