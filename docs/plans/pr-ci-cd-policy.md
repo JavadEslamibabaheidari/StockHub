@@ -33,9 +33,9 @@ All changes must follow this path:
 1. Create a new branch from current `main`.
 2. Open a pull request for the branch.
 3. Let CI run on the pull request.
-4. Resolve review comments and conversations.
+4. Resolve review comments and conversations when present.
 5. Keep the branch up to date with `main` so strict checks pass.
-6. Merge only after required checks and review gates pass.
+6. Merge only after required checks pass.
 7. Use auto-merge where practical.
 
 No app implementation should begin until this gate is in place and the
@@ -54,6 +54,8 @@ Once frontend and backend scaffolding exist:
 - each PR must trigger CI for changed code and any shared contracts it affects;
 - app checks must include build, lint/format, tests, and any generated-artifact
   validation that the chosen stack requires.
+- Pull-request approval is not a required merge gate. Review may still be used
+  voluntarily for collaboration and risk management.
 
 ## Required split-workflow PR
 
