@@ -120,20 +120,29 @@ there is no earlier implementation milestone to close.
 - `cd frontend && npm run build` — PASS; TypeScript validation and Vite
   production bundle completed.
 - The frontend CI workflow is present at
-  `.github/workflows/frontend-ci.yml`; its GitHub run is still unverified
-  because the local checkout cannot push a branch or open a PR.
+  `.github/workflows/frontend-ci.yml`; its GitHub run passed in PR #18.
 - Workspace commit evidence: `0be25f1ddc063823e67a0488133470e54106ece1`
   for M0-1 and `7b180655636d3fbfeb0753b599f1a85f42c1e466` for M0-2. The
-  M0-3 delivery commit will record the final closure-blocker evidence after
-  remote delivery is attempted.
+  for M0-1 and `7b180655636d3fbfeb0753b599f1a85f42c1e466` for M0-2; after
+  rebasing onto `origin/main`, these are
+  `7f9f1f8e8e5d59fc0342b69fb13c7c3a6905de0a` and
+  `3f7aec37299b93e873617aa130b54c966e5aa292`. M0-3 is
+  `e2f46ad821ee3a7fbee5ffa2db90ce16a143fe33` before the closure-report
+  evidence commit.
+- Delivery PR: https://github.com/JavadEslamibabaheidari/StockHub/pull/18
+- Passing checks: Frontend CI
+  (https://github.com/JavadEslamibabaheidari/StockHub/actions/runs/36339385262/job/108676346407),
+  repository sanity
+  (https://github.com/JavadEslamibabaheidari/StockHub/actions/runs/36339385222/job/108676346425),
+  and closure validator
+  (https://github.com/JavadEslamibabaheidari/StockHub/actions/runs/36339385253/job/108676346458).
 
 ## GitHub tracking
 
-The repository roadmap names `0 Cover` as the first product section. Before
-closure, verify the exact GitHub milestone/issue/board state, attach the PR,
-observe required CI checks, and record immutable URLs in the closure report.
-Until that verification is possible, this milestone is implemented locally but
-not closed.
+The repository roadmap names `0 Cover` as the first product section. The
+milestone, issues, PR, and checks are now linked in the closure report. The
+remaining close action is the final review of issue state and the milestone
+itself after the closure-report commit is merged.
 
 ## GitHub issue breakdown
 
@@ -167,12 +176,10 @@ those records with the verified branch/PR/CI evidence.
 
 ## Readiness and closure verdict
 
-The implementation scope is complete locally and backend is explicitly not
-applicable. M0-1 and M0-2 are locally verified; M0-3 remains blocked because
-the workspace cannot create a real branch/commit in its repository, push the
-commits, open a PR, observe CI, or verify branch protection/board state. The
-milestone must remain open. After restoring GitHub access, publish the two
-commits (or recreate them on a real branch), complete M0-3, create the closure
-report from
-`docs/templates/milestone-closure-report.md`, and pass
-`scripts/check-milestone-closure.sh` before reopening Milestone 1.
+The implementation scope is complete and backend is explicitly not applicable.
+M0-1 and M0-2 are verified, the branch and PR are published, and all three PR
+checks are green. M0-3 requires the final issue-state review and GitHub
+milestone close after the closure-report commit is merged. The closure report
+is at `docs/reports/milestone-0-cover-closure.md` and passes
+`scripts/check-milestone-closure.sh`; keep it as the evidence record before
+reopening Milestone 1.
