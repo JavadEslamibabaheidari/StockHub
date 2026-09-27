@@ -1,0 +1,33 @@
+name: Infrastructure or maintenance task
+description: Track repository, CI, delivery, documentation, or maintenance work
+title: ""
+labels:
+  - "type:chore"
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What maintenance or delivery outcome is needed?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and non-goals
+      description: Clarify what is included and excluded.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification plan
+      description: How will completion be demonstrated?
