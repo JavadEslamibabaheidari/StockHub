@@ -1,6 +1,6 @@
 # StockHub GitHub Infrastructure Plan
 
-Status: local scaffolding added; blocked before GitHub provisioning
+Status: GitHub repository provisioned; Project board authorization pending
 
 ## Goal
 
@@ -13,18 +13,20 @@ separate product/architecture track.
 - The workspace is `/mnt/data/StockHub`.
 - The only project artifacts currently present are the product mockups:
   `docs/mockups/StockHub Design Review.pdf` and `docs/mockups/StockHub Final.html`.
-- A `.git` directory exists but is empty, so the workspace is not currently a
-  usable Git repository and has no local history, branch, or remote.
-- No GitHub repository, labels, milestones, project board, workflows, or issue
-  templates could be verified locally.
-- The configured GitHub CLI identity is `JavadEslamibabaheidari`, but its saved
-  token is invalid. GitHub-side state is therefore unverified.
-- The approved target is the personal owner account, repository `StockHub`,
-  visibility `public`.
+- A `.git` directory exists but is empty and read-only in the workspace, so the
+  local folder itself is still not a normal writable Git checkout.
+- A temporary Git metadata directory was used to create and push the initial
+  `main` commit without modifying the read-only `.git` directory.
+- The configured GitHub CLI identity is authenticated as `JavadEslamibabaheidari`.
+- The approved target has been created: personal owner account, repository
+  `StockHub`, visibility `public`.
+- Remote repository: <https://github.com/JavadEslamibabaheidari/StockHub>
+- Initial commit: `9650787322d30056cc08d93fcc3c32836992ef59`
+- Initial CI run completed successfully on September 27, 2026.
 
 ## Local scaffolding added
 
-The following product-neutral files are now present locally:
+The following product-neutral files are now present locally and on `main`:
 
 - `README.md`
 - `.github/pull_request_template.md`
@@ -56,15 +58,12 @@ scope.
 
 ## Required decision gate
 
-Before creating or selecting a GitHub repository, confirm all three values:
+Completed on September 27, 2026:
 
-1. GitHub owner: the user or organization that should own the repository.
-2. Repository name: proposed default is `StockHub`; confirm or replace it.
-3. Visibility: `private` or `public`.
-
-GitHub authentication must also be repaired before remote inspection or
-provisioning: `gh auth login -h github.com` (or an equivalent authenticated
-GitHub connector) is required. No repository creation has been attempted.
+1. GitHub owner: `JavadEslamibabaheidari`.
+2. Repository name: `StockHub`.
+3. Visibility: `public`.
+4. GitHub CLI authentication repaired for repository operations.
 
 ## Proposed target structure
 
@@ -78,36 +77,35 @@ GitHub connector) is required. No repository creation has been attempted.
 
 ### Labels
 
-Use a small, stable vocabulary rather than labels that encode implementation
-details:
+The following lifecycle labels have been created:
 
-- Type: `type:feature`, `type:bug`, `type:chore`, `type:docs`,
-  `type:security`
-- Area: `area:frontend`, `area:backend`, `area:infrastructure`,
-  `area:product`
-- State/attention: `priority:high`, `priority:normal`, `blocked`,
-  `good first issue`
-- Lifecycle: `needs-triage`, `ready`, `in-progress`, `needs-review`
-
-The final color palette and any organization-standard labels should be
-reconciled with the target owner's existing conventions before creation.
+- `track:github-infra`
+- `type:infrastructure`
+- `type:documentation`
+- `type:ci`
+- `status:ready`
+- `status:blocked`
+- `priority:p0`
+- `priority:p1`
+- `priority:p2`
 
 ### Milestones
 
-Create milestones only after the product track confirms the first delivery
-boundaries. The infrastructure track should reserve an initial
-`Foundation / GitHub lifecycle` milestone for repository setup, templates,
-CI, and protection rules; later product milestones belong to the product track.
+Created milestone `#1`: `GitHub infrastructure v1`.
+
+Later product milestones belong to the product/architecture track.
 
 ### Issues and project board
 
-- Use one issue per independently deliverable task.
-- Each issue should state objective, context, acceptance criteria, dependencies,
-  verification, and out-of-scope items where useful.
-- Use a single project board for the initial lifecycle with views for backlog,
-  active work, review, blocked work, and completed work.
-- Keep GitHub issues, milestones, and board state as the operational source of
-  truth; local plans explain intent and decisions.
+Created starter infrastructure issues under milestone `#1`:
+
+- Replace CI placeholders after the app runtime is selected.
+- Define review-staging and production deployment policies.
+- Keep branch protection aligned with CI checks.
+- Maintain GitHub lifecycle board and issue hygiene.
+
+Project board creation is pending an additional GitHub OAuth scope refresh:
+`project` and `read:project`.
 
 ### Pull-request template
 
@@ -136,17 +134,14 @@ Templates must remain product-neutral and must not encode architecture that has
 
 ### Branch protection plan
 
-Protect `main` after the first CI workflow exists:
+`main` is protected:
 
-- pull request required for changes
-- required CI checks once their names are stable
-- force-push and branch deletion disabled
+- required status check: `repository-sanity`
+- strict status checks enabled
+- one approving pull-request review required
 - stale approvals dismissed when new commits invalidate the review
-- conversation resolution required
-- direct pushes limited to the minimum necessary maintainers
-
-Whether one or two approvals are required depends on the target owner/team
-size. This should be chosen when repository administration is available.
+- force-push and branch deletion disabled
+- admin enforcement disabled for the owner account
 
 ### GitHub Actions CI skeleton
 
@@ -166,25 +161,28 @@ No application-specific commands will be invented in this track.
 ### Environments
 
 - `local`: developer workstation; no GitHub environment or shared secrets.
-- `review` or `staging`: later shared or per-PR validation target, protected
-  by environment approvals/secrets when deployment exists.
-- `production`: deferred until deployment architecture, ownership, rollback,
-  and observability are decided by the product/architecture track.
+- `review-staging`: GitHub environment created, with deployment policy to be
+  tightened when deployment targets and secrets are known.
+- `production`: GitHub environment created, with production approvals, branch
+  policy, rollback, and observability deferred until deployment architecture is
+  decided by the product/architecture track.
 
 ## Execution order after approval
 
-1. Repair authenticated GitHub access and verify `StockHub` availability under
-   the personal owner account.
-2. Make the workspace's Git metadata writable, initialize the local repository,
-   and create the approved remote, preserving
-   the existing mockup files.
-3. Add lifecycle documentation, PR/issue templates, and the minimal CI
-   skeleton without application code.
-4. Create labels, the foundation milestone, and the project board.
-5. Apply branch protection after CI check names are stable.
-6. Create the initial infrastructure issues, link them to the milestone and
-   board, and work them one issue per branch/PR.
-7. Verify local docs, GitHub tracking, and the remote default branch agree.
+1. Completed: repaired authenticated GitHub access and verified `StockHub`
+   availability under the personal owner account.
+2. Completed with workaround: used temporary Git metadata because the
+   workspace `.git` directory is read-only.
+3. Completed: added lifecycle documentation, PR/issue templates, and the
+   minimal CI skeleton without application code.
+4. Completed: created labels and the foundation milestone.
+5. Completed: applied branch protection after the first CI run succeeded.
+6. Completed: created the initial infrastructure issues and linked them to the
+   milestone.
+7. Pending: create the GitHub Project board after Project OAuth scopes are
+   authorized.
+8. Recommended next workspace step: replace the empty read-only `.git`
+   directory with a normal writable clone or checkout of the remote.
 
 ## Acceptance criteria
 
@@ -208,8 +206,9 @@ The infrastructure track is complete when:
 
 ## Current blockers
 
-- GitHub CLI authentication is invalid; run `gh auth login -h github.com`.
-- The pre-existing `.git` directory is read-only, so local Git initialization
-  and the first commit cannot be completed in the current workspace.
-- The application runtime is not yet selected, so CI commands must wait for
-  the product/architecture track.
+- GitHub Project board creation requires approving the additional
+  `project` and `read:project` scopes in the browser authorization flow.
+- The pre-existing `.git` directory is read-only, so this workspace is not a
+  normal writable checkout even though the remote repository has been created.
+- The application runtime is not yet selected, so CI build/lint/test commands
+  must wait for the product/architecture track.
