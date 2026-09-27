@@ -37,6 +37,7 @@ describe('Milestone 0 Cover', () => {
 
     expect(markup).toContain('aria-label="StockHub roadmap contents"')
     expect(markup).toContain('aria-current="page"')
+    expect(markup.match(/aria-current="page"/g)).toHaveLength(1)
     expect(markup).toContain('Cover is the first live section')
   })
 
