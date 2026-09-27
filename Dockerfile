@@ -1,4 +1,4 @@
-FROM node:20-alpine AS frontend-build
+FROM node:22-alpine AS frontend-build
 WORKDIR /src/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
@@ -26,4 +26,5 @@ ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=12 \
     CMD curl --fail --silent http://localhost:8080/health || exit 1
+USER $APP_UID
 ENTRYPOINT ["dotnet", "StockHub.Api.dll"]

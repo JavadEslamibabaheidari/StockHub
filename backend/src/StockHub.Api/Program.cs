@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Npgsql;
 using StockHub.Api.Abstractions;
 using StockHub.Api.Contracts;
 using StockHub.Api.Domain;
@@ -58,6 +59,12 @@ builder.Services.AddAuthorization();
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 
 var app = builder.Build();
+if (args.Contains("--migrate-only", StringComparer.Ordinal))
+{
+    await PostgresDatabaseInitializer.ApplyAsync(connectionString, CancellationToken.None);
+    return;
+}
+
 if (app.Configuration.GetValue("Database:ApplyMigrations", true))
 {
     await PostgresDatabaseInitializer.ApplyAsync(connectionString, CancellationToken.None);
@@ -437,6 +444,19 @@ app.MapGet(
     .WithTags("Invitations");
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapGet("/ready", async (CancellationToken cancellationToken) =>
+{
+    try
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+        return Results.Ok(new { status = "ready" });
+    }
+    catch (NpgsqlException)
+    {
+        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+});
 app.MapFallbackToFile("index.html");
 
 app.Run();

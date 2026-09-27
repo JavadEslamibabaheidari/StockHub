@@ -84,12 +84,22 @@ Recommended lifecycle:
 - PR branches trigger CI and may trigger optional preview or review
   deployments.
 - Approved PRs with passing checks may auto-merge to `main`.
-- Merge or push to `main` triggers CD to `review-staging`.
-- Production remains deferred until deployment architecture, ownership,
-  rollback, approvals, and observability are approved.
+- Merge or push to `main` publishes the digest. The private
+  `StockHub-Deployment` Actions task selects a successful publish run and
+  deploys its image to persistent local kind through the dedicated runner.
+- Shared review-staging CD activates only after a hosted target is configured.
+- Production promotes the digest recorded by a successful review-staging run
+  through a manual dispatch and protected GitHub environment.
 
-Production CD must be gated and explicit. It should not be introduced as a
-side-effect of early app scaffolding.
+The `Image scan and local Kubernetes smoke` check must be required on `main`.
+It reports SARIF findings, blocks fixable high/critical vulnerabilities, and
+tests Compose and kind before publishing. Configure production approvers and
+main-only deployment rules before enabling promotion. The workflow fails on
+missing cluster or database configuration.
+
+After each milestone closes, synchronize its report and GitHub milestone,
+then create one annotated `v0.<milestone-number>.0` tag on verified `main`.
+See [the delivery gate](production-delivery-gate.md) for the current rollout.
 
 ## Tracking
 
