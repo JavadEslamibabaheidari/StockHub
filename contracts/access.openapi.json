@@ -7,7 +7,13 @@
     "/api/auth/sign-out": { "post": { "operationId": "signOut", "responses": { "204": { "description": "Signed out" } } } },
     "/api/auth/session": { "get": { "operationId": "getSession", "responses": { "200": { "$ref": "#/components/responses/Session" }, "401": { "$ref": "#/components/responses/Problem" } } } },
     "/api/workspaces": { "get": { "operationId": "listWorkspaces", "responses": { "200": { "$ref": "#/components/responses/WorkspaceList" } } }, "post": { "operationId": "createWorkspace", "parameters": [{ "$ref": "#/components/parameters/IdempotencyKey" }], "responses": { "201": { "$ref": "#/components/responses/Workspace" }, "422": { "$ref": "#/components/responses/Problem" } } } },
-    "/api/workspaces/{workspaceId}/active": { "put": { "operationId": "setActiveWorkspace", "parameters": [{ "$ref": "#/components/parameters/WorkspaceId" }], "responses": { "204": { "description": "Active workspace updated" }, "403": { "$ref": "#/components/responses/Problem" } } } }
+    "/api/workspaces/{workspaceId}/active": { "put": { "operationId": "setActiveWorkspace", "parameters": [{ "$ref": "#/components/parameters/WorkspaceId" }], "responses": { "204": { "description": "Active workspace updated" }, "403": { "$ref": "#/components/responses/Problem" } } } },
+    "/api/workspaces/{workspaceId}/onboarding": { "get": { "operationId": "getOnboarding", "parameters": [{ "$ref": "#/components/parameters/WorkspaceId" }], "responses": { "200": { "description": "Checklist state" }, "403": { "$ref": "#/components/responses/Problem" } } } },
+    "/api/workspaces/{workspaceId}/onboarding/actions": { "post": { "operationId": "selectOnboardingAction", "parameters": [{ "$ref": "#/components/parameters/WorkspaceId" }], "responses": { "202": { "description": "Handoff selected" }, "403": { "$ref": "#/components/responses/Problem" } } } },
+    "/api/workspaces/{workspaceId}/invitations": { "post": { "operationId": "createInvitation", "parameters": [{ "$ref": "#/components/parameters/WorkspaceId" }], "responses": { "202": { "description": "Invitation requested" }, "403": { "$ref": "#/components/responses/Problem" } } } },
+    "/api/invitations/{token}": { "get": { "operationId": "getInvitation", "responses": { "200": { "description": "Pending invitation" }, "404": { "$ref": "#/components/responses/Problem" } } } },
+    "/api/auth/google/start": { "get": { "operationId": "startGoogleSignIn", "responses": { "302": { "description": "Provider redirect" }, "503": { "$ref": "#/components/responses/Problem" } } } },
+    "/api/auth/google/callback": { "get": { "operationId": "googleCallback", "responses": { "503": { "$ref": "#/components/responses/Problem" } } } }
   },
   "components": {
     "parameters": {
