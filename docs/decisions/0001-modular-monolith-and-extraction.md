@@ -1,6 +1,6 @@
 # ADR 0001: Extraction-ready modular monolith
 
-Status: Proposed for review
+Status: Accepted in PR #14 (remote verification pending in this workspace)
 
 ## Context
 

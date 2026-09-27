@@ -1,6 +1,6 @@
 # ADR 0004: Inventory ledger and reservation correctness
 
-Status: Proposed for review
+Status: Accepted in PR #14 (remote verification pending in this workspace)
 
 ## Decision
 

@@ -13,11 +13,12 @@ the separate product track.
 
 ## Current status
 
-The repository currently contains planning and reference artifacts only. The
-runtime, application source, and deployment model will be added after the
-product/architecture decisions are complete.
+The frontend Cover runtime has been restored through Milestone 0. Access
+backend and frontend implementation remains gated by the Cover closure and the
+normal branch/PR workflow.
 
-The agreed architecture is documented in
-[docs/plans/architecture-baseline.md](docs/plans/architecture-baseline.md).
-Implementation remains gated on reviewing and merging the architecture ADRs
-through the normal branch and pull-request workflow.
+The accepted architecture is documented in
+[docs/plans/architecture-baseline.md](docs/plans/architecture-baseline.md),
+with ADRs merged in PR #14 according to the current project context. The
+implementation gate and closure process are documented in
+[docs/ai-development-workflow.md](docs/ai-development-workflow.md).

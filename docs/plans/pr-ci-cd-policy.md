@@ -57,6 +57,10 @@ Once frontend and backend scaffolding exist:
 - Pull-request approval is not a required merge gate. Review may still be used
   voluntarily for collaboration and risk management.
 
+Milestone closure PRs must also include the closure report required by
+`docs/ai-development-workflow.md` and pass
+`scripts/check-milestone-closure.sh`.
+
 ## Required split-workflow PR
 
 After application scaffolding exists, issue `#9` requires a dedicated

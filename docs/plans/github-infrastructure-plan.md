@@ -1,7 +1,7 @@
 # StockHub GitHub Infrastructure Plan
 
 Status: GitHub repository provisioned; mockup roadmap milestones synchronized;
-Project board authorization pending
+Project board authorization pending; local remote verification pending
 
 ## Goal
 
@@ -45,8 +45,8 @@ The following product-neutral files are now present locally and on `main`:
 - `docs/plans/pr-ci-cd-policy.md`
 
 The CI workflow currently performs repository sanity checks only. Runtime-
-specific build, test, and lint commands remain deferred until the application
-stack is selected.
+specific build, test, and lint commands remain deferred until the selected
+.NET/React application scaffolding exists.
 
 ## Scope
 
@@ -133,7 +133,7 @@ acceptance criteria:
 Existing infrastructure housekeeping issues remain open but are not assigned to
 the mockup roadmap milestone:
 
-- Replace CI placeholders after the app runtime is selected.
+- Replace CI placeholders after the selected app runtime is scaffolded.
 - Define review-staging and production deployment policies.
 - Keep branch protection aligned with CI checks.
 - Maintain GitHub lifecycle board and issue hygiene.
@@ -244,9 +244,9 @@ Recommended lifecycle:
    directory with a normal writable clone or checkout of the remote.
 9. Completed: created the current `1 Access` spec issues with acceptance
    criteria and mockup references.
-10. In progress by pull request: document the hard PR/CI/CD pre-implementation
-    gate and plan the split frontend/backend CI workflow PR tracked by issue
-    `#9`.
+10. Pending in the focused preparation PR: document the hard PR/CI/CD
+    pre-implementation gate, add the milestone-closure hook, and prepare the
+    split frontend/backend CI workflow tracked by issue `#9`.
 
 ## Acceptance criteria
 
@@ -274,9 +274,16 @@ The infrastructure track is complete when:
   `project` and `read:project` scopes in the browser authorization flow.
 - The pre-existing `.git` directory is read-only, so this workspace is not a
   normal writable checkout even though the remote repository has been created.
-- The application runtime is not yet selected, so CI build/lint/test commands
-  must wait for the product/architecture track.
+- The application runtime is selected by the accepted architecture baseline:
+  .NET 10/ASP.NET Core with PostgreSQL/EF Core, and React/TypeScript/Vite.
+  CI build/lint/test commands remain pending until runtime scaffolding exists.
 - Roadmap/spec approval is required before app implementation begins.
 - Issue `#9` tracks the required split frontend/backend CI workflow PR after
   app scaffolding exists and before app implementation proceeds beyond
   scaffolding.
+
+The reusable milestone-closure process is defined in
+`docs/ai-development-workflow.md` and validated by
+`scripts/check-milestone-closure.sh`. Its report is required before a
+milestone can be closed. GitHub milestone, issue, board, PR, and CI evidence
+must be re-queried at closure; narrative local plans are not sufficient proof.

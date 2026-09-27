@@ -36,3 +36,12 @@
 - [ ] Documentation is updated where behavior or process changed.
 - [ ] Tests or CI checks are added/updated where applicable.
 - [ ] Logs, screenshots, or other evidence are attached where useful.
+
+## Milestone traceability
+
+<!-- Required for milestone work. Link the applicable row-level evidence. -->
+
+- [ ] Mockup/spec, plan, acceptance criteria, accepted ADRs, knowledge, roadmap, code, tests, configuration, and GitHub tracking are mapped.
+- [ ] Deliberate deviations are listed with rationale, approval, owner, follow-up issue, and target milestone.
+- [ ] Missing coverage and follow-ups are listed with evidence; none are implicit.
+- [ ] If this closes a milestone, the closure report passes `scripts/check-milestone-closure.sh` and is linked here.

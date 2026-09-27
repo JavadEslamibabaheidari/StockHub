@@ -1,6 +1,6 @@
 # ADR 0008: Testing, CI, and deployment boundaries
 
-Status: Proposed for review
+Status: Accepted in PR #14 (remote verification pending in this workspace)
 
 ## Decision
 
