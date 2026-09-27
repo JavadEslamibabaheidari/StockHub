@@ -69,3 +69,24 @@ describe('Milestone 0 Cover', () => {
     expect(coverStyles).toContain('overflow-x: hidden')
   })
 })
+
+describe('Milestone 1 Access', () => {
+  it('renders labelled sign-up controls and deferred legal state', () => {
+    const originalWindow = globalThis.window
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash: '#signup' }, addEventListener: () => {}, removeEventListener: () => {} } })
+    const markup = renderToStaticMarkup(<App />)
+    expect(markup).toContain('Create your account')
+    expect(markup).toContain('aria-describedby="signup-guidance"')
+    expect(markup).toContain('Terms')
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+  })
+
+  it('renders the workspace and honest onboarding handoff routes', () => {
+    const originalWindow = globalThis.window
+    for (const [hash, expected] of [['#workspace', 'Create your workspace'], ['#onboarding', 'A steady start'], ['#invite', 'Invite your team']] as const) {
+      Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash }, addEventListener: () => {}, removeEventListener: () => {} } })
+      expect(renderToStaticMarkup(<App />)).toContain(expected)
+    }
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+  })
+})
