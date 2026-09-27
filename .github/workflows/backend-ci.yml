@@ -9,6 +9,8 @@ on:
       - 'Dockerfile'
       - 'docker-compose.yml'
       - 'scripts/check-compose-smoke.sh'
+      - 'docs/plans/**'
+      - 'docs/reports/**'
       - '.github/workflows/backend-ci.yml'
   push:
     branches: [main]
@@ -19,6 +21,8 @@ on:
       - 'Dockerfile'
       - 'docker-compose.yml'
       - 'scripts/check-compose-smoke.sh'
+      - 'docs/plans/**'
+      - 'docs/reports/**'
       - '.github/workflows/backend-ci.yml'
 
 permissions:
