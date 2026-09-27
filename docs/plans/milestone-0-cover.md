@@ -84,8 +84,8 @@ there is no earlier implementation milestone to close.
 | C0.3 | Implement Cover hero, stock model, legend, and contents | frontend | complete |
 | C0.4 | Add responsive and accessibility-oriented styles | frontend quality | complete |
 | C0.5 | Add smoke tests and run build/test checks | verification | complete — clean `npm ci`, 5 Vitest tests, and `npm run build` pass locally |
-| C0.6 | Create branch/PR and synchronize milestone tracking | delivery | blocked by unusable local Git/GitHub auth |
-| C0.7 | Run closure hook and record evidence | quality gate | pending C0.6 |
+| C0.6 | Create branch/PR and synchronize milestone tracking | delivery | complete — PR #18 merged and GitHub tracking synchronized |
+| C0.7 | Run closure hook and record evidence | quality gate | complete — closure report passed and milestone closed |
 
 ## Testing strategy
 
@@ -140,9 +140,9 @@ there is no earlier implementation milestone to close.
 ## GitHub tracking
 
 The repository roadmap names `0 Cover` as the first product section. The
-milestone, issues, PR, and checks are now linked in the closure report. The
-remaining close action is the final review of issue state and the milestone
-itself after the closure-report commit is merged.
+milestone, issues, PR, and checks are now linked in the closure report. Final
+GitHub review confirms issues #15, #16, and #17 are closed and milestone
+`0 Cover` is closed with no open issues.
 
 ## GitHub issue breakdown
 
@@ -178,8 +178,8 @@ those records with the verified branch/PR/CI evidence.
 
 The implementation scope is complete and backend is explicitly not applicable.
 M0-1 and M0-2 are verified, the branch and PR are published, and all three PR
-checks are green. M0-3 requires the final issue-state review and GitHub
-milestone close after the closure-report commit is merged. The closure report
-is at `docs/reports/milestone-0-cover-closure.md` and passes
-`scripts/check-milestone-closure.sh`; keep it as the evidence record before
-reopening Milestone 1.
+checks are green. M0-3 is complete: the closure report at
+`docs/reports/milestone-0-cover-closure.md` passes
+`scripts/check-milestone-closure.sh`, PR #18 is merged, issues #15–#17 are
+closed, and milestone `0 Cover` is closed with zero open issues. Milestone 1
+may now proceed through the universal start gate in its separate task.
