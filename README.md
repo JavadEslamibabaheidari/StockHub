@@ -14,11 +14,19 @@ the separate product track.
 ## Current status
 
 The frontend Cover runtime has been restored through Milestone 0. Access
-backend and frontend implementation remains gated by the Cover closure and the
-normal branch/PR workflow.
+implementation is active after the verified Cover closure and follows the
+normal issue/branch/PR workflow.
 
 The accepted architecture is documented in
 [docs/plans/architecture-baseline.md](docs/plans/architecture-baseline.md),
 with ADRs merged in PR #14 according to the current project context. The
 implementation gate and closure process are documented in
 [docs/ai-development-workflow.md](docs/ai-development-workflow.md).
+
+## Backend checks
+
+```bash
+dotnet restore StockHub.sln
+dotnet build StockHub.sln --no-restore
+dotnet test StockHub.sln --no-restore
+```

@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "jPyuDOythYw=",
+  "success": true,
+  "projectFilePath": "/home/javad/.codex/worktrees/access-milestone/StockHub/backend/src/StockHub.Api/StockHub.Api.csproj",
+  "expectedPackageFiles": [
+    "/home/javad/.nuget/packages/npgsql/10.0.0/npgsql.10.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

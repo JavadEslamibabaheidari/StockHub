@@ -30,3 +30,8 @@ Key rules:
 - Redis is optional caching infrastructure, never the source of truth.
 - Frontend API types are generated from OpenAPI; domain models are not shared
   between C# and TypeScript.
+
+Access backend work now lives in `backend/src/StockHub.Api` with the HTTP host
+and Access store boundary isolated from the frontend. Cookie authentication,
+identity/password hashing, workspace membership checks, and the `/api/auth` and
+`/api/workspaces` routes are introduced incrementally through milestone 1.

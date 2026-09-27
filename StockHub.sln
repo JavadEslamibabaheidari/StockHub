@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockHub.Api", "backend/src/StockHub.Api/StockHub.Api.csproj", "{1B8B1F56-0EF1-4D5D-A45E-19BCF4F61F01}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockHub.Api.Tests", "backend/tests/StockHub.Api.Tests/StockHub.Api.Tests.csproj", "{CBA8C2F5-9A83-4C6A-BD3A-7A5A0F6F14A1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1B8B1F56-0EF1-4D5D-A45E-19BCF4F61F01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B8B1F56-0EF1-4D5D-A45E-19BCF4F61F01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B8B1F56-0EF1-4D5D-A45E-19BCF4F61F01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B8B1F56-0EF1-4D5D-A45E-19BCF4F61F01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CBA8C2F5-9A83-4C6A-BD3A-7A5A0F6F14A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CBA8C2F5-9A83-4C6A-BD3A-7A5A0F6F14A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CBA8C2F5-9A83-4C6A-BD3A-7A5A0F6F14A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CBA8C2F5-9A83-4C6A-BD3A-7A5A0F6F14A1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
