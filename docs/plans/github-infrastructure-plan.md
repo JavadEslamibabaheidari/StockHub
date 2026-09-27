@@ -1,6 +1,7 @@
 # StockHub GitHub Infrastructure Plan
 
-Status: GitHub repository provisioned; Project board authorization pending
+Status: GitHub repository provisioned; mockup roadmap milestones synchronized;
+Project board authorization pending
 
 ## Goal
 
@@ -23,6 +24,9 @@ separate product/architecture track.
 - Remote repository: <https://github.com/JavadEslamibabaheidari/StockHub>
 - Initial commit: `9650787322d30056cc08d93fcc3c32836992ef59`
 - Initial CI run completed successfully on September 27, 2026.
+- Track 1 decision update: the roadmap is mockup-led from
+  `docs/mockups/StockHub Final.html`; GitHub milestones must match the mockup
+  sections and must not invent a parallel product milestone structure.
 
 ## Local scaffolding added
 
@@ -34,6 +38,7 @@ The following product-neutral files are now present locally and on `main`:
 - `.github/ISSUE_TEMPLATE/bug.yml`
 - `.github/ISSUE_TEMPLATE/infrastructure.yml`
 - `.github/workflows/ci.yml`
+- `docs/plans/mockup-led-roadmap.md`
 
 The CI workflow currently performs repository sanity checks only. Runtime-
 specific build, test, and lint commands remain deferred until the application
@@ -91,13 +96,38 @@ The following lifecycle labels have been created:
 
 ### Milestones
 
-Created milestone `#1`: `GitHub infrastructure v1`.
+GitHub milestones now match the mockup roadmap:
 
-Later product milestones belong to the product/architecture track.
+- `0 Cover`
+- `1 Access`
+- `2 Dashboard`
+- `3 Inventory`
+- `4 Orders`
+- `5 Reservations`
+- `6 Platforms`
+- `7 Pricing rules`
+- `8 Reports`
+- `9 Team`
+- `10 Settings`
+- `11 Dark mode`
+- `12 Design system`
+
+The current implementation/spec milestone is `1 Access`. Future milestone
+records may exist before their start gate, but detailed issues should be
+created when the milestone becomes active.
 
 ### Issues and project board
 
-Created starter infrastructure issues under milestone `#1`:
+Current milestone issues were created for `1 Access` with mockup references and
+acceptance criteria:
+
+- `Spec Access 1.1: Sign up`
+- `Spec Access 1.2: Sign in`
+- `Spec Access 1.3: Create workspace`
+- `Spec Access 1.4: Onboarding checklist`
+
+Existing infrastructure housekeeping issues remain open but are not assigned to
+the mockup roadmap milestone:
 
 - Replace CI placeholders after the app runtime is selected.
 - Define review-staging and production deployment policies.
@@ -158,6 +188,8 @@ can be extended after the application stack is known:
 
 No application-specific commands will be invented in this track.
 
+No application implementation should begin until the roadmap/spec is approved.
+
 ### Environments
 
 - `local`: developer workstation; no GitHub environment or shared secrets.
@@ -175,14 +207,17 @@ No application-specific commands will be invented in this track.
    workspace `.git` directory is read-only.
 3. Completed: added lifecycle documentation, PR/issue templates, and the
    minimal CI skeleton without application code.
-4. Completed: created labels and the foundation milestone.
+4. Completed: created labels and synchronized GitHub milestones to the mockup
+   roadmap.
 5. Completed: applied branch protection after the first CI run succeeded.
-6. Completed: created the initial infrastructure issues and linked them to the
-   milestone.
+6. Completed: created the initial infrastructure issues; after the Track 1
+   update, moved them out of the mockup milestone.
 7. Pending: create the GitHub Project board after Project OAuth scopes are
    authorized.
 8. Recommended next workspace step: replace the empty read-only `.git`
    directory with a normal writable clone or checkout of the remote.
+9. Completed: created the current `1 Access` spec issues with acceptance
+   criteria and mockup references.
 
 ## Acceptance criteria
 
@@ -193,8 +228,8 @@ The infrastructure track is complete when:
 - the local repository has a usable `main` branch and an authenticated remote;
 - the repository contains the approved PR template, issue templates, and CI
   workflow, with no application implementation added by this track;
-- labels, the foundation milestone, and the project board exist and have clear
-  conventions;
+- labels, mockup-roadmap milestones, current-milestone issues, and the project
+  board exist and have clear conventions;
 - `main` protection requires the agreed review and CI gates;
 - local/review-staging/production environment boundaries are documented, with
   production explicitly deferred until its decisions are made;
@@ -212,3 +247,4 @@ The infrastructure track is complete when:
   normal writable checkout even though the remote repository has been created.
 - The application runtime is not yet selected, so CI build/lint/test commands
   must wait for the product/architecture track.
+- Roadmap/spec approval is required before app implementation begins.
