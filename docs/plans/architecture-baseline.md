@@ -1,6 +1,6 @@
 # StockHub Architecture Baseline
 
-Status: agreed direction; formal ADR review and PR pending
+Status: accepted direction; architecture ADRs merged in PR #14 (remote verification pending in this workspace)
 
 ## Purpose
 

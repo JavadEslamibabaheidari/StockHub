@@ -1,6 +1,6 @@
 # ADR 0006: Identity, tenancy, and roles
 
-Status: Proposed for review
+Status: Accepted in PR #14 (remote verification pending in this workspace)
 
 ## Decision
 

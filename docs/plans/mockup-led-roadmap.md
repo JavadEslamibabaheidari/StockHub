@@ -1,6 +1,7 @@
 # StockHub Mockup-Led Roadmap
 
-Status: roadmap structure approved; architecture baseline drafted; Access spec issues created
+Status: roadmap structure approved; architecture baseline accepted in PR #14;
+Milestone 0 Cover restored locally; remote verification pending in this workspace
 
 ## Source of truth
 
@@ -65,7 +66,8 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-The current milestone is `1 Access`.
+The current milestone is `0 Cover`. Milestone `1 Access` remains planned and
+must not start until the Cover closure hook passes.
 
 GitHub issues should exist for the current milestone with detailed acceptance
 criteria and direct mockup references. Future milestone records may exist before
@@ -78,6 +80,10 @@ Current Access issues cover:
 - `1.2 Sign in`
 - `1.3 Create workspace`
 - `1.4 Onboarding checklist`
+
+Milestone 0 implementation is documented in
+[docs/plans/milestone-0-cover.md](milestone-0-cover.md). It is frontend-only;
+backend is not applicable because the Cover has no runtime data contract.
 
 ## Start gate for implementation
 
@@ -94,6 +100,19 @@ Implementation can begin only after:
   explicitly deferred out of scope;
 - GitHub milestone and issue state matches this roadmap; and
 - the project board is available or its access gap is recorded.
+
+The detailed implementation plan is
+[docs/plans/milestone-1-access.md](milestone-1-access.md). It must cover both
+backend and frontend work. The current gate is closed while the local checkout
+and authenticated GitHub verification are unavailable.
+
+## Milestone closure gate
+
+A milestone must not be marked complete or closed in GitHub until its closure
+report passes the reusable hook in
+[docs/ai-development-workflow.md](../ai-development-workflow.md), including
+the alignment matrix, deliberate deviations, missing coverage, follow-ups, and
+evidence for code, tests, configuration, and GitHub tracking.
 
 ## Architecture checkpoint
 

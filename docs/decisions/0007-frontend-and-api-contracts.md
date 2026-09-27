@@ -1,6 +1,6 @@
 # ADR 0007: React frontend and generated API contracts
 
-Status: Proposed for review
+Status: Accepted in PR #14 (remote verification pending in this workspace)
 
 ## Decision
 

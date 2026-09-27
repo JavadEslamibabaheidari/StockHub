@@ -1,6 +1,11 @@
 # StockHub Architecture Knowledge
 
-Status: agreed direction; ADR review and PR pending
+Status: accepted direction; architecture ADRs merged in PR #14 (remote verification pending in this workspace)
+
+Current milestone: `0 Cover`. The milestone plan is
+[docs/plans/milestone-0-cover.md](../plans/milestone-0-cover.md). It is a
+frontend-only foundation milestone; backend is not applicable. Milestone `1
+Access` remains planned and follows the Cover closure gate.
 
 StockHub starts as an extraction-ready modular monolith. Modules own their
 domain, persistence boundaries, contracts, configuration, and tests. The first
