@@ -19,4 +19,13 @@ public sealed class AccessValidationTests
         Assert.NotNull(result);
         Assert.Equal("country_invalid", result!.Code);
     }
+
+    [Fact]
+    public void Sign_in_rejects_missing_credentials_without_account_disclosure()
+    {
+        var result = StockHub.Api.AccessValidation.SignIn(new("", ""));
+
+        Assert.Equal("credentials_invalid", result!.Code);
+        Assert.DoesNotContain("account", result.Detail, StringComparison.OrdinalIgnoreCase);
+    }
 }

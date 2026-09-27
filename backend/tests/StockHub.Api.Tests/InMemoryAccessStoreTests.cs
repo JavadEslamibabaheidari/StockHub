@@ -30,4 +30,17 @@ public sealed class InMemoryAccessStoreTests
 
         Assert.False(await store.SetActiveWorkspaceAsync(user.Id, session.Id, workspace.Workspace.Id, CancellationToken.None));
     }
+
+    [Fact]
+    public async Task Duplicate_business_names_receive_unique_slugs()
+    {
+        var store = new StockHub.Api.InMemoryAccessStore();
+        var user = await store.CreateUserAsync("Ada", "ADA@EXAMPLE.COM", "hash", CancellationToken.None);
+        var request = new StockHub.Api.CreateWorkspaceRequest("Acme Goods", "IT", "EUR", null);
+
+        var first = await store.CreateWorkspaceAsync(user.Id, request, "one", CancellationToken.None);
+        var second = await store.CreateWorkspaceAsync(user.Id, request, "two", CancellationToken.None);
+
+        Assert.NotEqual(first.Workspace.Slug, second.Workspace.Slug);
+    }
 }
