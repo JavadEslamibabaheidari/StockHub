@@ -24,3 +24,8 @@ npm run build
 The Cover is responsive from 320px through 1440px, exposes a named Contents
 navigation, uses visible focus states, and communicates status with text plus
 icons/dots rather than colour alone.
+
+Milestone 0 Cover closure is verified by merged PR #18 and report
+`docs/reports/milestone-0-cover-closure.md`. Access frontend work consumes only
+generated OpenAPI TypeScript clients and is tracked by issues #22, #23, #25,
+and #26 under milestone 1.

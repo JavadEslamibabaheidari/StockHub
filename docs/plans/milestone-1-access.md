@@ -1,6 +1,6 @@
 # Milestone 1 — Access
 
-Status: start gate CLOSED pending Milestone 0 closure, repository/GitHub verification, and prerequisite preparation
+Status: start gate OPEN — previous milestone closure and Access issue persistence verified 2026-09-27
 
 ## Goal
 
@@ -239,13 +239,25 @@ keyboard-accessible browse path.
 
 ## GitHub tracking
 
-GitHub remains the source of truth. The current issue set is expected to contain
-the four Access specification issues named in the roadmap, plus implementation
-issues for the backend, frontend, contract/CI, and closure work. Before A1 is
-complete, verify their exact numbers, milestone `1 Access`, labels, board
-columns, acceptance criteria, and dependencies. No issue or board state is
-claimed as synchronized from this workspace until authenticated GitHub access
-is restored and the result is recorded in the closure evidence.
+GitHub remains the source of truth. The persisted issue set is verified under
+milestone `1 Access`: specification issues #5–#8 and implementation issues
+#20–#27. Issue #9 remains the repository-wide CI prerequisite and is explicitly
+linked by A7.
+
+Verified milestone: https://github.com/JavadEslamibabaheidari/StockHub/milestone/1
+Verified previous closure: https://github.com/JavadEslamibabaheidari/StockHub/issues/17
+Verified Cover PR: https://github.com/JavadEslamibabaheidari/StockHub/pull/18
+
+| Order | Issue | URL | Depends on |
+|---|---|---|---|
+| 1 | A1 Prepare Access implementation baseline | https://github.com/JavadEslamibabaheidari/StockHub/issues/20 | Cover closure #17 |
+| 2 | A2 Implement Access backend identity, sessions, and workspace persistence | https://github.com/JavadEslamibabaheidari/StockHub/issues/21 | A1; specs #5–#7 |
+| 3 | A3 Publish Access OpenAPI contract and generated TypeScript client | https://github.com/JavadEslamibabaheidari/StockHub/issues/22 | A2 |
+| 4 | A4 Build Access React routes and responsive screens | https://github.com/JavadEslamibabaheidari/StockHub/issues/23 | A3 |
+| 5 | A5 Add Access backend security and integration quality gates | https://github.com/JavadEslamibabaheidari/StockHub/issues/24 | A2–A3 |
+| 6 | A6 Add Access frontend contract, accessibility, and end-to-end tests | https://github.com/JavadEslamibabaheidari/StockHub/issues/25 | A3–A4 |
+| 7 | A7 Split and enforce Access backend/frontend CI checks | https://github.com/JavadEslamibabaheidari/StockHub/issues/26 | A2–A6; #9 |
+| 8 | A8 Validate and close Milestone 1 Access | https://github.com/JavadEslamibabaheidari/StockHub/issues/27 | A1–A7; specs #5–#8 |
 
 ## Knowledge updates
 
@@ -256,11 +268,10 @@ stale planned-only statements rather than appending contradictory notes.
 
 ## Start-gate verdict
 
-The gate is CLOSED. The plan is implementation-ready in scope and covers both
-backend and frontend work, but implementation must first wait for Milestone 0
-Cover closure, then A1 and remote
-verification of the accepted ADR/roadmap/GitHub state. The exact next step is
-to close Cover, restore a normal checkout with valid GitHub authentication,
-verify PR #14, the Access milestone/issues/board, branch protection, and CI,
-then open the focused preparation PR. Only after that PR passes the start gate
-should A2–A7 begin.
+The gate is OPEN. The previous-milestone closure hook passed: Cover report
+`docs/reports/milestone-0-cover-closure.md` is `status: PASS` on merged PR #18,
+Cover milestone 0 is closed, and its three issues are closed. The Access plan
+has no unresolved implementation-blocking decisions, the accepted ADRs and
+knowledge agree with the plan, and the twelve Access issues are persisted under
+milestone 1 with verified immutable URLs. Implementation begins with A1 in the
+isolated Access worktree and proceeds one issue/branch/PR at a time.
