@@ -35,6 +35,9 @@ TypeScript boundary is `frontend/src/api/generated.ts`. Run
 `cd frontend && npm run contract:check` to verify required operations and
 generated-client alignment before frontend changes are delivered.
 
+Frontend CI runs the locked install, tests, generated-client contract check,
+and production build in `.github/workflows/frontend-ci.yml`.
+
 Access routes are hash-addressable in the current shell (`#signup`, `#signin`,
 `#workspace`, `#onboarding`, `#invite`, and deferred handoffs). Forms use the
 generated client, expose labelled controls and live alert errors, and keep
