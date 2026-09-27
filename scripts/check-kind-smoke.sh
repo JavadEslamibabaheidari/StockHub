@@ -37,6 +37,6 @@ for attempt in {1..30}; do
   [[ "$attempt" != 30 ]] || { cat /tmp/stockhub-kind-port-forward.log; exit 1; }
   sleep 2
 done
-curl --fail --silent "http://localhost:$port/" | rg -qi '<!doctype html|<html'
-curl --fail --silent "http://localhost:$port/workspace" | rg -qi '<!doctype html|<html'
+curl --fail --silent "http://localhost:$port/" | grep -qiE '<!doctype html|<html'
+curl --fail --silent "http://localhost:$port/workspace" | grep -qiE '<!doctype html|<html'
 test "$(curl --silent --output /dev/null --write-out '%{http_code}' "http://localhost:$port/api/auth/session")" = 401

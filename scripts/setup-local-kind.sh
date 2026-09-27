@@ -5,7 +5,7 @@ cluster=stockhub-local
 namespace=stockhub-local
 context="kind-$cluster"
 
-if ! kind get clusters | rg -qx "$cluster"; then
+if ! kind get clusters | grep -qx "$cluster"; then
   kind create cluster --name "$cluster" --config deploy/kind-local.yaml --wait 120s
 fi
 kubectl --context "$context" get namespace "$namespace" >/dev/null 2>&1 || \
