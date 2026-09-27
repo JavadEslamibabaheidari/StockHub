@@ -1,7 +1,7 @@
 # Deployment environments
 
-Status: policy baseline; deployment targets and secrets are intentionally not
-selected yet
+Status: local container packaging implemented; shared hosting targets and
+secrets remain intentionally unselected
 
 ## Environments
 
@@ -36,7 +36,15 @@ hosting target is approved.
 
 ## Current delivery rule
 
-CI is implemented for frontend and backend validation. CD remains out of scope
-until the target and ownership decisions above are approved. This prevents a
-workflow from accidentally deploying an arbitrary branch or an unreviewed
-configuration.
+The repository now provides a local/reviewable Compose stack through
+`Dockerfile`, `docker-compose.yml`, and `scripts/check-compose-smoke.sh`. It
+builds the React bundle into the ASP.NET Core image, starts PostgreSQL with a
+health check, applies the Access migration, and exposes the app at one origin
+(`http://localhost:8080` by default). The local Compose password is a
+development default only; shared environments must override all database and
+cookie settings through environment or secret management.
+
+CI is implemented for frontend, backend, PostgreSQL integration, and container
+smoke validation. CD remains out of scope until the target and ownership
+decisions above are approved. This prevents a workflow from accidentally
+deploying an arbitrary branch or an unreviewed configuration.

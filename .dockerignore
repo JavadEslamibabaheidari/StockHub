@@ -1,0 +1,10 @@
+.git
+.github
+**/bin
+**/obj
+frontend/node_modules
+frontend/dist
+*.user
+*.suo
+docs/mockups
+**/.DS_Store
