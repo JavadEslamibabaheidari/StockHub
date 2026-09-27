@@ -1,0 +1,46 @@
+name: Milestone closure
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'docs/reports/**'
+      - 'docs/ai-development-workflow.md'
+      - 'scripts/check-milestone-closure.sh'
+
+permissions:
+  contents: read
+
+jobs:
+  closure-report:
+    name: Validate milestone closure evidence
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Locate closure reports
+        id: report
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -d docs/reports ]]; then
+            echo "No milestone closure report in this pull request; skipping closure validation."
+            echo "path=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          mapfile -t reports < <(find docs/reports -maxdepth 1 -type f -name 'milestone-*-closure.md' -print 2>/dev/null | sort)
+          if [[ "${#reports[@]}" -eq 0 ]]; then
+            echo "No milestone closure report in this pull request; skipping closure validation."
+            echo "path=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "${#reports[@]}" -ne 1 ]]; then
+            echo "Expected exactly one milestone closure report; found ${#reports[@]}" >&2
+            exit 1
+          fi
+          echo "path=${reports[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Run closure gate
+        if: steps.report.outputs.path != ''
+        run: bash scripts/check-milestone-closure.sh "${{ steps.report.outputs.path }}"

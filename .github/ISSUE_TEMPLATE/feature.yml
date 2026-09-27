@@ -1,0 +1,38 @@
+name: Feature or user story
+description: Propose a user-visible capability or product outcome
+title: ""
+labels:
+  - "type:feature"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the outcome, not an unapproved implementation.
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What user or business outcome should this deliver?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What problem, evidence, or reference material supports this?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List observable conditions that define completion.
+      placeholder: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and constraints
+      description: Note related issues, decisions, risks, or non-goals.
