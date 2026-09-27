@@ -4,12 +4,16 @@ on:
   pull_request:
     paths:
       - 'frontend/**'
+      - 'contracts/**'
+      - 'scripts/check-access-contract.mjs'
       - '.github/workflows/frontend-ci.yml'
   push:
     branches:
       - main
     paths:
       - 'frontend/**'
+      - 'contracts/**'
+      - 'scripts/check-access-contract.mjs'
       - '.github/workflows/frontend-ci.yml'
 
 permissions:
@@ -36,6 +40,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Lint and type-check
+        run: npm run lint
 
       - name: Run tests
         run: npm test -- --run

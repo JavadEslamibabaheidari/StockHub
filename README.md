@@ -10,6 +10,8 @@ the separate product track.
 - Work is delivered through focused issues and pull requests.
 - Product mockups are reference material under `docs/mockups/`.
 - The GitHub lifecycle plan is [docs/plans/github-infrastructure-plan.md](docs/plans/github-infrastructure-plan.md).
+- Deployment policy is documented in [docs/plans/deployment-environments.md](docs/plans/deployment-environments.md).
+- Issue metadata rules are documented in [docs/plans/github-issue-hygiene.md](docs/plans/github-issue-hygiene.md).
 
 ## Current status
 
@@ -29,4 +31,15 @@ implementation gate and closure process are documented in
 dotnet restore StockHub.sln
 dotnet build StockHub.sln --no-restore
 dotnet test StockHub.sln --no-restore
+```
+
+## Frontend checks
+
+```bash
+cd frontend
+npm ci
+npm run lint
+npm test -- --run
+npm run contract:check
+npm run build
 ```

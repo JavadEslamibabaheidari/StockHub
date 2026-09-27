@@ -1,7 +1,7 @@
 # StockHub Mockup-Led Roadmap
 
 Status: roadmap structure approved; architecture baseline accepted in PR #14;
-Milestone 0 Cover restored locally; remote verification pending in this workspace
+Milestone 0 Cover is closed; Milestone 1 Access is the active corrective milestone
 
 ## Source of truth
 
@@ -66,8 +66,11 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-The current milestone is `0 Cover`. Milestone `1 Access` remains planned and
-must not start until the Cover closure hook passes.
+The current milestone is `1 Access`. Milestone `0 Cover` is closed with its
+closure hook and zero open GitHub issues. Access was reopened for corrective
+work after its prior closure report was found to claim PASS while the runtime
+still used in-memory persistence and had no verified container or same-origin
+production path.
 
 GitHub issues should exist for the current milestone with detailed acceptance
 criteria and direct mockup references. Future milestone records may exist before
@@ -80,6 +83,9 @@ Current Access issues cover:
 - `1.2 Sign in`
 - `1.3 Create workspace`
 - `1.4 Onboarding checklist`
+- PostgreSQL persistence and integration tests (#39)
+- Docker/Compose packaging (#40)
+- One-origin frontend/API serving (#41)
 
 Milestone 0 implementation is documented in
 [docs/plans/milestone-0-cover.md](milestone-0-cover.md). It is frontend-only;
@@ -103,8 +109,9 @@ Implementation can begin only after:
 
 The detailed implementation plan is
 [docs/plans/milestone-1-access.md](milestone-1-access.md). It must cover both
-backend and frontend work. The current gate is closed while the local checkout
-and authenticated GitHub verification are unavailable.
+backend and frontend work. The current gate is open because the local checkout
+and authenticated GitHub verification are available. Closure remains blocked
+until issues #39–#41 and the final evidence audit are complete.
 
 ## Milestone closure gate
 

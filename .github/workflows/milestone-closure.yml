@@ -48,5 +48,9 @@ jobs:
           set -euo pipefail
           while IFS= read -r report; do
             [[ -n "$report" ]] || continue
-            bash scripts/check-milestone-closure.sh "$report"
+            if grep -Eq '^status:[[:space:]]*PASS[[:space:]]*$' "$report"; then
+              bash scripts/check-milestone-closure.sh "$report"
+            else
+              echo "Closure report is explicitly blocked; final PASS validation is deferred: $report"
+            fi
           done <<< '${{ steps.report.outputs.paths }}'
