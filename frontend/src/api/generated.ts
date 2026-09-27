@@ -1,0 +1,20 @@
+export type Problem = { title: string; detail: string; code?: string | null };
+export type SignUpRequest = { fullName: string; email: string; password: string };
+export type SignInRequest = { email: string; password: string };
+export type CreateWorkspaceRequest = { businessName: string; country: string; currency: string; vatNumber?: string | null };
+export type WorkspaceRole = 'Owner' | 'Admin' | 'Manager' | 'WarehouseStaff' | 'Viewer';
+export type WorkspaceSummary = { id: string; businessName: string; country: string; currency: string; role: WorkspaceRole };
+export type WorkspaceResponse = WorkspaceSummary & { vatNumber?: string | null; slug: string };
+export type SessionResponse = { userId: string; fullName: string; email: string; activeWorkspaceId?: string | null; workspaces: WorkspaceSummary[] };
+export class AccessApiError extends Error { constructor(public readonly status: number, public readonly problem: Problem) { super(problem.detail); } }
+export class AccessApiClient {
+  constructor(private readonly baseUrl = '') {}
+  private async request<T>(path: string, init: RequestInit = {}): Promise<T> { const response = await fetch(`${this.baseUrl}${path}`, { credentials: 'include', headers: { 'Content-Type': 'application/json', ...init.headers }, ...init }); if (!response.ok) throw new AccessApiError(response.status, await response.json() as Problem); return response.status === 204 ? undefined as T : await response.json() as T; }
+  signUp(request: SignUpRequest) { return this.request<{ next: string }>('/api/auth/sign-up', { method: 'POST', body: JSON.stringify(request) }); }
+  signIn(request: SignInRequest) { return this.request<{ next: string }>('/api/auth/sign-in', { method: 'POST', body: JSON.stringify(request) }); }
+  signOut() { return this.request<void>('/api/auth/sign-out', { method: 'POST' }); }
+  session() { return this.request<SessionResponse>('/api/auth/session'); }
+  workspaces() { return this.request<WorkspaceSummary[]>('/api/workspaces'); }
+  createWorkspace(request: CreateWorkspaceRequest, idempotencyKey: string) { return this.request<WorkspaceResponse>('/api/workspaces', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify(request) }); }
+  setActiveWorkspace(workspaceId: string) { return this.request<void>(`/api/workspaces/${workspaceId}/active`, { method: 'PUT' }); }
+}
