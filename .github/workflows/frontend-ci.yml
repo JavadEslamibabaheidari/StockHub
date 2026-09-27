@@ -6,6 +6,8 @@ on:
       - 'frontend/**'
       - 'contracts/**'
       - 'scripts/check-access-contract.mjs'
+      - 'docs/plans/**'
+      - 'docs/reports/**'
       - '.github/workflows/frontend-ci.yml'
   push:
     branches:
@@ -14,6 +16,8 @@ on:
       - 'frontend/**'
       - 'contracts/**'
       - 'scripts/check-access-contract.mjs'
+      - 'docs/plans/**'
+      - 'docs/reports/**'
       - '.github/workflows/frontend-ci.yml'
 
 permissions:
