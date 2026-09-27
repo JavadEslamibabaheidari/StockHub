@@ -29,3 +29,8 @@ Milestone 0 Cover closure is verified by merged PR #18 and report
 `docs/reports/milestone-0-cover-closure.md`. Access frontend work consumes only
 generated OpenAPI TypeScript clients and is tracked by issues #22, #23, #25,
 and #26 under milestone 1.
+
+The committed contract is `contracts/access.openapi.json`; the generated
+TypeScript boundary is `frontend/src/api/generated.ts`. Run
+`cd frontend && npm run contract:check` to verify required operations and
+generated-client alignment before frontend changes are delivered.

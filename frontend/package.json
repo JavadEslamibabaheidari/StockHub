@@ -8,6 +8,7 @@
     "build": "tsc --noEmit -p tsconfig.app.json && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
+    "contract:check": "node ../scripts/check-access-contract.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
