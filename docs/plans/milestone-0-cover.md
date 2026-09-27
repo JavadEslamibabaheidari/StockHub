@@ -122,10 +122,10 @@ there is no earlier implementation milestone to close.
 - The frontend CI workflow is present at
   `.github/workflows/frontend-ci.yml`; its GitHub run is still unverified
   because the local checkout cannot push a branch or open a PR.
-- Temporary local commit evidence: `cabc22181c175a995ca59d93a08b1959c1aba284`
-  for M0-1 and `48900e371471898d6670e8035dd040f8fb8c2a17` for M0-2. These
-  commits exist in `/tmp/stockhub-commits`, not in the read-only workspace
-  `.git` directory and are not yet reachable from GitHub.
+- Workspace commit evidence: `0be25f1ddc063823e67a0488133470e54106ece1`
+  for M0-1 and `7b180655636d3fbfeb0753b599f1a85f42c1e466` for M0-2. The
+  M0-3 delivery commit will record the final closure-blocker evidence after
+  remote delivery is attempted.
 
 ## GitHub tracking
 
