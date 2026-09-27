@@ -22,7 +22,7 @@ for attempt in {1..30}; do
 done
 
 curl --fail --silent "http://localhost:${STOCKHUB_PORT:-8080}/" > /tmp/stockhub-root.html
-rg -q '<!doctype html|<html' /tmp/stockhub-root.html
+grep -Eq '<!doctype html|<html' /tmp/stockhub-root.html
 curl --fail --silent "http://localhost:${STOCKHUB_PORT:-8080}/workspace" > /tmp/stockhub-workspace.html
-rg -q '<!doctype html|<html' /tmp/stockhub-workspace.html
+grep -Eq '<!doctype html|<html' /tmp/stockhub-workspace.html
 test "$(curl --silent --output /dev/null --write-out '%{http_code}' "http://localhost:${STOCKHUB_PORT:-8080}/api/auth/session")" = "401"
