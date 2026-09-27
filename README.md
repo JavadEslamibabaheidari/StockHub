@@ -16,3 +16,8 @@ the separate product track.
 The repository currently contains planning and reference artifacts only. The
 runtime, application source, and deployment model will be added after the
 product/architecture decisions are complete.
+
+The agreed architecture is documented in
+[docs/plans/architecture-baseline.md](docs/plans/architecture-baseline.md).
+Implementation remains gated on reviewing and merging the architecture ADRs
+through the normal branch and pull-request workflow.
