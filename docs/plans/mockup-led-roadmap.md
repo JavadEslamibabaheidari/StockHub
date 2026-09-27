@@ -66,18 +66,25 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-The current milestone is `1 Access`, which is complete and closed. Milestone `0 Cover` is closed with its
+The next milestone is `2 Dashboard`. `1 Access` is complete and closed. Milestone `0 Cover` is closed with its
 closure hook and zero open GitHub issues. Access is complete after corrective PRs #38, #43, and #44;
 all persistence, packaging, and same-origin gaps were closed; the runtime
 now uses PostgreSQL persistence and has verified container and same-origin
 production routing.
+
+The next product milestone is `2 Dashboard`. Before its implementation
+advances, complete the cross-cutting [production delivery gate](production-delivery-gate.md)
+tracked in issue #47. It adds image security, local Kubernetes verification,
+and GitHub Actions deployment without creating a parallel product milestone.
+Each completed milestone receives one annotated `v0.<number>.0` tag after its
+closure and checks are verified.
 
 GitHub issues should exist for the current milestone with detailed acceptance
 criteria and direct mockup references. Future milestone records may exist before
 their start gate, but detailed issues should be created when that milestone is
 ready to be specified.
 
-Current Access issues cover:
+Completed Access issues covered:
 
 - `1.1 Sign up`
 - `1.2 Sign in`
