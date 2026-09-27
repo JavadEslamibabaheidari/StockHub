@@ -8,4 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Npgsql" Version="10.0.0" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="../../database/migrations/001_access.sql" Link="Database/Migrations/001_access.sql" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

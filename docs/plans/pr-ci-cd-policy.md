@@ -18,6 +18,8 @@ changes.
 - admin enforcement enabled;
 - strict required status checks;
 - required status check: `Repository sanity`;
+- required status check: `Frontend test and build`;
+- required status check: `Backend build and test`;
 - pull request required, with no approving review required;
 - required conversation resolution;
 - required linear history;
@@ -43,10 +45,8 @@ roadmap/spec is approved.
 
 ## CI policy
 
-The current `Repository sanity` workflow is a temporary baseline for repository
-health before application scaffolding exists.
-
-Once frontend and backend scaffolding exist:
+The `Repository sanity` workflow checks repository health while the separate
+frontend and backend workflows validate application code:
 
 - frontend and backend must have separate CI pipelines;
 - branch protection must require both frontend and backend checks;
