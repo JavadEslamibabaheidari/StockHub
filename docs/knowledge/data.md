@@ -28,3 +28,10 @@ Product imports, platform credentials, and product records remain owned by
 their future modules; Access only owns the onboarding handoff and its durable
 state. The detailed contract and acceptance criteria are in
 [docs/plans/milestone-1-access.md](../plans/milestone-1-access.md).
+
+The Access migration baseline is `backend/database/migrations/001_access.sql`.
+It defines users, workspaces, memberships, and cookie session records with
+case-insensitive email uniqueness, owner-role constraints, ISO code columns,
+and tenant foreign keys. The application store is behind `IAccessStore` so the
+PostgreSQL adapter can be introduced without sharing domain entities across
+the API/frontend boundary.
