@@ -241,8 +241,8 @@ keyboard-accessible browse path.
 
 GitHub remains the source of truth. The persisted issue set is verified under
 milestone `1 Access`: specification issues #5–#8 and implementation issues
-#20–#27. Issue #9 remains the repository-wide CI prerequisite and is explicitly
-linked by A7.
+#20–#27 plus closure-audit issue #35. Issue #9 remains the repository-wide CI
+prerequisite and is explicitly linked by A7.
 
 Verified milestone: https://github.com/JavadEslamibabaheidari/StockHub/milestone/1
 Verified previous closure: https://github.com/JavadEslamibabaheidari/StockHub/issues/17
@@ -258,6 +258,7 @@ Verified Cover PR: https://github.com/JavadEslamibabaheidari/StockHub/pull/18
 | 6 | A6 Add Access frontend contract, accessibility, and end-to-end tests | https://github.com/JavadEslamibabaheidari/StockHub/issues/25 | A3–A4 |
 | 7 | A7 Split and enforce Access backend/frontend CI checks | https://github.com/JavadEslamibabaheidari/StockHub/issues/26 | A2–A6; #9 |
 | 8 | A8 Validate and close Milestone 1 Access | https://github.com/JavadEslamibabaheidari/StockHub/issues/27 | A1–A7; specs #5–#8 |
+| 9 | A9 Complete onboarding, invitations, and Google OIDC coverage before closure | https://github.com/JavadEslamibabaheidari/StockHub/issues/35 | A2–A7; blocks A8 |
 
 ## Knowledge updates
 
@@ -272,6 +273,6 @@ The gate is OPEN. The previous-milestone closure hook passed: Cover report
 `docs/reports/milestone-0-cover-closure.md` is `status: PASS` on merged PR #18,
 Cover milestone 0 is closed, and its three issues are closed. The Access plan
 has no unresolved implementation-blocking decisions, the accepted ADRs and
-knowledge agree with the plan, and the twelve Access issues are persisted under
-milestone 1 with verified immutable URLs. Implementation begins with A1 in the
-isolated Access worktree and proceeds one issue/branch/PR at a time.
+knowledge agree with the plan, and the thirteen Access issues are persisted
+under milestone 1 with verified immutable URLs. A9 resolved the closure-audit
+gap in merged PR #36; A8 now performs the final report and tracking sync.
