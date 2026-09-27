@@ -6,6 +6,9 @@ on:
       - 'backend/**'
       - 'StockHub.sln'
       - 'contracts/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'scripts/check-compose-smoke.sh'
       - '.github/workflows/backend-ci.yml'
   push:
     branches: [main]
@@ -13,6 +16,9 @@ on:
       - 'backend/**'
       - 'StockHub.sln'
       - 'contracts/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'scripts/check-compose-smoke.sh'
       - '.github/workflows/backend-ci.yml'
 
 permissions:
@@ -22,6 +28,22 @@ jobs:
   backend:
     name: Backend build and test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: stockhub
+          POSTGRES_USER: stockhub
+          POSTGRES_PASSWORD: stockhub-ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U stockhub -d stockhub"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      STOCKHUB_POSTGRES_TEST_CONNECTION: Host=localhost;Port=5432;Database=stockhub;Username=stockhub;Password=stockhub-ci
     steps:
       - name: Check out repository
         uses: actions/checkout@v4

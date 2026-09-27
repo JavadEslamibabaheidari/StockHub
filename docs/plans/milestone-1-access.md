@@ -1,6 +1,6 @@
 # Milestone 1 — Access
 
-Status: start gate OPEN — previous milestone closure and Access issue persistence verified 2026-09-27
+Status: corrective work OPEN — previous closure was reopened after an implementation audit on 2026-09-27
 
 ## Goal
 
@@ -207,18 +207,22 @@ keyboard-accessible browse path.
 | A6 | Add frontend unit, accessibility, contract, and Playwright tests | frontend quality | A4 | required frontend checks pass in CI |
 | A7 | Split CI and update required branch checks | delivery | A2–A6 | repository, backend, and frontend checks are all required and green |
 | A8 | Run planned-state validation and closure hook | quality gate | A1–A7 | closure report passes script and review |
+| A9 | Complete onboarding, invitations, and Google OIDC coverage before closure | backend/frontend quality | A2–A7 | audit issue #35 resolved and handoff states are covered |
+| A10 | Replace the default in-memory store with PostgreSQL persistence and real integration tests | backend/data | A2; issue #39 | fresh database migration, durable flows, transactional idempotency, and CI integration tests pass |
+| A11 | Add Docker and Compose packaging for the API, frontend, and PostgreSQL | delivery/infrastructure | A10; issue #40 | compose build/start/health smoke checks pass with environment-only secrets |
+| A12 | Serve the frontend and API under one origin and verify production routing | full stack quality | A11; issue #41 | root/deep-link/API/health smoke checks pass on one application origin |
+| A13 | Re-run closure evidence and close the milestone only after every issue is closed | quality gate | A8–A12 | report passes the closure hook and GitHub milestone has zero open issues |
 
 ## Dependencies and risks
 
-- The current workspace has no usable Git metadata, so A1 is blocking.
-- GitHub CLI authentication is invalid and network access is unavailable in the
-  current execution environment, so remote milestone, issue, project, branch
-  protection, CI, and PR state cannot yet be independently verified.
+- The earlier Access closure was premature: the API still registered
+  `InMemoryAccessStore`, and no container or same-origin production path was
+  verified. The corrective issues #39–#41 are therefore blocking A13.
 - Google OIDC requires provider credentials and callback configuration. Local
   tests use a deterministic test adapter; review-staging must provide approved
   configuration before the Google acceptance criterion is marked complete.
-- PostgreSQL and browser-test dependencies must be available in CI before
-  implementation is considered complete.
+- PostgreSQL, Docker, and browser-test dependencies must be available in CI
+  before implementation is considered complete.
 - The mockup includes future-module actions in the onboarding checklist. Their
   Access behavior must remain honest and explicitly deferred until those
   milestones implement the actions.
@@ -240,9 +244,9 @@ keyboard-accessible browse path.
 ## GitHub tracking
 
 GitHub remains the source of truth. The persisted issue set is verified under
-milestone `1 Access`: specification issues #5–#8 and implementation issues
-#20–#27 plus closure-audit issue #35. Issue #9 remains the repository-wide CI
-prerequisite and is explicitly linked by A7.
+milestone `1 Access`: specification issues #5–#8, implementation issues
+#20–#27, closure-audit issue #35, and corrective issues #39–#41. Milestone 1
+was reopened while #39–#41 are implemented and verified.
 
 Verified milestone: https://github.com/JavadEslamibabaheidari/StockHub/milestone/1
 Verified previous closure: https://github.com/JavadEslamibabaheidari/StockHub/issues/17
@@ -259,6 +263,10 @@ Verified Cover PR: https://github.com/JavadEslamibabaheidari/StockHub/pull/18
 | 7 | A7 Split and enforce Access backend/frontend CI checks | https://github.com/JavadEslamibabaheidari/StockHub/issues/26 | A2–A6; #9 |
 | 8 | A8 Validate and close Milestone 1 Access | https://github.com/JavadEslamibabaheidari/StockHub/issues/27 | A1–A7; specs #5–#8 |
 | 9 | A9 Complete onboarding, invitations, and Google OIDC coverage before closure | https://github.com/JavadEslamibabaheidari/StockHub/issues/35 | A2–A7; blocks A8 |
+| 10 | A10 Implement PostgreSQL-backed Access persistence and integration tests | https://github.com/JavadEslamibabaheidari/StockHub/issues/39 | A2; blocks A11–A13 |
+| 11 | A11 Add Docker and Compose packaging for the Access stack | https://github.com/JavadEslamibabaheidari/StockHub/issues/40 | A10; blocks A12–A13 |
+| 12 | A12 Serve the frontend and API under one origin | https://github.com/JavadEslamibabaheidari/StockHub/issues/41 | A10–A11; blocks A13 |
+| 13 | A13 Re-run closure evidence and close Milestone 1 Access | tracked in this plan and closure report | A8–A12; every milestone issue closed |
 
 ## Knowledge updates
 
@@ -269,10 +277,11 @@ stale planned-only statements rather than appending contradictory notes.
 
 ## Start-gate verdict
 
-The gate is OPEN. The previous-milestone closure hook passed: Cover report
+The corrective gate is OPEN. The previous-milestone closure hook passed: Cover report
 `docs/reports/milestone-0-cover-closure.md` is `status: PASS` on merged PR #18,
 Cover milestone 0 is closed, and its three issues are closed. The Access plan
 has no unresolved implementation-blocking decisions, the accepted ADRs and
 knowledge agree with the plan, and the thirteen Access issues are persisted
-under milestone 1 with verified immutable URLs. A9 resolved the closure-audit
-gap in merged PR #36; A8 now performs the final report and tracking sync.
+under milestone 1 with verified immutable URLs. The previous PASS report is
+superseded until A10–A12 are implemented and A13 re-runs the full evidence and
+GitHub state checks.

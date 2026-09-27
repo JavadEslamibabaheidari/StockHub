@@ -1,13 +1,17 @@
 namespace StockHub.Api.Tests;
 
+using StockHub.Api.Contracts;
+using StockHub.Api.Domain;
+using StockHub.Api.Infrastructure;
+
 public sealed class InMemoryAccessStoreTests
 {
     [Fact]
     public async Task Workspace_creation_is_idempotent_and_assigns_owner()
     {
-        var store = new StockHub.Api.InMemoryAccessStore();
+        var store = new InMemoryAccessStore();
         var user = await store.CreateUserAsync("Ada Lovelace", "ADA@EXAMPLE.COM", "hash", CancellationToken.None);
-        var request = new StockHub.Api.CreateWorkspaceRequest("Acme Goods", "IT", "EUR", null);
+        var request = new CreateWorkspaceRequest("Acme Goods", "IT", "EUR", null);
 
         var first = await store.CreateWorkspaceAsync(user.Id, request, "retry-1", CancellationToken.None);
         var second = await store.CreateWorkspaceAsync(user.Id, request, "retry-1", CancellationToken.None);
@@ -15,14 +19,14 @@ public sealed class InMemoryAccessStoreTests
         Assert.Equal(first.Workspace.Id, second.Workspace.Id);
         var memberships = await store.ListWorkspacesAsync(user.Id, CancellationToken.None);
         var membership = Assert.Single(memberships);
-        Assert.Equal(StockHub.Api.WorkspaceRole.Owner, membership.Role);
+        Assert.Equal(WorkspaceRole.Owner, membership.Role);
         Assert.Equal("acme-goods", first.Workspace.Slug);
     }
 
     [Fact]
     public async Task Active_workspace_can_only_be_selected_for_a_membership()
     {
-        var store = new StockHub.Api.InMemoryAccessStore();
+        var store = new InMemoryAccessStore();
         var user = await store.CreateUserAsync("Ada Lovelace", "ADA@EXAMPLE.COM", "hash", CancellationToken.None);
         var other = await store.CreateUserAsync("Grace Hopper", "GRACE@EXAMPLE.COM", "hash", CancellationToken.None);
         var session = await store.CreateSessionAsync(user.Id, CancellationToken.None);
@@ -34,9 +38,9 @@ public sealed class InMemoryAccessStoreTests
     [Fact]
     public async Task Duplicate_business_names_receive_unique_slugs()
     {
-        var store = new StockHub.Api.InMemoryAccessStore();
+        var store = new InMemoryAccessStore();
         var user = await store.CreateUserAsync("Ada", "ADA@EXAMPLE.COM", "hash", CancellationToken.None);
-        var request = new StockHub.Api.CreateWorkspaceRequest("Acme Goods", "IT", "EUR", null);
+        var request = new CreateWorkspaceRequest("Acme Goods", "IT", "EUR", null);
 
         var first = await store.CreateWorkspaceAsync(user.Id, request, "one", CancellationToken.None);
         var second = await store.CreateWorkspaceAsync(user.Id, request, "two", CancellationToken.None);
