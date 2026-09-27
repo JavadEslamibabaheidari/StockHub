@@ -27,6 +27,9 @@ separate product/architecture track.
 - Track 1 decision update: the roadmap is mockup-led from
   `docs/mockups/StockHub Final.html`; GitHub milestones must match the mockup
   sections and must not invent a parallel product milestone structure.
+- Track 1 policy update: PR/CI/CD governance is a hard pre-implementation gate.
+  All changes must come through branches and pull requests, and direct `main`
+  commits are no longer allowed.
 
 ## Local scaffolding added
 
@@ -39,6 +42,7 @@ The following product-neutral files are now present locally and on `main`:
 - `.github/ISSUE_TEMPLATE/infrastructure.yml`
 - `.github/workflows/ci.yml`
 - `docs/plans/mockup-led-roadmap.md`
+- `docs/plans/pr-ci-cd-policy.md`
 
 The CI workflow currently performs repository sanity checks only. Runtime-
 specific build, test, and lint commands remain deferred until the application
@@ -170,8 +174,16 @@ Templates must remain product-neutral and must not encode architecture that has
 - strict status checks enabled
 - one approving pull-request review required
 - stale approvals dismissed when new commits invalidate the review
+- last pusher cannot approve their own final push
+- conversation resolution required
+- linear history required
 - force-push and branch deletion disabled
-- admin enforcement disabled for the owner account
+- admin enforcement enabled
+- repository auto-merge enabled
+- branch deletion after merge enabled
+
+All changes must come from a branch and a pull request. Direct `main` changes
+are not allowed.
 
 ### GitHub Actions CI skeleton
 
@@ -186,9 +198,25 @@ can be extended after the application stack is known:
 - keep secrets and deployment credentials out of CI until environments are
   explicitly approved
 
+Once real app scaffolding exists, split CI into separate frontend and backend
+workflow files. Branch protection must then require the separate frontend and
+backend checks, not only `repository-sanity`.
+
 No application-specific commands will be invented in this track.
 
 No application implementation should begin until the roadmap/spec is approved.
+
+### CD lifecycle
+
+CD must not deploy arbitrary branches directly to production.
+
+Recommended lifecycle:
+
+- PR branches trigger CI and optional preview/review deployments.
+- Approved PRs with passing checks may auto-merge to `main`.
+- Merge or push to `main` triggers CD to `review-staging`.
+- Production remains deferred and gated until deployment architecture,
+  ownership, rollback, approvals, and observability are approved.
 
 ### Environments
 
@@ -218,6 +246,9 @@ No application implementation should begin until the roadmap/spec is approved.
    directory with a normal writable clone or checkout of the remote.
 9. Completed: created the current `1 Access` spec issues with acceptance
    criteria and mockup references.
+10. In progress by pull request: document the hard PR/CI/CD pre-implementation
+    gate and plan the split frontend/backend CI workflow PR tracked by issue
+    `#9`.
 
 ## Acceptance criteria
 
@@ -248,3 +279,6 @@ The infrastructure track is complete when:
 - The application runtime is not yet selected, so CI build/lint/test commands
   must wait for the product/architecture track.
 - Roadmap/spec approval is required before app implementation begins.
+- Issue `#9` tracks the required split frontend/backend CI workflow PR after
+  app scaffolding exists and before app implementation proceeds beyond
+  scaffolding.
