@@ -1,16 +1,16 @@
 # Milestone closure report — 1 Access
 
-status: BLOCKED
+status: PASS
 milestone: 1 Access
 plan: docs/plans/milestone-1-access.md
 mockup_evidence: docs/mockups/StockHub Final.html section 1 Access; docs/mockups/StockHub Design Review.pdf section 1 Access
 adr_evidence: docs/decisions/0002-module-boundaries-and-contracts.md; docs/decisions/0006-identity-tenancy-and-roles.md; docs/decisions/0007-frontend-and-api-contracts.md; docs/decisions/0008-testing-ci-and-deployment.md
 knowledge_evidence: docs/knowledge/architecture.md; docs/knowledge/data.md; docs/knowledge/frontend.md; docs/knowledge/messaging.md
 roadmap_evidence: docs/plans/mockup-led-roadmap.md milestone 1 Access
-code_evidence: backend/src/StockHub.Api; backend/database/migrations/001_access.sql; contracts/access.openapi.json; frontend/src/api; frontend/src/App.tsx; frontend/src/styles.css; .github/workflows/backend-ci.yml; .github/workflows/frontend-ci.yml
-tests_evidence: dotnet restore/build/test StockHub.sln (6 backend tests passed); cd frontend && npm ci && npm test -- --run (7 tests passed) && npm run contract:check && npm run build; PR checks #28, #29, #30, #31, #32, #33, #34, #36 passed
-configuration_evidence: StockHub.sln; backend/database/migrations/001_access.sql; frontend/package-lock.json; backend/frontend CI workflows; no production deployment introduced
-github_evidence: milestone https://github.com/JavadEslamibabaheidari/StockHub/milestone/1; implementation PRs #28–#34 and #36; closure issue #27; audit issue #35; corrective issues #39–#41 are open
+code_evidence: backend/src/StockHub.Api; backend/database/migrations/001_access.sql; contracts/access.openapi.json; frontend/src/api; frontend/src/App.tsx; frontend/src/styles.css; Dockerfile; docker-compose.yml; scripts/check-compose-smoke.sh; .github/workflows/backend-ci.yml; .github/workflows/frontend-ci.yml; .github/workflows/container-ci.yml
+tests_evidence: backend 6 tests passed locally and PostgreSQL integration tests passed in Backend CI; frontend 8 tests passed in Frontend CI; generated contract check and production build passed; Container smoke passed on PR #43 and PR #44
+configuration_evidence: StockHub.sln; PostgreSQL migration; Docker Compose health checks and environment-only connection settings; same-origin static-file and SPA fallback; no production deployment introduced
+github_evidence: milestone https://github.com/JavadEslamibabaheidari/StockHub/milestone/1; corrective issue #39 closed by PR #38; issue #40 closed by merged PR #43; issue #41 closed by merged PR #44; all required checks passed
 previous_milestone_hook: PASS — Cover closure report is status PASS on merged PR #18 and milestone 0 is closed
 baseline: merged Cover mainline before Access implementation
 
@@ -18,41 +18,32 @@ baseline: merged Cover mainline before Access implementation
 
 | ID | Source / expected outcome | Implementation or configuration | Test / evidence | Status | Reason, owner, follow-up issue, target milestone |
 |---|---|---|---|---|---|
-| mockup | Sign-up, sign-in, workspace, and onboarding hierarchy and states | frontend/src/App.tsx and styles | 7 frontend tests; responsive CSS and keyboard-visible focus | PASS | Product owner; no follow-up; target complete |
-| plan | Access acceptance criteria and dependency order implemented | docs/plans/milestone-1-access.md; issues #20–#27 and #35 | PRs #28–#34 and #36; corrective issues #39–#41 | BLOCKED | PostgreSQL, packaging, and same-origin criteria remain open in #39–#41 |
-| adr | Tenant boundary, cookie session, generated contract, CI decisions respected | backend/src; contracts; workflows | Backend/frontend CI and review | PASS | No follow-up; target complete |
+| mockup | Sign-up, sign-in, workspace, and onboarding hierarchy and states | frontend/src/App.tsx and styles | 8 frontend tests; responsive CSS; keyboard-visible focus | PASS | Product owner; no follow-up; target complete |
+| plan | Access acceptance criteria and dependency order implemented | docs/plans/milestone-1-access.md; issues #20–#27, #35, #39–#41 | PRs #28–#38, #43, and #44; corrective issues closed | PASS | Quality gate satisfied; no follow-up; target complete |
+| adr | Tenant boundary, cookie session, generated contract, CI, persistence, and deployment decisions respected | backend/src; contracts; migrations; workflows; container files | Backend, frontend, container, and repository checks passed | PASS | No follow-up; target complete |
 | knowledge | Architecture, data, frontend, and messaging knowledge matches implementation | docs/knowledge/*.md | Source and command verification | PASS | No follow-up; target complete |
-| roadmap | Access section delivered without claiming future module completion | docs/plans/mockup-led-roadmap.md; onboarding handoffs | Frontend route and API contract checks | PASS | Inventory/platform/team actions remain owning-module handoffs |
-| code | Backend, migration, contract, frontend, and CI are present | listed in code_evidence | Merged PR sequence | BLOCKED | The registered runtime store is still in-memory; #39 fixes the persistence gap |
-| tests | Validation, retry, tenant denial, auth states, contract, frontend routes, and builds pass | backend/tests; frontend/src/App.test.tsx | 6 backend and 7 frontend tests plus CI | BLOCKED | No real PostgreSQL integration or packaged same-origin smoke test yet; #39 and #41 |
-| configuration | Local/review configuration and migration evidence exists | migration, solution, workflows, package lock | CI-equivalent commands and green PR checks | BLOCKED | No Docker/Compose packaging or production-origin verification yet; #40 and #41 |
-| github | Issues, branches, PRs, checks, milestone, and closure evidence synchronized | milestone 1 and PR/issue URLs above | GitHub review before closure | PASS | Repository owner; no follow-up; target complete |
+| roadmap | Access section delivered without claiming future module completion | docs/plans/mockup-led-roadmap.md; onboarding handoffs | Route, API contract, same-origin, and closure checks | PASS | Inventory/platform/team actions remain owning-milestone handoffs |
+| code | Durable Access runtime, migrations, frontend, container packaging, and one-origin serving are present | listed in code_evidence | PR #38 persistence; PR #43 packaging; PR #44 client-origin regression test | PASS | No follow-up; target complete |
+| tests | Validation, retry, tenant denial, auth states, PostgreSQL persistence, contract, frontend routes, and builds pass | backend/tests; frontend tests; CI workflows | Local tests plus all required GitHub checks on PRs #43 and #44 | PASS | No follow-up; target complete |
+| configuration | Local/review configuration and deployment evidence are reproducible | migration, solution, package locks, Docker Compose, workflows | docker compose config/build/smoke; backend/frontend CI | PASS | No production deployment introduced; target complete |
+| github | Issues, branches, PRs, checks, milestone, and closure evidence synchronized | milestone 1 and issue/PR links above | GitHub review before closure | PASS | Repository owner; no follow-up; target complete |
 
 ## Deliberate deviations
 
-The Google provider is configuration-safe in this milestone: absent credentials return an actionable 503 Problem Details response and never create an unauthenticated session. Live provider credentials and production identity-provider operations remain deferred by the plan's non-goals; owner Codex, no additional issue required, target review deployment.
+Google provider credentials and production identity-provider operations remain configuration-owned deployment work, as permitted by the plan's non-goals. Inventory import execution, platform authorization, email delivery, and full team administration remain explicit owning-milestone handoffs; Access exposes honest entry states without claiming those capabilities complete.
 
 ## Missing coverage and follow-ups
 
-Blocking gaps: the default runtime store is in-memory rather than PostgreSQL (#39),
-Docker/Compose packaging is absent (#40), and the production app does not serve
-the frontend and API under one verified origin (#41). Product import execution,
-platform authorization, email delivery, and full team administration remain
-explicit owning-milestone handoffs and are not marked complete by Access.
+No Access closure-blocking gaps remain. Future-module handoffs remain recorded in the roadmap and Access plan: Inventory owns import execution, Platforms owns authorization and synchronization, and Team owns delivery and administration of invitations.
 
 ## Evidence and verification
 
-- Previous Cover closure hook verified from merged PR #18 and `docs/reports/milestone-0-cover-closure.md`.
-- Access issues were persisted before implementation; the closure audit created and solved #35 through PR #36.
-- The prior PASS report is superseded by this blocked audit; the closure hook must
-  be rerun after #39–#41 are merged.
-- Backend Release build/test: 6 tests passed.
-- Frontend locked install/test/build: 7 tests passed; generated contract check passed.
-- Backend CI and Frontend CI are separate required workflows and passed on PR #34 and PR #36.
+- PostgreSQL persistence replaced the default runtime in-memory store; migration, durable sessions, workspaces, memberships, invitations, onboarding actions, and idempotency are covered by implementation and integration tests.
+- Dockerfile and Compose package the frontend, API, and PostgreSQL with health checks; the smoke script verifies health, root HTML, the /workspace deep link, and a same-origin unauthenticated API response.
+- The frontend API client regression test proves its default request base is relative and uses cookie credentials.
+- PR #43 passed backend, frontend, container, and repository checks and closed #40; PR #44 passed all four required checks and closed #41.
+- The closure hook is run against this report before the GitHub milestone is closed.
 
 ## Closure verdict
 
-BLOCKED. The earlier closure did not have a valid product reason to defer these
-items: the plan explicitly requires PostgreSQL integration coverage and deployment
-configuration. Milestone 1 must remain open until corrective issues #39–#41 are
-implemented, tested, merged, and reflected in a fresh PASS report.
+PASS. Milestone 1 Access meets the approved plan, roadmap, mockup, ADR, knowledge, code, test, configuration, and GitHub tracking gates. The milestone is ready to close after this report is committed and the milestone shows zero open issues.
