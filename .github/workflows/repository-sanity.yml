@@ -1,4 +1,4 @@
-name: CI
+name: Repository sanity
 
 on:
   pull_request:
@@ -23,5 +23,5 @@ jobs:
       - name: Check required planning artifact
         run: test -f docs/plans/github-infrastructure-plan.md
 
-      # Runtime-specific build, test, and lint commands belong here after the
-      # product/architecture track selects the application stack.
+      - name: Check milestone closure script
+        run: test -x scripts/check-milestone-closure.sh

@@ -1,7 +1,7 @@
 # StockHub GitHub Infrastructure Plan
 
-Status: GitHub repository provisioned; mockup roadmap milestones synchronized;
-Project board authorization pending; local remote verification pending
+Status: GitHub repository provisioned; CI split implemented; Project board
+authorization pending
 
 ## Goal
 
@@ -44,9 +44,9 @@ The following product-neutral files are now present locally and on `main`:
 - `docs/plans/mockup-led-roadmap.md`
 - `docs/plans/pr-ci-cd-policy.md`
 
-The CI workflow currently performs repository sanity checks only. Runtime-
-specific build, test, and lint commands remain deferred until the selected
-.NET/React application scaffolding exists.
+CI is split into repository sanity, frontend, and backend workflows. The
+frontend runs type-check/lint, tests, contract validation, and a production
+build; the backend runs restore, build, tests, and migration validation.
 
 ## Scope
 
@@ -138,8 +138,8 @@ the mockup roadmap milestone:
 - Keep branch protection aligned with CI checks.
 - Maintain GitHub lifecycle board and issue hygiene.
 
-Project board creation is pending an additional GitHub OAuth scope refresh:
-`project` and `read:project`.
+Project board synchronization is pending an additional GitHub OAuth scope
+refresh: `project` and `read:project`. No board state is inferred locally.
 
 ### Pull-request template
 
@@ -196,9 +196,8 @@ can be extended after the application stack is known:
 - keep secrets and deployment credentials out of CI until environments are
   explicitly approved
 
-Once real app scaffolding exists, split CI into separate frontend and backend
-workflow files. Branch protection must then require the separate frontend and
-backend checks, not only `Repository sanity`.
+The repository now uses separate workflow files. Branch protection must require
+the frontend and backend checks in addition to `Repository sanity`.
 
 No application-specific commands will be invented in this track.
 
@@ -238,15 +237,15 @@ Recommended lifecycle:
 5. Completed: applied branch protection after the first CI run succeeded.
 6. Completed: created the initial infrastructure issues; after the Track 1
    update, moved them out of the mockup milestone.
-7. Pending: create the GitHub Project board after Project OAuth scopes are
-   authorized.
+7. Pending: create and synchronize the GitHub Project board after Project OAuth
+   scopes are authorized.
 8. Recommended next workspace step: replace the empty read-only `.git`
    directory with a normal writable clone or checkout of the remote.
 9. Completed: created the current `1 Access` spec issues with acceptance
    criteria and mockup references.
-10. Pending in the focused preparation PR: document the hard PR/CI/CD
-    pre-implementation gate, add the milestone-closure hook, and prepare the
-    split frontend/backend CI workflow tracked by issue `#9`.
+10. Completed in the focused preparation PR: document the hard PR/CI/CD
+    pre-implementation gate, add the milestone-closure hook, and split the
+    frontend/backend CI workflow tracked by issue `#9`.
 
 ## Acceptance criteria
 
@@ -276,11 +275,9 @@ The infrastructure track is complete when:
   normal writable checkout even though the remote repository has been created.
 - The application runtime is selected by the accepted architecture baseline:
   .NET 10/ASP.NET Core with PostgreSQL/EF Core, and React/TypeScript/Vite.
-  CI build/lint/test commands remain pending until runtime scaffolding exists.
-- Roadmap/spec approval is required before app implementation begins.
-- Issue `#9` tracks the required split frontend/backend CI workflow PR after
-  app scaffolding exists and before app implementation proceeds beyond
-  scaffolding.
+  CI build/lint/test commands are implemented in the split workflows.
+- Roadmap/spec approval is required before new product implementation begins.
+- Project board synchronization remains pending the additional OAuth scopes.
 
 The reusable milestone-closure process is defined in
 `docs/ai-development-workflow.md` and validated by

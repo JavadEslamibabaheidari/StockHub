@@ -5,12 +5,14 @@ on:
     paths:
       - 'backend/**'
       - 'StockHub.sln'
+      - 'contracts/**'
       - '.github/workflows/backend-ci.yml'
   push:
     branches: [main]
     paths:
       - 'backend/**'
       - 'StockHub.sln'
+      - 'contracts/**'
       - '.github/workflows/backend-ci.yml'
 
 permissions:
