@@ -1,6 +1,6 @@
 # Milestone 1 — Access
 
-Status: corrective work OPEN — previous closure was reopened after an implementation audit on 2026-09-27
+Status: COMPLETE — corrective work delivered, verified, and closed on 2026-09-27
 
 ## Goal
 
