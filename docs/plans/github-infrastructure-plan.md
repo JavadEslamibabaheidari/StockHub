@@ -170,11 +170,9 @@ Templates must remain product-neutral and must not encode architecture that has
 
 `main` is protected:
 
-- required status check: `repository-sanity`
+- required status check: `Repository sanity`
 - strict status checks enabled
-- one approving pull-request review required
-- stale approvals dismissed when new commits invalidate the review
-- last pusher cannot approve their own final push
+- pull request required, with no approving review required
 - conversation resolution required
 - linear history required
 - force-push and branch deletion disabled
@@ -200,7 +198,7 @@ can be extended after the application stack is known:
 
 Once real app scaffolding exists, split CI into separate frontend and backend
 workflow files. Branch protection must then require the separate frontend and
-backend checks, not only `repository-sanity`.
+backend checks, not only `Repository sanity`.
 
 No application-specific commands will be invented in this track.
 
