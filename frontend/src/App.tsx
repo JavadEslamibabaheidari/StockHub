@@ -1,3 +1,6 @@
+import React, { useEffect, useState } from 'react'
+import { AccessApiClient, AccessApiError } from './api/generated'
+
 type RoadmapSection = {
   number: string
   title: string
@@ -92,7 +95,40 @@ function Contents() {
   )
 }
 
+const api = new AccessApiClient()
+
+function AccessLayout({ title, children }: { title: string; children: React.ReactNode }) {
+  return <main className="access-shell"><div className="access-card"><a className="back-link" href="#cover">← Back to Cover</a><Logo /><h1 className="access-title">{title}</h1>{children}</div></main>
+}
+
+function ErrorMessage({ error }: { error: string | null }) { return error ? <p className="form-error" role="alert">{error}</p> : null }
+
+function SignUp() {
+  const [fullName, setFullName] = useState(''); const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [show, setShow] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null)
+  async function submit(event: React.FormEvent) { event.preventDefault(); setBusy(true); setError(null); try { await api.signUp({ fullName, email, password }); window.location.hash = 'workspace' } catch (caught) { setError(caught instanceof AccessApiError ? caught.problem.detail : 'We could not create your account. Try again.'); } finally { setBusy(false) } }
+  return <AccessLayout title="Create your account"><p className="access-lede">Start with one calm place for every marketplace you sell on.</p><form className="access-form" onSubmit={submit} aria-describedby="signup-guidance"><label>Full name<input required value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" /></label><label>Work email<input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></label><label>Password <span className="field-hint">8 characters minimum</span><span className="password-field"><input required minLength={8} type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" /><button type="button" aria-pressed={show} onClick={() => setShow(!show)}>{show ? 'Hide' : 'Show'}</button></span></label><p id="signup-guidance" className="form-hint">Your password is stored securely and never appears in logs.</p><ErrorMessage error={error} /><button className="primary-button" disabled={busy}>{busy ? 'Creating account…' : 'Create account'}</button></form><p className="secondary-action">Already have an account? <a href="#signin">Sign in</a></p><p className="deferred-note"><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> — legal acceptance is not recorded in this milestone.</p></AccessLayout>
+}
+
+function SignIn() {
+  const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [show, setShow] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null)
+  async function submit(event: React.FormEvent) { event.preventDefault(); setBusy(true); setError(null); try { await api.signIn({ email, password }); window.location.hash = 'workspace' } catch (caught) { setError(caught instanceof AccessApiError && caught.status === 401 ? 'Email or password is incorrect.' : 'We could not sign you in. Try again.'); } finally { setBusy(false) } }
+  return <AccessLayout title="Welcome back"><p className="access-lede">Sign in to keep your stock count steady.</p><form className="access-form" onSubmit={submit}><label>Work email<input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></label><label>Password<span className="password-field"><input required type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" /><button type="button" aria-pressed={show} onClick={() => setShow(!show)}>{show ? 'Hide' : 'Show'}</button></span></label><ErrorMessage error={error} /><button className="primary-button" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button></form><p className="secondary-action"><a href="#forgot">Forgot password?</a> · <a href="#signup">Create an account</a></p></AccessLayout>
+}
+
+function Workspace() {
+  const [businessName, setBusinessName] = useState(''); const [country, setCountry] = useState('IT'); const [currency, setCurrency] = useState('EUR'); const [vatNumber, setVatNumber] = useState(''); const [error, setError] = useState<string | null>(null); const [busy, setBusy] = useState(false)
+  async function submit(event: React.FormEvent) { event.preventDefault(); setBusy(true); setError(null); try { await api.createWorkspace({ businessName, country, currency, vatNumber: vatNumber || null }, crypto.randomUUID()); window.location.hash = 'onboarding' } catch (caught) { setError(caught instanceof AccessApiError ? caught.problem.detail : 'We could not create this workspace. Try again.'); } finally { setBusy(false) } }
+  return <AccessLayout title="Create your workspace"><p className="access-lede">A workspace keeps your team and stock scope together.</p><form className="access-form" onSubmit={submit}><label>Business name<input required value={businessName} onChange={(e) => setBusinessName(e.target.value)} /></label><div className="form-row"><label>Country<input required maxLength={2} value={country} onChange={(e) => setCountry(e.target.value.toUpperCase())} /></label><label>Currency<input required maxLength={3} value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} /></label></div><label>VAT number <span className="field-hint">Optional</span><input value={vatNumber} onChange={(e) => setVatNumber(e.target.value)} /></label><ErrorMessage error={error} /><button className="primary-button" disabled={busy}>{busy ? 'Creating workspace…' : 'Continue'}</button></form></AccessLayout>
+}
+
+function Onboarding() { return <AccessLayout title="A steady start"><p className="access-lede">Choose the next step. Each action stays honest about what is ready today.</p><div className="checklist" aria-label="Onboarding checklist"><a href="#deferred"><strong>Import products</strong><span>CSV template, preview, or manual add — Inventory will complete the import.</span></a><a href="#deferred"><strong>Connect a platform</strong><span>See the approved platform catalog — Platforms will complete the connection.</span></a><a href="#invite"><strong>Invite your team</strong><span>Create a secure invitation request — Team will complete administration and delivery.</span></a></div><button className="secondary-button" onClick={() => { window.location.hash = 'cover' }}>Back to Cover</button></AccessLayout> }
+
+function Deferred({ invite = false }: { invite?: boolean }) { return <AccessLayout title={invite ? 'Invite your team' : 'Coming next'}><p className="access-lede">{invite ? 'Invitation requests will be secured here. Email delivery and full team administration are delivered by the Team milestone.' : 'This handoff is visible, but the owning capability is not complete yet.'}</p><p className="deferred-note">Nothing has been marked complete or sent. <a href="#onboarding">Return to the checklist</a>.</p></AccessLayout> }
+
+function AccessRoute() { const [hash, setHash] = useState(window.location.hash); useEffect(() => { const update = () => setHash(window.location.hash); window.addEventListener('hashchange', update); return () => window.removeEventListener('hashchange', update) }, []); if (hash === '#signup') return <SignUp />; if (hash === '#signin') return <SignIn />; if (hash === '#workspace') return <Workspace />; if (hash === '#onboarding') return <Onboarding />; if (hash === '#invite') return <Deferred invite />; if (hash === '#forgot' || hash === '#deferred') return <Deferred />; return null }
+
 export default function App() {
+  if (typeof window !== 'undefined' && ['#signup', '#signin', '#workspace', '#onboarding', '#invite', '#forgot', '#deferred'].includes(window.location.hash)) return <AccessRoute />
   return (
     <main id="cover" className="cover-shell">
       <div className="cover-grid">
@@ -103,6 +139,7 @@ export default function App() {
             One stock count and one price list for every marketplace you sell
             on, kept in sync in real time, in the browser.
           </p>
+          <p className="access-actions"><a className="primary-button" href="#signup">Create your account</a><a className="text-button" href="#signin">Sign in</a></p>
           <p className="design-note">Final design · source of truth · 26 Sep 2026 · 1440 px, reflows to 1024 px</p>
           <StockModel />
         </section>

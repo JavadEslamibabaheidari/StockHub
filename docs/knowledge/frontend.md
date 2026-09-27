@@ -34,3 +34,9 @@ The committed contract is `contracts/access.openapi.json`; the generated
 TypeScript boundary is `frontend/src/api/generated.ts`. Run
 `cd frontend && npm run contract:check` to verify required operations and
 generated-client alignment before frontend changes are delivered.
+
+Access routes are hash-addressable in the current shell (`#signup`, `#signin`,
+`#workspace`, `#onboarding`, `#invite`, and deferred handoffs). Forms use the
+generated client, expose labelled controls and live alert errors, and keep
+future Inventory, Platforms, Team, and password-recovery behavior explicitly
+deferred.
