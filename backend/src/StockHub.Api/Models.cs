@@ -15,3 +15,6 @@ public sealed record SessionResponse(Guid UserId, string FullName, string Email,
 public sealed record WorkspaceSummary(Guid Id, string BusinessName, string Country, string Currency, WorkspaceRole Role);
 public sealed record WorkspaceResponse(Guid Id, string BusinessName, string Country, string Currency, string? VatNumber, string Slug, WorkspaceRole Role);
 public sealed record Problem(string Title, string Detail, string? Code = null);
+public sealed record OnboardingTask(string Key, string Title, string Status, string? Handoff);
+public sealed record OnboardingActionRequest(string Key);
+public sealed record InvitationRequest(string Email, WorkspaceRole Role);

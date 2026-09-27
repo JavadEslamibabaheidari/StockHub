@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
@@ -18,6 +19,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 var app = builder.Build();
+var invitations = new System.Collections.Concurrent.ConcurrentDictionary<string, (Guid WorkspaceId, string Email, StockHub.Api.WorkspaceRole Role)>();
 app.UseExceptionHandler(exceptionApp => exceptionApp.Run(async context =>
 {
     context.Response.StatusCode = 500;
@@ -88,6 +90,47 @@ app.MapPut("/api/workspaces/{workspaceId:guid}/active", async (Guid workspaceId,
     await context.SignInAsync(principal);
     return Results.NoContent();
 }).RequireAuthorization().WithTags("Workspaces");
+
+app.MapGet("/api/auth/google/start", (IConfiguration configuration) =>
+{
+    if (string.IsNullOrWhiteSpace(configuration["Authentication:Google:ClientId"]) || string.IsNullOrWhiteSpace(configuration["Authentication:Google:ClientSecret"])) return Results.Problem("Google sign-in is not configured for this environment.", statusCode: 503, extensions: new Dictionary<string, object?> { ["code"] = "google_not_configured" });
+    return Results.Redirect("/api/auth/google/callback?state=configuration-required");
+}).WithTags("Auth");
+
+app.MapGet("/api/auth/google/callback", () => Results.Problem("Google sign-in requires a configured provider adapter.", statusCode: 503, extensions: new Dictionary<string, object?> { ["code"] = "google_adapter_unavailable" })).WithTags("Auth");
+
+app.MapGet("/api/workspaces/{workspaceId:guid}/onboarding", async (Guid workspaceId, ClaimsPrincipal principal, StockHub.Api.IAccessStore store, CancellationToken cancellationToken) =>
+{
+    if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return Results.Unauthorized();
+    var member = (await store.ListWorkspacesAsync(userId, cancellationToken)).Any(x => x.Workspace.Id == workspaceId);
+    if (!member) return Results.Forbid();
+    return Results.Ok(new[] { new StockHub.Api.OnboardingTask("import-products", "Import products", "available", "inventory"), new StockHub.Api.OnboardingTask("connect-platform", "Connect a platform", "available", "platforms"), new StockHub.Api.OnboardingTask("invite-team", "Invite your team", "available", "team") });
+}).RequireAuthorization().WithTags("Onboarding");
+
+app.MapPost("/api/workspaces/{workspaceId:guid}/onboarding/actions", async (Guid workspaceId, StockHub.Api.OnboardingActionRequest request, ClaimsPrincipal principal, StockHub.Api.IAccessStore store, CancellationToken cancellationToken) =>
+{
+    if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return Results.Unauthorized();
+    var member = (await store.ListWorkspacesAsync(userId, cancellationToken)).Any(x => x.Workspace.Id == workspaceId);
+    if (!member) return Results.Forbid();
+    return Results.Accepted($"/api/workspaces/{workspaceId}/onboarding", new { selected = request.Key, completed = false });
+}).RequireAuthorization().WithTags("Onboarding");
+
+app.MapPost("/api/workspaces/{workspaceId:guid}/invitations", async (Guid workspaceId, StockHub.Api.InvitationRequest request, ClaimsPrincipal principal, StockHub.Api.IAccessStore store, CancellationToken cancellationToken) =>
+{
+    if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return Results.Unauthorized();
+    var membership = (await store.ListWorkspacesAsync(userId, cancellationToken)).FirstOrDefault(x => x.Workspace.Id == workspaceId);
+    if (membership.Workspace is null || membership.Role is not (StockHub.Api.WorkspaceRole.Owner or StockHub.Api.WorkspaceRole.Admin)) return Results.Forbid();
+    var rawToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+    var tokenHash = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(rawToken)));
+    invitations[tokenHash] = (workspaceId, request.Email.Trim(), request.Role);
+    return Results.Accepted($"/api/invitations/{rawToken}", new { status = "requested", expiresInHours = 72 });
+}).RequireAuthorization().WithTags("Invitations");
+
+app.MapGet("/api/invitations/{token}", (string token) =>
+{
+    var hash = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token)));
+    return invitations.ContainsKey(hash) ? Results.Ok(new { status = "pending" }) : Results.NotFound();
+}).WithTags("Invitations");
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.Run();
