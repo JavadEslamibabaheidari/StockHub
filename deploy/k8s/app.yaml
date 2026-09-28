@@ -72,8 +72,12 @@ spec:
           volumeMounts:
             - name: data-protection
               mountPath: /home/app/.aspnet/DataProtection-Keys
+            - name: temp
+              mountPath: /tmp
       volumes:
         - name: data-protection
+          emptyDir: {}
+        - name: temp
           emptyDir: {}
 ---
 apiVersion: v1

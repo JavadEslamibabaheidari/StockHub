@@ -11,6 +11,9 @@ cleanup() {
   if [[ -n "${forward_pid:-}" ]]; then
     kill "$forward_pid" 2>/dev/null || true
   fi
+  if [[ -n "${cookie_jar:-}" ]]; then
+    rm -f "$cookie_jar"
+  fi
   kind delete cluster --name "$cluster"
 }
 trap cleanup EXIT
@@ -40,3 +43,33 @@ done
 curl --fail --silent "http://localhost:$port/" | grep -qiE '<!doctype html|<html'
 curl --fail --silent "http://localhost:$port/workspace" | grep -qiE '<!doctype html|<html'
 test "$(curl --silent --output /dev/null --write-out '%{http_code}' "http://localhost:$port/api/auth/session")" = 401
+
+cookie_jar="$(mktemp)"
+smoke_email="smoke-${BASHPID}@example.test"
+api_url="http://localhost:$port/api"
+test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  -c "$cookie_jar" -b "$cookie_jar" -H 'Content-Type: application/json' \
+  -d "{\"fullName\":\"Smoke User\",\"email\":\"$smoke_email\",\"password\":\"SmokePassword123!\"}" \
+  "$api_url/auth/sign-up")" = 201
+test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  -c "$cookie_jar" -b "$cookie_jar" "$api_url/auth/session")" = 200
+workspace_response="$(curl --fail --silent -c "$cookie_jar" -b "$cookie_jar" \
+  -H 'Content-Type: application/json' -H "Idempotency-Key: smoke-${BASHPID}" \
+  -d '{"businessName":"Smoke Workspace","country":"IT","currency":"EUR"}' \
+  "$api_url/workspaces")"
+workspace_id="$(printf '%s' "$workspace_response" | jq -r '.id')"
+[[ "$workspace_id" != null && -n "$workspace_id" ]]
+test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  -c "$cookie_jar" -b "$cookie_jar" -X PUT "$api_url/workspaces/$workspace_id/active")" = 204
+test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  -c "$cookie_jar" -b "$cookie_jar" "$api_url/workspaces/$workspace_id/onboarding")" = 200
+test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  -c "$cookie_jar" -b "$cookie_jar" -X POST "$api_url/auth/sign-out")" = 204
+test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  -c "$cookie_jar" -b "$cookie_jar" "$api_url/auth/session")" = 401
+test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  -c "$cookie_jar" -b "$cookie_jar" -H 'Content-Type: application/json' \
+  -d "{\"email\":\"$smoke_email\",\"password\":\"SmokePassword123!\"}" \
+  "$api_url/auth/sign-in")" = 200
+test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  -c "$cookie_jar" -b "$cookie_jar" "$api_url/auth/session")" = 200

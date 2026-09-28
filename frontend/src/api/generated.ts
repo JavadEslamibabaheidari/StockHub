@@ -11,7 +11,7 @@ export type InvitationRequest = { email: string; role: WorkspaceRole };
 export class AccessApiError extends Error { constructor(public readonly status: number, public readonly problem: Problem) { super(problem.detail); } }
 export class AccessApiClient {
   constructor(private readonly baseUrl = '') {}
-  private async request<T>(path: string, init: RequestInit = {}): Promise<T> { const response = await fetch(`${this.baseUrl}${path}`, { credentials: 'include', headers: { 'Content-Type': 'application/json', ...init.headers }, ...init }); if (!response.ok) throw new AccessApiError(response.status, await response.json() as Problem); return response.status === 204 ? undefined as T : await response.json() as T; }
+  private async request<T>(path: string, init: RequestInit = {}): Promise<T> { const response = await fetch(`${this.baseUrl}${path}`, { credentials: 'include', ...init, headers: { 'Content-Type': 'application/json', ...init.headers } }); if (!response.ok) throw new AccessApiError(response.status, await response.json() as Problem); return response.status === 204 ? undefined as T : await response.json() as T; }
   signUp(request: SignUpRequest) { return this.request<{ next: string }>('/api/auth/sign-up', { method: 'POST', body: JSON.stringify(request) }); }
   signIn(request: SignInRequest) { return this.request<{ next: string }>('/api/auth/sign-in', { method: 'POST', body: JSON.stringify(request) }); }
   signOut() { return this.request<void>('/api/auth/sign-out', { method: 'POST' }); }
