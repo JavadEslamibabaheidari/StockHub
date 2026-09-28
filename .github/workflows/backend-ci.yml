@@ -2,28 +2,8 @@ name: Backend CI
 
 on:
   pull_request:
-    paths:
-      - 'backend/**'
-      - 'StockHub.sln'
-      - 'contracts/**'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - 'scripts/check-compose-smoke.sh'
-      - 'docs/plans/**'
-      - 'docs/reports/**'
-      - '.github/workflows/backend-ci.yml'
   push:
     branches: [main]
-    paths:
-      - 'backend/**'
-      - 'StockHub.sln'
-      - 'contracts/**'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - 'scripts/check-compose-smoke.sh'
-      - 'docs/plans/**'
-      - 'docs/reports/**'
-      - '.github/workflows/backend-ci.yml'
 
 permissions:
   contents: read
