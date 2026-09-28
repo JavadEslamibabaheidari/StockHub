@@ -47,12 +47,8 @@ a {
 }
 
 .cover-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(300px, 0.78fr);
-  align-items: start;
-  width: min(1240px, 100%);
+  width: min(860px, 100%);
   margin: 0 auto;
-  gap: clamp(32px, 6vw, 96px);
 }
 
 .hero-column {
@@ -136,8 +132,7 @@ h1 {
   font-size: 13px;
 }
 
-.model-card,
-.contents-card {
+.model-card {
   border: 1px solid rgb(201 192 176 / 72%);
   border-radius: 18px;
   background: rgb(248 243 233 / 86%);
@@ -149,8 +144,7 @@ h1 {
   padding: clamp(18px, 2.3vw, 28px);
 }
 
-.model-card h2,
-.contents-card h2 {
+.model-card h2 {
   margin-bottom: 16px;
   font-size: 15px;
   letter-spacing: -0.01em;
@@ -267,79 +261,7 @@ h1 {
   background: var(--panel);
 }
 
-.contents-card {
-  padding: clamp(20px, 2.5vw, 30px);
-}
-
-.contents-card ol {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  gap: 10px;
-}
-
-.contents-card ol > li > a {
-  display: flex;
-  align-items: baseline;
-  width: fit-content;
-  font-weight: 700;
-  text-decoration: none;
-  gap: 12px;
-}
-
-.contents-card ol > li > a:hover,
-.contents-card ol > li > a:focus-visible {
-  color: var(--accent);
-}
-
-.contents-card ol > li.current > a {
-  color: var(--accent);
-}
-
-.section-number {
-  min-width: 19px;
-  font-variant-numeric: tabular-nums;
-}
-
-.contents-card ul {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 4px 0 0 31px;
-  padding: 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.35;
-  list-style: none;
-  gap: 4px 16px;
-}
-
-.contents-card li:focus-within {
-  outline: none;
-}
-
-.contents-card a:focus-visible {
-  border-radius: 4px;
-  outline: 3px solid rgb(189 109 61 / 35%);
-  outline-offset: 4px;
-}
-
-.roadmap-note {
-  margin: 22px 0 0;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.45;
-}
-
 @media (max-width: 1024px) {
-  .cover-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr);
-    gap: 36px;
-  }
-
   .hero-column {
     min-height: auto;
   }
@@ -358,12 +280,6 @@ h1 {
     padding: 28px 18px 42px;
   }
 
-  .cover-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-  }
-
   .hero-column {
     width: 100%;
   }
@@ -373,13 +289,8 @@ h1 {
     font-size: clamp(56px, 16vw, 82px);
   }
 
-  .model-card,
-  .contents-card {
+  .model-card {
     border-radius: 14px;
-  }
-
-  .contents-card {
-    width: 100%;
   }
 }
 
@@ -448,6 +359,7 @@ h1 {
 .stock-preview-row b { color: #201e1d; font-size: 22px; }
 .stock-preview small { color: #655a4c; font-size: 11px; }
 .google-button { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 41px; border: 1px solid #d6cec0; border-radius: 999px; background: #f9f4ed; color: #201e1d; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; gap: 7px; }
+.google-button:disabled { opacity: .6; cursor: not-allowed; }
 .google-g { display: grid; width: 19px; height: 19px; border: 1px solid #d6cec0; border-radius: 6px; color: #a54f25; place-items: center; }
 .form-divider { display: flex; align-items: center; margin: 20px 0; color: #766b5e; font-size: 11px; gap: 10px; }
 .form-divider::before, .form-divider::after { height: 1px; flex: 1; background: #d8cfbe; content: ''; }
@@ -489,6 +401,11 @@ h1 {
 .workspace-preview dd { margin: 0; font-weight: 700; }
 .deferred-content { max-width: 500px; margin: 12vh auto; }
 .deferred-content p { color: #655a4c; line-height: 1.5; }
+.recovery-content { width: min(400px, 100%); margin: 12vh auto; }
+.recovery-content .access-form { margin: 24px 0; }
+.recovery-content .primary-button { width: 100%; }
+.form-help { margin: 10px 0; color: #655a4c; font-size: 13px; }
+.form-help a { color: #9d4c21; font-weight: 700; }
 .dashboard-page { min-height: 100vh; padding: 38px; background: #efede7; color: #201e1d; }
 .dashboard-shell { display: grid; grid-template-columns: 225px minmax(0,1fr); width: min(1400px, 100%); min-height: calc(100vh - 76px); margin: auto; overflow: hidden; border-radius: 24px; background: #f5ead8; box-shadow: 0 10px 24px #21180724; }
 .dashboard-sidebar { display: flex; flex-direction: column; padding: 12px; background: #ebddc5; }

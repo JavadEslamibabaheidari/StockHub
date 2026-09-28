@@ -17,18 +17,16 @@ function Frame({ children, kind, topRight }: { children: ReactNode; kind: string
 function ErrorText({ value }: { value: string | null }) { return value && <p className="form-error" role="alert">{value}</p> }
 
 function GoogleButton() {
-  const [error, setError] = useState<string | null>(null)
-  async function start() {
-    setError(null)
-    try {
-      const response = await fetch('/api/auth/google/start', { credentials: 'include', redirect: 'manual' })
-      if (response.status === 503) { setError('Google sign-in is not configured for this environment. Use email for now.'); return }
-      if (response.type === 'opaqueredirect' || response.redirected) { window.location.assign(response.url || '/api/auth/google/start'); return }
-      if (!response.ok) throw new Error('provider')
-      window.location.assign('/api/auth/google/start')
-    } catch { setError('Google sign-in is unavailable. Use email for now.') }
-  }
-  return <><button className="google-button" type="button" onClick={start}><span className="google-g" aria-hidden="true">G</span>Continue with Google</button><ErrorText value={error} /><div className="form-divider"><span>or with email</span></div></>
+  const [available, setAvailable] = useState<boolean | null>(null)
+  useEffect(() => {
+    let active = true
+    fetch('/api/auth/google/availability')
+      .then(response => response.ok ? response.json() : { available: false })
+      .then(data => { if (active) setAvailable(data.available === true) })
+      .catch(() => { if (active) setAvailable(false) })
+    return () => { active = false }
+  }, [])
+  return <>{available ? <a className="google-button" href="/api/auth/google/start"><span className="google-g" aria-hidden="true">G</span>Continue with Google</a> : <button className="google-button" type="button" disabled><span className="google-g" aria-hidden="true">G</span>Continue with Google</button>}{available === false && <p className="field-hint" role="status">Google sign-in is unavailable while its provider is being configured.</p>}<div className="form-divider"><span>or with email</span></div></>
 }
 
 function PasswordInput({ value, change, autoComplete }: { value: string; change: (value: string) => void; autoComplete: string }) {
@@ -38,25 +36,78 @@ function PasswordInput({ value, change, autoComplete }: { value: string; change:
 
 export function SignUp() {
   const [fullName, setFullName] = useState(''); const [email, setEmail] = useState(''); const [password, setPassword] = useState('')
-  const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null); const [created, setCreated] = useState(false)
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(null)
-    try { await api.signUp({ fullName: fullName.trim(), email: email.trim(), password }); go('workspace') }
-    catch (caught) { setError(message(caught, 'We could not create your account. Try again.')) }
+    let accountCreated = false
+    try {
+      await api.signUp({ fullName: fullName.trim(), email: email.trim(), password })
+      accountCreated = true
+      setCreated(true)
+      await api.session()
+      go('workspace')
+    }
+    catch (caught) {
+      setError(accountCreated
+        ? 'Your account was created, but the session could not be confirmed. Please sign in.'
+        : message(caught, 'We could not create your account. Try again.'))
+    }
     finally { setBusy(false) }
   }
-  return <Frame kind="auth signup" topRight={<span className="step-label">Step 1 of 2</span>}><div className="auth-grid"><section className="auth-main"><div className="auth-content"><h1>Create your account</h1><p className="access-lede">Manage stock and prices for every marketplace from one place.</p><GoogleButton /><form className="access-form" onSubmit={submit} aria-describedby="signup-guidance"><label>Full name<input required value={fullName} onChange={event => setFullName(event.target.value)} autoComplete="name" placeholder="Marco Rossi" /></label><label>Work email<input required type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" placeholder="you@company.it" /></label><label>Password<PasswordInput value={password} change={setPassword} autoComplete="new-password" /><span id="signup-guidance" className="field-hint">At least 8 characters</span></label><ErrorText value={error} /><button className="primary-button" disabled={busy}>{busy ? 'Creating account…' : 'Create account'}</button></form><p className="legal-note"><a href="#legal">Terms</a> and <a href="#legal">Privacy policy</a> are pending approval. No legal acceptance is recorded.</p></div><p className="auth-footer">Already have an account? <a href="#signin">Sign in</a></p></section><aside className="auth-aside signup-aside"><div className="shape shape-peach" /><div className="shape shape-sage" /><div className="aside-content"><h2>Up and running in<br />three steps</h2><ol className="preview-steps"><li><b>1</b><span><strong>Create your workspace</strong><small>Business name, country and currency</small></span></li><li><b>2</b><span><strong>Import your products</strong><small>Upload a CSV or add them by hand</small></span></li><li><b>3</b><span><strong>Connect your platforms</strong><small>Amazon, Unieuro, Euronics, eBay</small></span></li></ol></div></aside></div></Frame>
+  return <Frame kind="auth signup" topRight={<span className="step-label">Step 1 of 2</span>}><div className="auth-grid"><section className="auth-main"><div className="auth-content"><h1>Create your account</h1><p className="access-lede">Manage stock and prices for every marketplace from one place.</p><GoogleButton /><form className="access-form" onSubmit={submit} aria-describedby="signup-guidance"><label>Full name<input required value={fullName} onChange={event => setFullName(event.target.value)} autoComplete="name" placeholder="Marco Rossi" /></label><label>Email<input required type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" /></label><label>Password<PasswordInput value={password} change={setPassword} autoComplete="new-password" /><span id="signup-guidance" className="field-hint">At least 8 characters</span></label><ErrorText value={error} />{error && <p className="form-help"><a href="#signin">Sign in</a> · <a href="#forgot">Reset password</a></p>}<button className="primary-button" disabled={busy || created}>{busy ? 'Creating account…' : created ? 'Account created' : 'Create account'}</button></form><p className="legal-note"><a href="#legal">Terms</a> and <a href="#legal">Privacy policy</a> are pending approval. No legal acceptance is recorded.</p></div><p className="auth-footer">Already have an account? <a href="#signin">Sign in</a></p></section><aside className="auth-aside signup-aside"><div className="shape shape-peach" /><div className="shape shape-sage" /><div className="aside-content"><h2>Up and running in<br />three steps</h2><ol className="preview-steps"><li><b>1</b><span><strong>Create your workspace</strong><small>Business name, country and currency</small></span></li><li><b>2</b><span><strong>Import your products</strong><small>Upload a CSV or add them by hand</small></span></li><li><b>3</b><span><strong>Connect your platforms</strong><small>Amazon, Unieuro, Euronics, eBay</small></span></li></ol></div></aside></div></Frame>
 }
 
 export function SignIn() {
   const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null)
+  const [providerError] = useState(() => {
+    if (typeof window === 'undefined') return null
+    const reason = new URLSearchParams(window.location.search).get('authError')
+    if (reason === 'google-unverified') return 'Google did not confirm this email address. Try another Google account.'
+    if (reason === 'google-link') return 'This Google account needs to be linked after signing in with email.'
+    if (reason === 'google') return 'Google sign-in could not be completed. Please try again.'
+    return null
+  })
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('authError') && window.history) {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.hash}`)
+    }
+  }, [])
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(null)
     try { await api.signIn({ email: email.trim(), password }); const session = await api.session(); go(session.activeWorkspaceId || session.workspaces.length ? 'onboarding' : 'workspace') }
     catch (caught) { setError(caught instanceof AccessApiError && caught.status === 401 ? 'Email or password is incorrect.' : message(caught, 'We could not sign you in. Try again.')) }
     finally { setBusy(false) }
   }
-  return <Frame kind="auth signin"><div className="auth-grid"><section className="auth-main"><div className="auth-content"><h1>Sign in</h1><p className="access-lede">Welcome back. Sign in to manage stock across your marketplaces.</p><GoogleButton /><form className="access-form" onSubmit={submit}><label>Work email<input required type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" placeholder="you@company.it" /></label><label><span className="label-row">Password <a href="#forgot">Forgot password?</a></span><PasswordInput value={password} change={setPassword} autoComplete="current-password" /></label><ErrorText value={error} /><button className="primary-button" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button></form></div><p className="auth-footer">New to StockHub? <a href="#signup">Start a free trial</a></p></section><aside className="auth-aside signin-aside"><div className="shape shape-sage" /><div className="shape shape-peach" /><div className="aside-content"><h2>One stock count for<br />every marketplace.</h2><div className="stock-preview"><strong>Samsung Galaxy S24 128GB</strong><div className="stock-preview-row"><span>On hand<b>5</b></span>−<span>Reserved<b>2</b></span>=<span className="available">Available<b>3</b></span></div><small>● Shown on Amazon, Unieuro, Euronics and eBay</small></div></div></aside></div></Frame>
+  return <Frame kind="auth signin"><div className="auth-grid"><section className="auth-main"><div className="auth-content"><h1>Sign in</h1><p className="access-lede">Welcome back. Sign in to manage stock across your marketplaces.</p><ErrorText value={providerError} /><GoogleButton /><form className="access-form" onSubmit={submit}><label>Email<input required type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" /></label><label><span className="label-row">Password <a href="#forgot">Forgot password?</a></span><PasswordInput value={password} change={setPassword} autoComplete="current-password" /></label><ErrorText value={error} /><button className="primary-button" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button></form></div><p className="auth-footer">New to StockHub? <a href="#signup">Start a free trial</a></p></section><aside className="auth-aside signin-aside"><div className="shape shape-sage" /><div className="shape shape-peach" /><div className="aside-content"><h2>One stock count for<br />every marketplace.</h2><div className="stock-preview"><strong>Samsung Galaxy S24 128GB</strong><div className="stock-preview-row"><span>On hand<b>5</b></span>−<span>Reserved<b>2</b></span>=<span className="available">Available<b>3</b></span></div><small>● Shown on Amazon, Unieuro, Euronics and eBay</small></div></div></aside></div></Frame>
+}
+
+export function ForgotPassword() {
+  const [email, setEmail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [sent, setSent] = useState(false)
+  async function submit(event: FormEvent) {
+    event.preventDefault(); setBusy(true); setError(null)
+    try { await api.requestPasswordReset({ email: email.trim() }); setSent(true) }
+    catch (caught) { setError(message(caught, 'We could not send a reset link. Please try again.')) }
+    finally { setBusy(false) }
+  }
+  return <Frame kind="recovery-page"><section className="recovery-content"><h1>Reset your password</h1><p className="access-lede">Enter your email address and we’ll send a link to choose a new password.</p>{sent ? <p role="status">If an account uses this email, a reset link is on its way. Check your inbox.</p> : <form className="access-form" onSubmit={submit}><label>Email<input required type="email" autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="you@example.com" /></label><ErrorText value={error} /><button className="primary-button" disabled={busy}>{busy ? 'Sending…' : 'Send reset link'}</button></form>}<p className="form-help"><a href="#signin">Back to sign in</a></p></section></Frame>
+}
+
+export function ResetPassword() {
+  const token = typeof window === 'undefined' ? '' : new URLSearchParams(window.location.hash.split('?')[1] || '').get('token') || ''
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [complete, setComplete] = useState(false)
+  async function submit(event: FormEvent) {
+    event.preventDefault(); setBusy(true); setError(null)
+    try { await api.confirmPasswordReset({ token, newPassword: password }); setComplete(true) }
+    catch (caught) { setError(message(caught, 'This reset link is invalid or has expired. Request another link.')) }
+    finally { setBusy(false) }
+  }
+  return <Frame kind="recovery-page"><section className="recovery-content"><h1>Choose a new password</h1>{complete ? <><p role="status">Your password has been changed. Sign in with the new password.</p><a className="primary-button" href="#signin">Sign in</a></> : token ? <form className="access-form" onSubmit={submit}><label>New password<PasswordInput value={password} change={setPassword} autoComplete="new-password" /><span className="field-hint">At least 8 characters</span></label><ErrorText value={error} /><button className="primary-button" disabled={busy}>{busy ? 'Updating…' : 'Update password'}</button></form> : <><p>This reset link is missing a token.</p><a href="#forgot">Request a new link</a></>}</section></Frame>
 }
 
 export function Workspace() {
@@ -85,9 +136,9 @@ export function Invite() {
   const [workspaceId, setWorkspaceId] = useState<string | null>(null); const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null); const [sent, setSent] = useState(false)
   useEffect(() => { api.session().then(data => setWorkspaceId(data.activeWorkspaceId || data.workspaces[0]?.id || null)).catch(() => go('signin')) }, [])
   async function submit(event: FormEvent) { event.preventDefault(); if (!workspaceId) return; setBusy(true); setError(null); try { await api.invite(workspaceId, { email: email.trim(), role }); setSent(true) } catch (caught) { setError(message(caught, 'Could not create the invitation request.')) } finally { setBusy(false) } }
-  return <Frame kind="deferred-page"><div className="deferred-content"><h1>Invite your team</h1><p>Give a teammate their own role in this workspace. Email delivery is planned for the Team milestone.</p>{sent ? <p role="status">Invitation request created. No email has been sent.</p> : <form className="access-form" onSubmit={submit}><label>Work email<input required type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="teammate@company.it" /></label><label>Role<select value={role} onChange={event => setRole(event.target.value as typeof role)}><option value="Viewer">Viewer</option><option value="WarehouseStaff">Warehouse staff</option><option value="Manager">Manager</option><option value="Admin">Admin</option></select></label><ErrorText value={error} /><button className="primary-button" disabled={busy || !workspaceId}>{busy ? 'Creating request…' : 'Create invitation request'}</button></form>}<p><a href="#onboarding">Return to the checklist</a></p></div></Frame>
+  return <Frame kind="deferred-page"><div className="deferred-content"><h1>Invite your team</h1><p>Give a teammate their own role in this workspace. Email delivery is planned for the Team milestone.</p>{sent ? <p role="status">Invitation request created. No email has been sent.</p> : <form className="access-form" onSubmit={submit}><label>Email<input required type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="teammate@company.it" /></label><label>Role<select value={role} onChange={event => setRole(event.target.value as typeof role)}><option value="Viewer">Viewer</option><option value="WarehouseStaff">Warehouse staff</option><option value="Manager">Manager</option><option value="Admin">Admin</option></select></label><ErrorText value={error} /><button className="primary-button" disabled={busy || !workspaceId}>{busy ? 'Creating request…' : 'Create invitation request'}</button></form>}<p><a href="#onboarding">Return to the checklist</a></p></div></Frame>
 }
 
-export function Deferred({ forgot = false, legal = false }: { forgot?: boolean; legal?: boolean }) {
-  return <Frame kind="deferred-page"><div className="deferred-content"><h1>{forgot ? 'Password recovery' : legal ? 'Legal documents' : 'Coming next'}</h1><p>{forgot ? 'Password reset is planned for a later milestone. No email has been sent.' : legal ? 'Terms and Privacy content is pending approval. No legal acceptance has been recorded.' : 'This capability is planned for a later milestone. No action has been marked complete.'}</p><a className="secondary-button" href={forgot ? '#signin' : legal ? '#signup' : '#onboarding'}>Go back</a></div></Frame>
+export function Deferred({ legal = false }: { legal?: boolean }) {
+  return <Frame kind="deferred-page"><div className="deferred-content"><h1>{legal ? 'Legal documents' : 'Coming next'}</h1><p>{legal ? 'Terms and Privacy content is pending approval. No legal acceptance has been recorded.' : 'This capability is planned for a later milestone. No action has been marked complete.'}</p><a className="secondary-button" href={legal ? '#signup' : '#onboarding'}>Go back</a></div></Frame>
 }

@@ -13,6 +13,9 @@ public sealed class InMemoryAccessStore : IAccessStore
     private readonly ConcurrentDictionary<(Guid UserId, Guid WorkspaceId), Membership> _memberships = new();
     private readonly ConcurrentDictionary<(Guid UserId, string Key), Guid> _idempotency = new();
     private readonly ConcurrentDictionary<string, Invitation> _invitations = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, (Guid UserId, DateTimeOffset ExpiresAt)> _passwordResets = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, Guid> _googleIdentities = new(StringComparer.Ordinal);
+    private readonly object _userCreationLock = new();
 
     public Task<User?> FindUserAsync(string normalizedEmail, CancellationToken cancellationToken)
     {
@@ -37,6 +40,27 @@ public sealed class InMemoryAccessStore : IAccessStore
         return Task.FromResult(user);
     }
 
+    public Task<(User User, Session Session)> CreateUserWithSessionAsync(
+        string fullName,
+        string normalizedEmail,
+        string passwordHash,
+        CancellationToken cancellationToken)
+    {
+        lock (_userCreationLock)
+        {
+            if (_users.ContainsKey(normalizedEmail))
+            {
+                throw new InvalidOperationException("duplicate_user");
+            }
+
+            var user = new User(Guid.NewGuid(), fullName.Trim(), normalizedEmail, passwordHash);
+            var session = new Session(Guid.NewGuid(), user.Id, null, DateTimeOffset.UtcNow.AddHours(8));
+            _users[normalizedEmail] = user;
+            _sessions[session.Id] = session;
+            return Task.FromResult((user, session));
+        }
+    }
+
     public Task<Session> CreateSessionAsync(Guid userId, CancellationToken cancellationToken)
     {
         var session = new Session(Guid.NewGuid(), userId, null, DateTimeOffset.UtcNow.AddHours(8));
@@ -59,6 +83,88 @@ public sealed class InMemoryAccessStore : IAccessStore
         _sessions.TryRemove(sessionId, out _);
 
         return Task.CompletedTask;
+    }
+
+    public Task CreatePasswordResetAsync(
+        Guid userId,
+        string tokenHash,
+        DateTimeOffset expiresAt,
+        CancellationToken cancellationToken)
+    {
+        lock (_userCreationLock)
+        {
+            foreach (var existing in _passwordResets.Where(item => item.Value.UserId == userId))
+            {
+                _passwordResets.TryRemove(existing.Key, out _);
+            }
+
+            _passwordResets[tokenHash] = (userId, expiresAt);
+            return Task.CompletedTask;
+        }
+    }
+
+    public Task<bool> ResetPasswordAsync(string tokenHash, string passwordHash, CancellationToken cancellationToken)
+    {
+        lock (_userCreationLock)
+        {
+            if (!_passwordResets.TryGetValue(tokenHash, out var reset)
+                || reset.ExpiresAt <= DateTimeOffset.UtcNow)
+            {
+                return Task.FromResult(false);
+            }
+
+            var user = _users.Values.FirstOrDefault(item => item.Id == reset.UserId);
+            if (user is null)
+            {
+                return Task.FromResult(false);
+            }
+
+            _users[user.NormalizedEmail] = user with { PasswordHash = passwordHash };
+            foreach (var session in _sessions.Where(item => item.Value.UserId == user.Id))
+            {
+                _sessions.TryRemove(session.Key, out _);
+            }
+
+            foreach (var existing in _passwordResets.Where(item => item.Value.UserId == user.Id))
+            {
+                _passwordResets.TryRemove(existing.Key, out _);
+            }
+
+            return Task.FromResult(true);
+        }
+    }
+
+    public Task<User> GetOrCreateGoogleUserAsync(
+        string subject,
+        string normalizedEmail,
+        string fullName,
+        bool allowExistingAccountLink,
+        CancellationToken cancellationToken)
+    {
+        lock (_userCreationLock)
+        {
+            if (_googleIdentities.TryGetValue(subject, out var existingUserId))
+            {
+                return Task.FromResult(_users.Values.Single(user => user.Id == existingUserId));
+            }
+
+            if (_users.TryGetValue(normalizedEmail, out var existing))
+            {
+                if (!allowExistingAccountLink
+                    || _googleIdentities.Values.Contains(existing.Id))
+                {
+                    throw new InvalidOperationException("external_account_conflict");
+                }
+
+                _googleIdentities[subject] = existing.Id;
+                return Task.FromResult(existing);
+            }
+
+            var user = new User(Guid.NewGuid(), fullName.Trim(), normalizedEmail, string.Empty);
+            _users[normalizedEmail] = user;
+            _googleIdentities[subject] = user.Id;
+            return Task.FromResult(user);
+        }
     }
 
     public Task<IReadOnlyList<(Workspace Workspace, WorkspaceRole Role)>> ListWorkspacesAsync(

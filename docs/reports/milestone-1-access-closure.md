@@ -1,7 +1,8 @@
 # Milestone closure report — 1 Access
 
-status: PASS
+status: BLOCKED
 milestone: 1 Access
+reopened_reason: Live testing found unavailable Google sign-in, failed signup handling, missing password recovery, and incomplete visible controls. The PASS evidence below describes the earlier closure and is superseded by docs/plans/milestone-1-access-remediation.md and issue #65 until deployed verification is complete.
 plan: docs/plans/milestone-1-access.md
 mockup_evidence: docs/mockups/StockHub Final.html section 1 Access; docs/mockups/StockHub Design Review.pdf section 1 Access
 adr_evidence: docs/decisions/0002-module-boundaries-and-contracts.md; docs/decisions/0006-identity-tenancy-and-roles.md; docs/decisions/0007-frontend-and-api-contracts.md; docs/decisions/0008-testing-ci-and-deployment.md

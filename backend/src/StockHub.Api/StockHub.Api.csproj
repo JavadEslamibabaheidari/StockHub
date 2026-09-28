@@ -6,9 +6,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.0" />
     <PackageReference Include="Npgsql" Version="10.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="../../database/migrations/001_access.sql" Link="Database/Migrations/001_access.sql" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../database/migrations/002_auth_completion.sql" Link="Database/Migrations/002_auth_completion.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

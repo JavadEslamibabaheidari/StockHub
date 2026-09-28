@@ -5,6 +5,8 @@ namespace StockHub.Api.Validation;
 
 public static class AccessValidation
 {
+    public static bool IsValidEmail(string value) => IsEmail(value);
+
     public static Problem? SignUp(SignUpRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.FullName))
@@ -17,7 +19,7 @@ public static class AccessValidation
             return new("Validation failed", "Enter a valid email address.", "email_invalid");
         }
 
-        if (request.Password.Length < 8)
+        if (string.IsNullOrEmpty(request.Password) || request.Password.Length < 8)
         {
             return new("Validation failed", "Password must be at least 8 characters.", "password_too_short");
         }

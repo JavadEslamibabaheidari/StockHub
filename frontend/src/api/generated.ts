@@ -1,6 +1,8 @@
 export type Problem = { title: string; detail: string; code?: string | null };
 export type SignUpRequest = { fullName: string; email: string; password: string };
 export type SignInRequest = { email: string; password: string };
+export type PasswordResetRequest = { email: string };
+export type PasswordResetConfirmRequest = { token: string; newPassword: string };
 export type CreateWorkspaceRequest = { businessName: string; country: string; currency: string; vatNumber?: string | null };
 export type WorkspaceRole = 'Owner' | 'Admin' | 'Manager' | 'WarehouseStaff' | 'Viewer';
 export type WorkspaceSummary = { id: string; businessName: string; country: string; currency: string; role: WorkspaceRole };
@@ -15,6 +17,8 @@ export class AccessApiClient {
   signUp(request: SignUpRequest) { return this.request<{ next: string }>('/api/auth/sign-up', { method: 'POST', body: JSON.stringify(request) }); }
   signIn(request: SignInRequest) { return this.request<{ next: string }>('/api/auth/sign-in', { method: 'POST', body: JSON.stringify(request) }); }
   signOut() { return this.request<void>('/api/auth/sign-out', { method: 'POST' }); }
+  requestPasswordReset(request: PasswordResetRequest) { return this.request<{ message: string }>('/api/auth/password-reset/request', { method: 'POST', body: JSON.stringify(request) }); }
+  confirmPasswordReset(request: PasswordResetConfirmRequest) { return this.request<void>('/api/auth/password-reset/confirm', { method: 'POST', body: JSON.stringify(request) }); }
   session() { return this.request<SessionResponse>('/api/auth/session'); }
   workspaces() { return this.request<WorkspaceSummary[]>('/api/workspaces'); }
   createWorkspace(request: CreateWorkspaceRequest, idempotencyKey: string) { return this.request<WorkspaceResponse>('/api/workspaces', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify(request) }); }

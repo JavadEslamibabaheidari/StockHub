@@ -10,7 +10,8 @@ The current implementation entry point is `frontend/src/main.tsx`, rendering
 `frontend/src/App.tsx`. The Cover is a static product surface with no backend
 dependency. It establishes the warm neutral background, serif brand/hero
 typography, accent/sage brand marks, stock-model cards, status pills, and
-roadmap Contents panel used by later screens.
+visual language used by later screens. The roadmap Contents panel was removed
+after user review.
 
 Verification commands:
 
@@ -21,8 +22,7 @@ npm test
 npm run build
 ```
 
-The Cover is responsive from 320px through 1440px, exposes a named Contents
-navigation, uses visible focus states, and communicates status with text plus
+The Cover is responsive from 320px through 1440px, uses visible focus states, and communicates status with text plus
 icons/dots rather than colour alone.
 
 Milestone 0 Cover closure is verified by merged PR #18 and report
@@ -41,5 +41,7 @@ and production build in `.github/workflows/frontend-ci.yml`.
 Access routes are hash-addressable in the current shell (`#signup`, `#signin`,
 `#workspace`, `#onboarding`, `#invite`, and deferred handoffs). Forms use the
 generated client, expose labelled controls and live alert errors, and keep
-future Inventory, Platforms, Team, and password-recovery behavior explicitly
-deferred.
+future Inventory, Platforms, and Team handoffs explicitly deferred. Password
+recovery now has request and reset screens backed by the access API. Milestone 1
+has been reopened; see `docs/plans/milestone-1-access-remediation.md` for its
+current acceptance gate.
