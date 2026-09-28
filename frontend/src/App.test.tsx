@@ -38,7 +38,7 @@ describe('Milestone 0 Cover', () => {
     expect(markup).toContain('aria-label="StockHub roadmap contents"')
     expect(markup).toContain('aria-current="page"')
     expect(markup.match(/aria-current="page"/g)).toHaveLength(1)
-    expect(markup).toContain('Cover is the first live section')
+    expect(markup).toContain('Cover and Access are live')
   })
 
   it('keeps every approved roadmap screen name in the contents index', () => {
@@ -78,12 +78,14 @@ describe('Milestone 1 Access', () => {
     expect(markup).toContain('Create your account')
     expect(markup).toContain('aria-describedby="signup-guidance"')
     expect(markup).toContain('Terms')
+    expect(markup).toContain('Continue with Google')
+    expect(markup).toContain('Up and running in')
     Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
   })
 
-  it('renders the workspace and honest onboarding handoff routes', () => {
+  it('renders the workspace and onboarding routes', () => {
     const originalWindow = globalThis.window
-    for (const [hash, expected] of [['#workspace', 'Create your workspace'], ['#onboarding', 'A steady start'], ['#invite', 'Invite your team']] as const) {
+    for (const [hash, expected] of [['#workspace', 'Create your workspace'], ['#onboarding', 'Welcome, there'], ['#invite', 'Invite your team']] as const) {
       Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash }, addEventListener: () => {}, removeEventListener: () => {} } })
       expect(renderToStaticMarkup(<App />)).toContain(expected)
     }
