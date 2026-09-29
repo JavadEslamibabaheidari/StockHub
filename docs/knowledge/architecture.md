@@ -35,3 +35,8 @@ Access backend work now lives in `backend/src/StockHub.Api` with the HTTP host
 and Access store boundary isolated from the frontend. Cookie authentication,
 identity/password hashing, workspace membership checks, and the `/api/auth` and
 `/api/workspaces` routes are introduced incrementally through milestone 1.
+
+
+## Milestone 2 Dashboard architecture note
+
+Dashboard is implemented as a workspace-scoped read/action surface in the modular monolith. `IDashboardStore` owns Dashboard UI state, while product data continues through `IProductStore`. Later-module controls do not mutate future module state; they open named handoffs until the owning milestone implements the real workflow.

@@ -21,6 +21,7 @@ var connectionString = builder.Configuration.GetConnectionString("Postgres")
 
 builder.Services.AddSingleton<IAccessStore>(_ => new PostgresAccessStore(connectionString));
 builder.Services.AddSingleton<IProductStore>(_ => new PostgresProductStore(connectionString));
+builder.Services.AddSingleton<IDashboardStore>(_ => new PostgresDashboardStore(connectionString));
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<IRecoveryEmailSender, SmtpRecoveryEmailSender>();
 
@@ -665,6 +666,130 @@ app.MapPost(
     .RequireAuthorization()
     .WithTags("Products");
 
+
+app.MapGet(
+    "/api/workspaces/{workspaceId:guid}/dashboard",
+    async (
+        Guid workspaceId,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IProductStore productStore,
+        IDashboardStore dashboardStore,
+        CancellationToken cancellationToken) =>
+    {
+        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            return Results.Unauthorized();
+        }
+
+        if (!await IsWorkspaceMember(accessStore, userId, workspaceId, cancellationToken))
+        {
+            return Results.Forbid();
+        }
+
+        var products = await productStore.ListAsync(workspaceId, cancellationToken);
+        var state = await dashboardStore.GetAsync(workspaceId, cancellationToken);
+        return Results.Ok(BuildDashboardSnapshot(state, products));
+    })
+    .RequireAuthorization()
+    .WithTags("Dashboard");
+
+app.MapPost(
+    "/api/workspaces/{workspaceId:guid}/dashboard/actions",
+    async (
+        Guid workspaceId,
+        DashboardActionRequest request,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IProductStore productStore,
+        IDashboardStore dashboardStore,
+        CancellationToken cancellationToken) =>
+    {
+        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            return Results.Unauthorized();
+        }
+
+        if (!await IsWorkspaceMember(accessStore, userId, workspaceId, cancellationToken))
+        {
+            return Results.Forbid();
+        }
+
+        var state = await dashboardStore.GetAsync(workspaceId, cancellationToken);
+        string message;
+        switch (request.Action.Trim().ToLowerInvariant())
+        {
+            case "start-first-sync":
+                state = state with { Mode = "first-sync", SyncPlatform = NormalizeDashboardPlatform(request.Platform), DetailPanel = $"{NormalizeDashboardPlatform(request.Platform)} setup opened. Real marketplace authorization is owned by Milestone 6 Platforms." };
+                message = "Platform picker opened and first sync preview started.";
+                break;
+            case "finish-first-sync":
+                state = state with { Mode = "live", DetailPanel = "First sync preview completed for Dashboard testing." };
+                message = "First sync preview completed.";
+                break;
+            case "retry-sync":
+                state = state with { EuronicsRetried = true, DetailPanel = "Retry sent for the Euronics sync alert. Live connector repair belongs to Milestone 6 Platforms." };
+                message = "Retry queued for Euronics.";
+                break;
+            case "resolve-mismatch":
+                state = state with { MismatchResolved = true, DetailPanel = "Stock mismatch resolved by using the StockHub count for the dashboard projection." };
+                message = "Mismatch resolved with the StockHub count.";
+                break;
+            case "show-more-low-stock":
+                state = state with { ShowMoreLowStock = true, DetailPanel = "Showing all low-stock dashboard alerts." };
+                message = "More low-stock products are now visible.";
+                break;
+            case "review-mismatch":
+                state = state with { DetailPanel = "Stock mismatch review opened. Full inventory reconciliation belongs to Milestone 3 Inventory." };
+                message = "Mismatch review opened.";
+                break;
+            case "restock":
+                state = state with { RestockListed = true, DetailPanel = "Restock request added to the dashboard reorder handoff. Purchase workflows belong to Milestone 3 Inventory." };
+                message = "Product added to the reorder handoff.";
+                break;
+            case "open-reservations":
+                state = state with { DetailPanel = "Reservations preview opened. The full Reservations workspace belongs to Milestone 5 Reservations." };
+                message = "Reservations preview opened.";
+                break;
+            case "open-sync-details":
+                state = state with { DetailPanel = "Sync details opened. Connector authorization and repair belong to Milestone 6 Platforms." };
+                message = "Sync details opened.";
+                break;
+            case "adjust-on-hand":
+                if (request.OnHand is null || request.OnHand < 0 || !Guid.TryParse(request.TargetId, out var productId))
+                {
+                    return Results.UnprocessableEntity(new Problem(
+                        "Validation failed",
+                        "Choose a product and enter a non-negative on-hand count.",
+                        "dashboard_adjust_invalid"));
+                }
+
+                var updated = await productStore.UpdateOnHandAsync(workspaceId, productId, request.OnHand.Value, cancellationToken);
+                if (updated is null)
+                {
+                    return Results.NotFound(new Problem(
+                        "Product not found",
+                        "This product is no longer available in the workspace.",
+                        "product_not_found"));
+                }
+
+                state = state with { DetailPanel = $"{updated.Name} on-hand count updated to {updated.OnHand}." };
+                message = "On-hand count updated.";
+                break;
+            default:
+                return Results.UnprocessableEntity(new Problem(
+                    "Unknown dashboard action",
+                    "This dashboard control is not recognized.",
+                    "dashboard_action_unknown"));
+        }
+
+        state = await dashboardStore.SaveAsync(state, cancellationToken);
+        var products = await productStore.ListAsync(workspaceId, cancellationToken);
+        return Results.Ok(new DashboardActionResultResponse(message, message, BuildDashboardSnapshot(state, products)));
+    })
+    .RequireAuthorization()
+    .WithTags("Dashboard");
+
 app.MapPost(
     "/api/workspaces/{workspaceId:guid}/invitations",
     async (
@@ -861,6 +986,233 @@ static Problem? ValidateProducts(IReadOnlyList<ProductRequest> products)
     return null;
 }
 
+
+
+
+static string NormalizeDashboardPlatform(string? platform) =>
+    platform?.Trim().ToLowerInvariant() switch
+    {
+        "unieuro" or "un" => "Unieuro",
+        "euronics" or "eu" => "Euronics",
+        "ebay" or "eb" => "eBay",
+        _ => "Amazon"
+    };
+
+static async Task<bool> IsWorkspaceMember(
+    IAccessStore accessStore,
+    Guid userId,
+    Guid workspaceId,
+    CancellationToken cancellationToken) =>
+    (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
+    .Any(workspace => workspace.Workspace.Id == workspaceId);
+
+static DashboardSnapshotResponse BuildDashboardSnapshot(
+    DashboardWorkspaceState state,
+    IReadOnlyList<Product> products)
+{
+    var mode = state.Mode == "first-sync"
+        ? "first-sync"
+        : products.Count == 0
+            ? "first-use"
+            : "live";
+
+    var primary = products.FirstOrDefault();
+    var primaryName = primary?.Name ?? "Samsung Galaxy S24 128GB";
+    var primaryId = primary?.Id.ToString() ?? string.Empty;
+    var lowStockProducts = products.Where(product => product.OnHand <= 5).ToArray();
+    var lowStockCount = lowStockProducts.Length;
+
+    if (mode == "first-use")
+    {
+        return new DashboardSnapshotResponse(
+            mode,
+            "Dashboard",
+            "Saturday, 26 September · Rossi Elettronica",
+            "No platforms connected",
+            "neutral",
+            [
+                new("revenue", "Revenue today", "€0.00", "Appears after your first order", "neutral"),
+                new("orders", "Orders today", "0", "Appears after your first order", "neutral"),
+                new("reservations", "Active reservations", "0", "Held 10 min per order", "neutral"),
+                new("products", "Products", "—", "Import to get started", "neutral"),
+                new("sync", "Sync status", "—", "No platform connected", "neutral")
+            ],
+            [],
+            [],
+            [new("empty", "info", "ok", "Nothing needs your attention.", "Connect a platform when you are ready.", [])],
+            [
+                new("import-products", "Import products", "Upload a CSV or add products one by one", products.Count > 0 ? "done" : "available"),
+                new("connect-platform", "Connect a platform", "Choose where you sell. You can add more later.", "available"),
+                new("invite-team", "Invite your team", "Give your staff their own login and role", "available")
+            ],
+            null,
+            BuildSearchIndex(products, []),
+            ["Nothing needs your attention."]);
+    }
+
+    if (mode == "first-sync")
+    {
+        return new DashboardSnapshotResponse(
+            mode,
+            "Dashboard",
+            "Saturday, 26 September · Rossi Elettronica",
+            "Syncing 1,176 / 1,240…",
+            "syncing",
+            [
+                new("revenue", "Revenue today", "—", "After the first sync", "neutral"),
+                new("orders", "Orders today", "—", "After the first sync", "neutral"),
+                new("reservations", "Active reservations", "—", "After the first sync", "neutral"),
+                new("low", "Low-stock products", "—", "After the first sync", "neutral"),
+                new("sync", "Sync status", "—", "After the first sync", "neutral")
+            ],
+            [],
+            [],
+            [new("sync-clean", "info", "ok", "Nothing needs your attention.", "Stock changes made now are queued until the first sync finishes.", [])],
+            [],
+            new DashboardSyncResponse(
+                state.SyncPlatform,
+                1176,
+                1240,
+                "about 10s left",
+                [
+                    new("matched", "Products matched", "1,240 of 1,240 SKUs found", "done"),
+                    new("stock", "Stock sent", "Available counts on Amazon", "done"),
+                    new("prices", "Sending prices", "Base price + Amazon rule", "active")
+                ]),
+            BuildSearchIndex(products, [$"{state.SyncPlatform} first sync"]),
+            [$"First sync with {state.SyncPlatform} is running."]);
+    }
+
+    var reservations = BuildReservations(primaryName);
+    var attention = BuildAttention(state, primary, primaryId, primaryName, lowStockCount);
+    return new DashboardSnapshotResponse(
+        mode,
+        "Dashboard",
+        "Saturday, 26 September · live across 4 platforms",
+        state.EuronicsRetried ? "4 of 4 synced" : "3 of 4 synced · Euronics failed",
+        state.EuronicsRetried ? "ok" : "danger",
+        [
+            new("revenue", "Revenue today", "€4.8k", "+12.4% vs last Saturday", "ok"),
+            new("orders", "Orders today", "37", "Avg. order €130.27", "neutral"),
+            new("reservations", "Active reservations", "6", "None expiring in the next minute", "warning"),
+            new("low", "Low-stock products", lowStockCount.ToString(), "5 or fewer available", "warning"),
+            new("sync", "Sync status", state.EuronicsRetried ? "4 of 4" : "3 of 4", state.EuronicsRetried ? "All healthy" : "Euronics failing", state.EuronicsRetried ? "ok" : "danger")
+        ],
+        reservations,
+        [
+            new("Amazon", 51.8m, "dark"),
+            new("Unieuro", 23.4m, "sage"),
+            new("Euronics", 14.9m, "neutral"),
+            new("eBay", 9.9m, "light")
+        ],
+        attention,
+        [],
+        null,
+        BuildSearchIndex(products, reservations.Select(item => item.ProductName).Concat(attention.Select(item => item.Title))),
+        attention.Select(item => item.Title).ToArray());
+}
+
+static IReadOnlyList<DashboardReservationResponse> BuildReservations(string primaryName) =>
+[
+    new("r1", primaryName, "Unieuro", "#UN-48213", "1 unit", "01:35 left", 18),
+    new("r2", "Nintendo Switch OLED", "Amazon", "#AMZ-7731", "1 unit", "03:52 left", 40),
+    new("r3", "De'Longhi Magnifica S", "Amazon", "#AMZ-7735", "1 unit", "05:17 left", 55),
+    new("r4", "Dyson V15 Detect", "Unieuro", "#UN-48220", "1 unit", "07:29 left", 72),
+    new("r5", primaryName, "Amazon", "#AMZ-7742", "1 unit", "07:49 left", 77),
+    new("r6", "Apple AirPods Pro 2", "eBay", "#EB-2291", "1 unit", "09:24 left", 92)
+];
+
+static IReadOnlyList<DashboardAttentionResponse> BuildAttention(
+    DashboardWorkspaceState state,
+    Product? primary,
+    string primaryId,
+    string primaryName,
+    int lowStockCount)
+{
+    var items = new List<DashboardAttentionResponse>();
+    if (!state.EuronicsRetried)
+    {
+        items.Add(new(
+            "euronics-sync",
+            "sync",
+            "danger",
+            "Euronics sync failed 12 min ago",
+            "API token expired · Euronics may show outdated stock for 3 products",
+            [new("retry-sync", "Retry", "danger")]));
+    }
+
+    if (primary is not null && primary.OnHand <= 5)
+    {
+        var available = Math.Max(0, primary.OnHand - 2);
+        items.Add(new(
+            $"product:{primary.Id}",
+            "low-stock",
+            "warning",
+            $"{primaryName}: {available} available ({primary.OnHand} on hand)",
+            "Low-stock product visible on the dashboard.",
+            [new("adjust-on-hand", "Adjust on hand", "link")]));
+    }
+
+    items.Add(new(
+        "low-switch",
+        "low-stock",
+        "warning",
+        "Nintendo Switch OLED: 2 available (3 on hand)",
+        "Low-stock product visible on the dashboard.",
+        [new("review-mismatch", "Adjust on hand", "link")]));
+
+    if (!state.MismatchResolved)
+    {
+        items.Add(new(
+            "stock-mismatch",
+            "mismatch",
+            "warning",
+            "Stock mismatch on eBay",
+            "Apple AirPods Pro 2: eBay shows 7, StockHub has 63 available",
+            [new("resolve-mismatch", "Use StockHub count", "primary"), new("review-mismatch", "Review", "link")]));
+    }
+
+    items.Add(new(
+        "out-sony",
+        "out-of-stock",
+        "danger",
+        "Sony WH-1000XM5: out of stock on all platforms",
+        state.RestockListed ? "Added to the reorder handoff." : "Restock is tracked as an Inventory milestone handoff.",
+        [new("restock", state.RestockListed ? "On reorder list" : "Restock", "link")]));
+
+    if (state.ShowMoreLowStock || lowStockCount > 4)
+    {
+        items.Add(new("low-gopro", "low-stock", "warning", "GoPro HERO12 Black: 4 available", "Expanded low-stock dashboard item.", [new("review-mismatch", "Adjust on hand", "link")]));
+        items.Add(new("low-roomba", "low-stock", "warning", "iRobot Roomba Combo j7: 5 available", "Expanded low-stock dashboard item.", [new("review-mismatch", "Adjust on hand", "link")]));
+    }
+    else
+    {
+        items.Add(new("more-low", "expand", "neutral", "+2 more low-stock products", "GoPro HERO12 Black, iRobot Roomba Combo j7", [new("show-more-low-stock", "Show", "link")]));
+    }
+
+    return items;
+}
+
+static IReadOnlyList<DashboardSearchResultResponse> BuildSearchIndex(
+    IReadOnlyList<Product> products,
+    IEnumerable<string> extra)
+{
+    var result = products.Select(product => new DashboardSearchResultResponse(
+        product.Id.ToString(),
+        "product",
+        $"{product.Name} · {product.Sku}",
+        $"{product.OnHand} on hand · €{product.BasePrice:0.00}",
+        "adjust-on-hand")).ToList();
+
+    result.AddRange(extra.Distinct().Select((label, index) => new DashboardSearchResultResponse(
+        $"dashboard-{index}",
+        "dashboard",
+        label,
+        "Dashboard result",
+        "open-detail")));
+
+    return result;
+}
 
 static Task SignIn(HttpContext context, User user, Guid sessionId, Guid? activeWorkspaceId = null)
 {

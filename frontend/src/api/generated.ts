@@ -13,6 +13,19 @@ export type InvitationRequest = { email: string; role: WorkspaceRole };
 export type InvitationResponse = { email: string; role: WorkspaceRole; status: string };
 export type ProductRequest = { sku: string; name: string; onHand: number; basePrice: number; category?: string | null };
 export type ProductResponse = ProductRequest & { id: string };
+export type DashboardMetricResponse = { key: string; label: string; value: string; hint: string; tone: string };
+export type DashboardReservationResponse = { id: string; productName: string; platform: string; orderNumber: string; quantity: string; timeLeft: string; progressPercent: number };
+export type DashboardPlatformSaleResponse = { platform: string; percent: number; tone: string };
+export type DashboardActionResponse = { key: string; label: string; style: string };
+export type DashboardAttentionResponse = { id: string; kind: string; tone: string; title: string; detail: string; actions: DashboardActionResponse[] };
+export type DashboardGetStartedResponse = { key: string; title: string; detail: string; status: string };
+export type DashboardSyncStepResponse = { key: string; title: string; detail: string; status: string };
+export type DashboardSyncResponse = { platform: string; syncedProducts: number; totalProducts: number; remainingLabel: string; steps: DashboardSyncStepResponse[] };
+export type DashboardSearchResultResponse = { id: string; type: string; label: string; detail: string; action: string };
+export type DashboardSnapshotResponse = { state: string; title: string; subtitle: string; statusLabel: string; statusTone: string; metrics: DashboardMetricResponse[]; reservations: DashboardReservationResponse[]; salesByPlatform: DashboardPlatformSaleResponse[]; attention: DashboardAttentionResponse[]; getStarted: DashboardGetStartedResponse[]; sync?: DashboardSyncResponse | null; searchIndex: DashboardSearchResultResponse[]; notifications: string[] };
+export type DashboardActionRequest = { action: string; targetId?: string | null; onHand?: number | null; platform?: string | null };
+export type DashboardActionResultResponse = { status: string; message: string; snapshot: DashboardSnapshotResponse };
+
 export class AccessApiError extends Error { constructor(public readonly status: number, public readonly problem: Problem) { super(problem.detail); } }
 export class AccessApiClient {
   constructor(private readonly baseUrl = '') {}
@@ -30,6 +43,8 @@ export class AccessApiClient {
   selectOnboardingAction(workspaceId: string, key: string) { return this.request<void>(`/api/workspaces/${workspaceId}/onboarding/actions`, { method: 'POST', body: JSON.stringify({ key }) }); }
   products(workspaceId: string) { return this.request<ProductResponse[]>(`/api/workspaces/${workspaceId}/products`); }
   importProducts(workspaceId: string, products: ProductRequest[]) { return this.request<ProductResponse[]>(`/api/workspaces/${workspaceId}/products/import`, { method: 'POST', body: JSON.stringify(products) }); }
+  dashboard(workspaceId: string) { return this.request<DashboardSnapshotResponse>(`/api/workspaces/${workspaceId}/dashboard`); }
+  dashboardAction(workspaceId: string, request: DashboardActionRequest) { return this.request<DashboardActionResultResponse>(`/api/workspaces/${workspaceId}/dashboard/actions`, { method: 'POST', body: JSON.stringify(request) }); }
   invite(workspaceId: string, request: InvitationRequest) { return this.request<{ status: string }>(`/api/workspaces/${workspaceId}/invitations`, { method: 'POST', body: JSON.stringify(request) }); }
   invitation(token: string) { return this.request<InvitationResponse>(`/api/invitations/${encodeURIComponent(token)}`); }
   acceptInvitation(token: string) { return this.request<{ status: string }>('/api/invitations/accept', { method: 'POST', body: JSON.stringify({ token }) }); }

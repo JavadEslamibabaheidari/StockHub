@@ -696,7 +696,7 @@ public static class PostgresDatabaseInitializer
 
         try
         {
-            foreach (var migrationName in new[] { "001_access.sql", "002_auth_completion.sql", "003_onboarding_products.sql" })
+            foreach (var migrationName in new[] { "001_access.sql", "002_auth_completion.sql", "003_onboarding_products.sql", "004_dashboard_state.sql" })
             {
                 var migrationPath = Path.Combine(AppContext.BaseDirectory, "Database", "Migrations", migrationName);
                 if (!File.Exists(migrationPath))

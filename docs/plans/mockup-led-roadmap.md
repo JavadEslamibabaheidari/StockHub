@@ -1,7 +1,7 @@
 # StockHub Mockup-Led Roadmap
 
 Status: roadmap structure approved; architecture baseline accepted in PR #14;
-Milestone 0 Cover is closed; Milestone 1 Access is complete and closed after PRs #38, #43, and #44
+Milestone 0 Cover is closed; Milestone 1 Access implementation is merged but closure remains blocked by external Google OAuth and email provider verification; Milestone 2 Dashboard is active
 
 ## Source of truth
 
@@ -66,13 +66,14 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-The next milestone is `2 Dashboard`. `1 Access` is complete and closed. Milestone `0 Cover` is closed with its
-closure hook and zero open GitHub issues. Access is complete after corrective PRs #38, #43, and #44;
-all persistence, packaging, and same-origin gaps were closed; the runtime
-now uses PostgreSQL persistence and has verified container and same-origin
-production routing.
+The active product milestone is `2 Dashboard`. Milestone `0 Cover` is closed with its
+closure hook and zero open GitHub issues. Milestone `1 Access` implementation is merged,
+but closure remains blocked until Google OAuth and outbound email provider setup are
+configured and verified in deployment. Access persistence, packaging, and same-origin gaps
+were closed; the runtime uses PostgreSQL persistence and has verified container and
+same-origin production routing.
 
-The next product milestone is `2 Dashboard`. Before its implementation
+Dashboard implementation follows [docs/plans/milestone-2-dashboard.md](milestone-2-dashboard.md). Before its implementation
 advances, complete the cross-cutting [production delivery gate](production-delivery-gate.md)
 tracked in issue #47. It adds image security, local Kubernetes verification,
 and GitHub Actions deployment without creating a parallel product milestone.

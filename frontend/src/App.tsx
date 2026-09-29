@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { AcceptInvite, Deferred, ForgotPassword, Invite, Onboarding, ResetPassword, SignIn, SignUp, Workspace } from './AccessScreens'
+import { Dashboard } from './DashboardScreens'
 
 const accessRouteHashes = [
   '#signup',
   '#signin',
   '#workspace',
   '#onboarding',
+  '#dashboard',
   '#invite',
   '#forgot',
   '#accept',
@@ -98,6 +100,7 @@ export default function App() {
     if (hash === '#signin') return <SignIn />
     if (hash === '#workspace') return <Workspace />
     if (hash === '#onboarding') return <Onboarding />
+    if (hash === '#dashboard') return <Dashboard />
     if (hash === '#invite') return <Invite />
     if (hash === '#forgot') return <ForgotPassword />
     if (hash === '#accept' || hash.startsWith('#accept?')) return <AcceptInvite />
