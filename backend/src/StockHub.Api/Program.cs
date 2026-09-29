@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
@@ -103,6 +104,14 @@ if (googleConfigured)
 }
 
 builder.Services.AddAuthorization();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
+        | ForwardedHeaders.XForwardedHost
+        | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 
@@ -125,6 +134,7 @@ app.UseExceptionHandler(exceptionApp => exceptionApp.Run(async context =>
     await Results.Problem("An unexpected error occurred.", statusCode: 500).ExecuteAsync(context);
 }));
 
+app.UseForwardedHeaders();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseAuthentication();
@@ -275,9 +285,6 @@ app.MapPost(
             catch (Exception exception) when (exception is System.Net.Mail.SmtpException or InvalidOperationException)
             {
                 logger.LogError(exception, "Password recovery email delivery failed");
-                return Results.Problem(
-                    "Password recovery is temporarily unavailable. Please try again later.",
-                    statusCode: StatusCodes.Status503ServiceUnavailable);
             }
         }
 
