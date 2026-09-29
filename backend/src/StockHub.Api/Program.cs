@@ -720,7 +720,7 @@ app.MapPost(
         switch (request.Action.Trim().ToLowerInvariant())
         {
             case "start-first-sync":
-                state = state with { Mode = "first-sync", DetailPanel = $"{request.Platform ?? "Platform"} setup opened. Real marketplace authorization is owned by Milestone 6 Platforms." };
+                state = state with { Mode = "first-sync", SyncPlatform = NormalizeDashboardPlatform(request.Platform), DetailPanel = $"{NormalizeDashboardPlatform(request.Platform)} setup opened. Real marketplace authorization is owned by Milestone 6 Platforms." };
                 message = "Platform picker opened and first sync preview started.";
                 break;
             case "finish-first-sync":
@@ -988,6 +988,16 @@ static Problem? ValidateProducts(IReadOnlyList<ProductRequest> products)
 
 
 
+
+static string NormalizeDashboardPlatform(string? platform) =>
+    platform?.Trim().ToLowerInvariant() switch
+    {
+        "unieuro" or "un" => "Unieuro",
+        "euronics" or "eu" => "Euronics",
+        "ebay" or "eb" => "eBay",
+        _ => "Amazon"
+    };
+
 static async Task<bool> IsWorkspaceMember(
     IAccessStore accessStore,
     Guid userId,
@@ -1009,9 +1019,8 @@ static DashboardSnapshotResponse BuildDashboardSnapshot(
     var primary = products.FirstOrDefault();
     var primaryName = primary?.Name ?? "Samsung Galaxy S24 128GB";
     var primaryId = primary?.Id.ToString() ?? string.Empty;
-    var lowStockCount = products.Count == 0
-        ? 0
-        : Math.Max(4, products.Count(product => product.OnHand <= 5));
+    var lowStockProducts = products.Where(product => product.OnHand <= 5).ToArray();
+    var lowStockCount = lowStockProducts.Length;
 
     if (mode == "first-use")
     {
@@ -1061,7 +1070,7 @@ static DashboardSnapshotResponse BuildDashboardSnapshot(
             [new("sync-clean", "info", "ok", "Nothing needs your attention.", "Stock changes made now are queued until the first sync finishes.", [])],
             [],
             new DashboardSyncResponse(
-                "Amazon",
+                state.SyncPlatform,
                 1176,
                 1240,
                 "about 10s left",
@@ -1070,12 +1079,12 @@ static DashboardSnapshotResponse BuildDashboardSnapshot(
                     new("stock", "Stock sent", "Available counts on Amazon", "done"),
                     new("prices", "Sending prices", "Base price + Amazon rule", "active")
                 ]),
-            BuildSearchIndex(products, ["Amazon first sync"]),
-            ["First sync with Amazon is running."]);
+            BuildSearchIndex(products, [$"{state.SyncPlatform} first sync"]),
+            [$"First sync with {state.SyncPlatform} is running."]);
     }
 
     var reservations = BuildReservations(primaryName);
-    var attention = BuildAttention(state, primaryId, primaryName, lowStockCount);
+    var attention = BuildAttention(state, primary, primaryId, primaryName, lowStockCount);
     return new DashboardSnapshotResponse(
         mode,
         "Dashboard",
@@ -1115,6 +1124,7 @@ static IReadOnlyList<DashboardReservationResponse> BuildReservations(string prim
 
 static IReadOnlyList<DashboardAttentionResponse> BuildAttention(
     DashboardWorkspaceState state,
+    Product? primary,
     string primaryId,
     string primaryName,
     int lowStockCount)
@@ -1131,13 +1141,17 @@ static IReadOnlyList<DashboardAttentionResponse> BuildAttention(
             [new("retry-sync", "Retry", "danger")]));
     }
 
-    items.Add(new(
-        "low-primary",
-        "low-stock",
-        "warning",
-        $"{primaryName}: 3 available (5 on hand)",
-        "Low-stock product visible on the dashboard.",
-        [new("adjust-on-hand", "Adjust on hand", "link")]));
+    if (primary is not null && primary.OnHand <= 5)
+    {
+        var available = Math.Max(0, primary.OnHand - 2);
+        items.Add(new(
+            $"product:{primary.Id}",
+            "low-stock",
+            "warning",
+            $"{primaryName}: {available} available ({primary.OnHand} on hand)",
+            "Low-stock product visible on the dashboard.",
+            [new("adjust-on-hand", "Adjust on hand", "link")]));
+    }
 
     items.Add(new(
         "low-switch",
@@ -1145,7 +1159,7 @@ static IReadOnlyList<DashboardAttentionResponse> BuildAttention(
         "warning",
         "Nintendo Switch OLED: 2 available (3 on hand)",
         "Low-stock product visible on the dashboard.",
-        [new("adjust-on-hand", "Adjust on hand", "link")]));
+        [new("review-mismatch", "Adjust on hand", "link")]));
 
     if (!state.MismatchResolved)
     {
@@ -1168,8 +1182,8 @@ static IReadOnlyList<DashboardAttentionResponse> BuildAttention(
 
     if (state.ShowMoreLowStock || lowStockCount > 4)
     {
-        items.Add(new("low-gopro", "low-stock", "warning", "GoPro HERO12 Black: 4 available", "Expanded low-stock dashboard item.", [new("adjust-on-hand", "Adjust on hand", "link")]));
-        items.Add(new("low-roomba", "low-stock", "warning", "iRobot Roomba Combo j7: 5 available", "Expanded low-stock dashboard item.", [new("adjust-on-hand", "Adjust on hand", "link")]));
+        items.Add(new("low-gopro", "low-stock", "warning", "GoPro HERO12 Black: 4 available", "Expanded low-stock dashboard item.", [new("review-mismatch", "Adjust on hand", "link")]));
+        items.Add(new("low-roomba", "low-stock", "warning", "iRobot Roomba Combo j7: 5 available", "Expanded low-stock dashboard item.", [new("review-mismatch", "Adjust on hand", "link")]));
     }
     else
     {

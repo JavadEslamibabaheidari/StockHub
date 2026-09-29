@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS dashboard_states (
     workspace_id uuid PRIMARY KEY REFERENCES workspaces(id) ON DELETE CASCADE,
     mode text NOT NULL DEFAULT 'first-use',
+    sync_platform text NOT NULL DEFAULT 'Amazon',
     euronics_retried boolean NOT NULL DEFAULT false,
     mismatch_resolved boolean NOT NULL DEFAULT false,
     restock_listed boolean NOT NULL DEFAULT false,

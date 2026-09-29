@@ -15,7 +15,7 @@ public sealed class PostgresDashboardStore(string connectionString) : IDashboard
             VALUES (@workspace)
             ON CONFLICT (workspace_id) DO NOTHING;
 
-            SELECT workspace_id, mode, euronics_retried, mismatch_resolved, restock_listed, show_more_low_stock, detail_panel, updated_at
+            SELECT workspace_id, mode, sync_platform, euronics_retried, mismatch_resolved, restock_listed, show_more_low_stock, detail_panel, updated_at
             FROM dashboard_states
             WHERE workspace_id = @workspace
             """,
@@ -34,10 +34,11 @@ public sealed class PostgresDashboardStore(string connectionString) : IDashboard
         await using var connection = await OpenConnectionAsync(cancellationToken);
         await using var command = new NpgsqlCommand(
             """
-            INSERT INTO dashboard_states(workspace_id, mode, euronics_retried, mismatch_resolved, restock_listed, show_more_low_stock, detail_panel, updated_at)
-            VALUES (@workspace, @mode, @euronicsRetried, @mismatchResolved, @restockListed, @showMoreLowStock, @detailPanel, @updatedAt)
+            INSERT INTO dashboard_states(workspace_id, mode, sync_platform, euronics_retried, mismatch_resolved, restock_listed, show_more_low_stock, detail_panel, updated_at)
+            VALUES (@workspace, @mode, @syncPlatform, @euronicsRetried, @mismatchResolved, @restockListed, @showMoreLowStock, @detailPanel, @updatedAt)
             ON CONFLICT (workspace_id) DO UPDATE
             SET mode = EXCLUDED.mode,
+                sync_platform = EXCLUDED.sync_platform,
                 euronics_retried = EXCLUDED.euronics_retried,
                 mismatch_resolved = EXCLUDED.mismatch_resolved,
                 restock_listed = EXCLUDED.restock_listed,
@@ -49,6 +50,7 @@ public sealed class PostgresDashboardStore(string connectionString) : IDashboard
             connection);
         command.Parameters.AddWithValue("workspace", saved.WorkspaceId);
         command.Parameters.AddWithValue("mode", saved.Mode);
+        command.Parameters.AddWithValue("syncPlatform", saved.SyncPlatform);
         command.Parameters.AddWithValue("euronicsRetried", saved.EuronicsRetried);
         command.Parameters.AddWithValue("mismatchResolved", saved.MismatchResolved);
         command.Parameters.AddWithValue("restockListed", saved.RestockListed);
@@ -75,10 +77,11 @@ public sealed class PostgresDashboardStore(string connectionString) : IDashboard
     private static DashboardWorkspaceState ReadState(NpgsqlDataReader reader) => new(
         reader.GetGuid(0),
         reader.GetString(1),
-        reader.GetBoolean(2),
+        reader.GetString(2),
         reader.GetBoolean(3),
         reader.GetBoolean(4),
         reader.GetBoolean(5),
-        reader.IsDBNull(6) ? null : reader.GetString(6),
-        reader.GetFieldValue<DateTimeOffset>(7));
+        reader.GetBoolean(6),
+        reader.IsDBNull(7) ? null : reader.GetString(7),
+        reader.GetFieldValue<DateTimeOffset>(8));
 }
