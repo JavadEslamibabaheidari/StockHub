@@ -20,6 +20,7 @@ require_pattern() {
 
 require_pattern '^status:[[:space:]]*PASS[[:space:]]*$' 'report status must be PASS'
 require_pattern '^milestone:[[:space:]]*[^[:space:]].*$' 'milestone is missing'
+require_pattern '^github_milestone_number:[[:space:]]*[0-9]+[[:space:]]*$' 'GitHub milestone number is missing'
 require_pattern '^plan:[[:space:]]*[^[:space:]].*$' 'plan evidence is missing'
 require_pattern '^mockup_evidence:[[:space:]]*[^[:space:]].*$' 'mockup evidence is missing'
 require_pattern '^adr_evidence:[[:space:]]*[^[:space:]].*$' 'ADR evidence is missing'

@@ -1,6 +1,7 @@
 # Milestone closure report — 2 Dashboard
 
 status: IN PROGRESS
+github_milestone_number: 3
 milestone: 2 Dashboard
 plan: docs/plans/milestone-2-dashboard.md
 mockup_evidence: docs/mockups/StockHub Final.html section 2 Dashboard; user-provided Milestone 2 screenshots for 2.1 Dashboard, 2.2 Dashboard first use, and 2.3 Dashboard first sync
@@ -16,15 +17,15 @@ evidence_last_updated: 2026-09-29
 
 | ID | Source / expected outcome | Implementation or configuration | Test / evidence | Status | Reason, owner, follow-up issue, target milestone |
 |---|---|---|---|---|---|
-| mockup-2.1 | Live Dashboard metrics, reservations, sales, sync, attention controls | Dashboard API snapshot, workspace dashboard state, React live dashboard | Browser verified on local Compose at `http://127.0.0.1:18082/#dashboard`; API action flow persisted retry, adjust, resolve, restock, and expanded low stock | PASS locally | CI and PR review pending |
+| mockup-2.1 | Live Dashboard metrics, reservations, sales, sync, attention controls | Dashboard API snapshot, workspace dashboard state, React live dashboard | Browser verified on local Compose at `http://127.0.0.1:18082/#dashboard`; API action flow persisted retry, adjust, resolve, restock, and expanded low stock | PASS locally | PR #68 checks and review completed; #47 remains a delivery gate |
 | mockup-2.2 | First-use Dashboard get-started, empty cards, upload, platform picker, invite | First-use dashboard state, product import reuse, platform first-sync action, invite API reuse | Browser verified first-use controls and API verified first-use snapshot | PASS locally | Invite delivery remains blocked by Access email provider setup when SMTP is not configured |
 | mockup-2.3 | First-sync progress state and safe background placeholders | `start-first-sync` dashboard action and persisted mode | Browser verified platform button opens first-sync screen and finish preview returns safely | PASS locally | Real marketplace authorization belongs to Milestone 6 Platforms |
 | access-regression | Signup, sign-in, workspace selection, logout, and navigation into/out of Dashboard still work | Dashboard route added; sign-in/workspace success now routes to Dashboard; sign-out remains cookie-backed | API signup/workspace setup verified; browser sign-in and sign-out verified | PASS | Milestone 1 closure still blocked by external Google OAuth and email provider setup |
-| backend | UI data and mutable actions need real API/persistence | `IDashboardStore`, PostgreSQL `dashboard_states`, Dashboard endpoints, product on-hand update | Backend tests 16/16; API flow against Compose verified product on-hand persisted to 9 | PASS locally | CI pending |
+| backend | UI data and mutable actions need real API/persistence | `IDashboardStore`, PostgreSQL `dashboard_states`, Dashboard endpoints, product on-hand update | Backend tests 16/16; API flow against Compose verified product on-hand persisted to 9 | PASS | PR #68 required checks passed |
 | handoffs | Later-milestone actions must be clear and not pretend complete | Sidebar routes and Dashboard detail panels name owning future milestones | Browser verified Inventory route shows Coming next and no action marked complete | PASS locally | Future module implementation remains in owning milestones |
 | tests | Important flows covered | Backend Dashboard store test; frontend Dashboard route render test; existing Access tests preserved | Local tests passed; PR #68 and PR #69 required checks passed | PASS | Main delivery run 36616827440 succeeded after PR #68 merge |
-| deployment | Containerized app must build and run with readiness | Docker Compose build/start on port 18082 with PostgreSQL migration 004; GitHub Actions delivery | Compose image built locally; `/ready` returned `{"status":"ready"}`; main delivery run 36616827440 passed image/kind smoke and published the tested source image | PASS | Review-staging and production promotion skipped by configured gates |
-| github | Issues, PR, docs, closure evidence synchronized | Dashboard implementation issue and PR to be linked before closure | Dashboard implementation issue #67 closed by merged PR #68 | PASS | PR #68 checks passed; main delivery run 36616827440 succeeded; review-staging and production promotion skipped by configured gates |
+| deployment | Containerized app must build and run with readiness | Docker Compose build/start on port 18082 with PostgreSQL migration 004; GitHub Actions delivery | Local Compose `/ready` passed; main delivery run 36616827440 passed image/kind smoke and published the tested source image | PARTIAL | Persistent local deployment is not proven by the public run; review-staging and production jobs were skipped; #47 owns the local delivery gate |
+| github | Issues, PR, docs, closure evidence synchronized | Dashboard issue #67 and delivery gate #47 | #67 closed by merged PR #68; #47 remains open | PARTIAL | Milestone 2 is open until #47 is resolved or explicitly reassigned |
 
 ## Deliberate deviations
 
