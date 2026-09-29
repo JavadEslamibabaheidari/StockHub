@@ -4,6 +4,8 @@ Before reporting project status, refresh `main` and `dev` when it exists, then r
 `docs/project-status.md`. Verify current milestones and issues on GitHub and
 inspect the relevant delivery run. Distinguish code merged, image published,
 local deployment verified, and shared staging/production deployment verified.
+A PR merged into `dev` is integrated there; it is on `main` only after the
+promotion PR merges. Name the branch and source SHA in status claims.
 A successful workflow with skipped deployment jobs proves publication only.
 If GitHub or the deployment target is inaccessible, mark that part unverified.
 

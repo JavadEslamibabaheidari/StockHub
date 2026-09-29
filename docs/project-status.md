@@ -12,7 +12,7 @@ Last reconciled: 2026-09-29. Live [GitHub milestones](https://github.com/JavadEs
 
 ## Status rules
 
-1. **Merged** means the commit is on GitHub `main`. A local branch or open PR does not qualify.
+1. **Integrated on `dev`** means the commit is on GitHub `dev`. **Merged to `main`** means a promotion PR put that commit on GitHub `main`. Name the branch and source SHA. A local branch or open PR qualifies as neither.
 2. **Published** means a successful `main` publish job names the source SHA and immutable image digest. A green PR check or temporary kind smoke test does not qualify.
 3. **Deployed** means the target's deployment record identifies the source SHA or digest, migration and startup success, and a healthy target endpoint. Record dev, staging, and production separately. A local smoke test may prove the app runs without proving automated promotion. A skipped job or uninspected target is `unverified`.
 4. **Milestone closed** means GitHub shows the milestone closed with zero open issues, the final report says `PASS`, and the evidence above is linked. Code merge and image publication alone do not close a milestone.
