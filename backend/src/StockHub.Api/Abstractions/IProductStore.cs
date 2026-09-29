@@ -11,4 +11,10 @@ public interface IProductStore
         Guid workspaceId,
         IReadOnlyList<ProductRequest> products,
         CancellationToken cancellationToken);
+
+    Task<Product?> UpdateOnHandAsync(
+        Guid workspaceId,
+        Guid productId,
+        int onHand,
+        CancellationToken cancellationToken);
 }

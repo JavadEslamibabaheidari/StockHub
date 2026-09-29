@@ -76,7 +76,7 @@ export function SignIn() {
   }, [])
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(null)
-    try { await api.signIn({ email: email.trim(), password }); const pendingInvite = sessionStorage.getItem('stockhub-pending-invite'); if (pendingInvite) { sessionStorage.removeItem('stockhub-pending-invite'); go(`accept?token=${pendingInvite}`); return } const session = await api.session(); go(session.activeWorkspaceId || session.workspaces.length ? 'onboarding' : 'workspace') }
+    try { await api.signIn({ email: email.trim(), password }); const pendingInvite = sessionStorage.getItem('stockhub-pending-invite'); if (pendingInvite) { sessionStorage.removeItem('stockhub-pending-invite'); go(`accept?token=${pendingInvite}`); return } const session = await api.session(); go(session.activeWorkspaceId || session.workspaces.length ? 'dashboard' : 'workspace') }
     catch (caught) { setError(caught instanceof AccessApiError && caught.status === 401 ? 'Email or password is incorrect.' : message(caught, 'We could not sign you in. Try again.')) }
     finally { setBusy(false) }
   }
@@ -118,7 +118,7 @@ export function Workspace() {
   useEffect(() => { api.session().catch(caught => { if (caught instanceof AccessApiError && caught.status === 401) go('signin') }) }, [])
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(null)
-    try { const workspace = await api.createWorkspace({ businessName: businessName.trim(), country, currency, vatNumber: vatNumber.trim() || null }, retryKey.current ??= newRequestKey()); await api.setActiveWorkspace(workspace.id); go('onboarding') }
+    try { const workspace = await api.createWorkspace({ businessName: businessName.trim(), country, currency, vatNumber: vatNumber.trim() || null }, retryKey.current ??= newRequestKey()); await api.setActiveWorkspace(workspace.id); go('dashboard') }
     catch (caught) { setError(message(caught, 'We could not create this workspace. Try again.')) }
     finally { setBusy(false) }
   }
@@ -126,7 +126,7 @@ export function Workspace() {
 }
 
 const nav = ['Dashboard', 'Inventory', 'Orders', 'Reservations', 'Platforms', 'Pricing rules', 'Reports', 'Team', 'Settings']
-const navRoutes = ['#onboarding', '#inventory', '#orders', '#reservations', '#platforms', '#pricing', '#reports', '#team', '#settings']
+const navRoutes = ['#dashboard', '#inventory', '#orders', '#reservations', '#platforms', '#pricing', '#reports', '#team', '#settings']
 const platformOptions = [
   ['amazon', 'Amazon', 'Seller Central authorization comes in the Platforms milestone.'],
   ['unieuro', 'Unieuro', 'Marketplace authorization comes in the Platforms milestone.'],
@@ -221,10 +221,10 @@ export function AcceptInvite() {
   const [status, setStatus] = useState('Checking invitation...')
   const [error, setError] = useState<string | null>(null)
   useEffect(() => { if (!token) { setError('This invitation link is missing a token.'); return } api.invitation(token).then(invitation => setStatus(`Invitation for ${invitation.email} as ${invitation.role}. Sign in with that email, then accept.`)).catch(caught => setError(message(caught, 'This invitation link is invalid or expired.'))) }, [token])
-  async function accept() { setError(null); try { await api.acceptInvitation(token); go('onboarding') } catch (caught) { if (caught instanceof AccessApiError && caught.status === 401) { sessionStorage.setItem('stockhub-pending-invite', token); go('signin'); return } setError(message(caught, 'Could not accept this invitation.')) } }
+  async function accept() { setError(null); try { await api.acceptInvitation(token); go('dashboard') } catch (caught) { if (caught instanceof AccessApiError && caught.status === 401) { sessionStorage.setItem('stockhub-pending-invite', token); go('signin'); return } setError(message(caught, 'Could not accept this invitation.')) } }
   return <Frame kind="deferred-page"><div className="deferred-content"><h1>Accept invitation</h1><p>{status}</p><ErrorText value={error} />{token && <button className="primary-button" type="button" onClick={accept}>Accept invitation</button>}<p><a href="#signin">Sign in</a> · <a href="#signup">Create account</a></p></div></Frame>
 }
 
 export function Deferred({ legal = false }: { legal?: boolean }) {
-  return <Frame kind="deferred-page"><div className="deferred-content"><h1>{legal ? 'Legal documents' : 'Coming next'}</h1><p>{legal ? 'Terms and Privacy content is pending approval. No legal acceptance has been recorded.' : 'This capability is planned for a later milestone. No action has been marked complete.'}</p><a className="secondary-button" href={legal ? '#signup' : '#onboarding'}>Go back</a></div></Frame>
+  return <Frame kind="deferred-page"><div className="deferred-content"><h1>{legal ? 'Legal documents' : 'Coming next'}</h1><p>{legal ? 'Terms and Privacy content is pending approval. No legal acceptance has been recorded.' : 'This capability is planned for a later milestone. No action has been marked complete.'}</p><a className="secondary-button" href={legal ? '#signup' : '#dashboard'}>Go back</a></div></Frame>
 }

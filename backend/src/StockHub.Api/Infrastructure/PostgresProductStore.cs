@@ -75,6 +75,31 @@ public sealed class PostgresProductStore(string connectionString) : IProductStor
         return result;
     }
 
+    public async Task<Product?> UpdateOnHandAsync(
+        Guid workspaceId,
+        Guid productId,
+        int onHand,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var command = new NpgsqlCommand(
+            """
+            UPDATE products
+            SET on_hand = @onHand,
+                updated_at = now()
+            WHERE workspace_id = @workspace
+              AND id = @product
+            RETURNING id, workspace_id, sku, name, on_hand, base_price, category
+            """,
+            connection);
+        command.Parameters.AddWithValue("workspace", workspaceId);
+        command.Parameters.AddWithValue("product", productId);
+        command.Parameters.AddWithValue("onHand", onHand);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        return await reader.ReadAsync(cancellationToken) ? ReadProduct(reader) : null;
+    }
+
     private async Task<NpgsqlConnection> OpenConnectionAsync(CancellationToken cancellationToken)
     {
         var connection = new NpgsqlConnection(connectionString);

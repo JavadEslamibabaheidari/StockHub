@@ -63,7 +63,7 @@ describe('Milestone 1 Access', () => {
 
   it('renders the workspace and onboarding routes', () => {
     const originalWindow = globalThis.window
-    for (const [hash, expected] of [['#workspace', 'Create your workspace'], ['#onboarding', 'Welcome, there'], ['#invite', 'Invite your team']] as const) {
+    for (const [hash, expected] of [['#workspace', 'Create your workspace'], ['#onboarding', 'Welcome, there'], ['#dashboard', 'Loading dashboard'], ['#invite', 'Invite your team']] as const) {
       Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash }, addEventListener: () => {}, removeEventListener: () => {} } })
       expect(renderToStaticMarkup(<App />)).toContain(expected)
     }
@@ -76,6 +76,18 @@ describe('Milestone 1 Access', () => {
       Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash }, addEventListener: () => {}, removeEventListener: () => {} } })
       expect(renderToStaticMarkup(<App />)).toContain(expected)
     }
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+  })
+})
+
+
+describe('Milestone 2 Dashboard route', () => {
+  it('routes #dashboard to the Dashboard application shell', () => {
+    const originalWindow = globalThis.window
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash: '#dashboard' }, addEventListener: () => {}, removeEventListener: () => {} } })
+    const markup = renderToStaticMarkup(<App />)
+    expect(markup).toContain('dashboard-page')
+    expect(markup).toContain('Loading dashboard')
     Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
   })
 })
