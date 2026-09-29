@@ -1,13 +1,17 @@
 # StockHub
 
-StockHub is being prepared for issue-by-issue delivery through a public GitHub
-repository. Product behavior and application architecture are being defined in
-the separate product track.
+StockHub is delivered through a public GitHub repository. See
+[docs/project-status.md](docs/project-status.md) for the current milestone,
+merged code, deployment verification, and closure state.
 
 ## Repository conventions
 
-- `main` is the protected integration branch.
-- Work is delivered through focused issues and pull requests.
+- `dev` is the intended protected integration branch for issue pull requests.
+  The local sync timer deploys merged commits to the dev stack once that branch
+  and its protections are configured.
+- `main` receives milestone promotion pull requests. Annotated version tags on
+  `main` promote the same local image through staging and prod after the release
+  checks pass.
 - Product mockups are reference material under `docs/mockups/`.
 - The GitHub lifecycle plan is [docs/plans/github-infrastructure-plan.md](docs/plans/github-infrastructure-plan.md).
 - Deployment policy is documented in [docs/plans/deployment-environments.md](docs/plans/deployment-environments.md).
@@ -15,14 +19,9 @@ the separate product track.
 
 ## Current status
 
-The frontend Cover runtime has been restored through Milestone 0. Access
-implementation is active after the verified Cover closure and follows the
-normal issue/branch/PR workflow.
-
-The accepted architecture is documented in
-[docs/plans/architecture-baseline.md](docs/plans/architecture-baseline.md),
-with ADRs merged in PR #14 according to the current project context. The
-implementation gate and closure process are documented in
+The latest merged Dashboard commit is running on the local dev stack. Staging
+and prod await a validated milestone tag. The implementation gate and closure
+process are documented in
 [docs/ai-development-workflow.md](docs/ai-development-workflow.md).
 
 ## Backend checks

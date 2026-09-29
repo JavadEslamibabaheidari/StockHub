@@ -1,71 +1,25 @@
-name: Container security and Kubernetes delivery
+name: Container quality and image publishing
 
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [dev]
+    tags: ['v0.*.0']
   schedule:
     - cron: '17 3 * * 1'
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: Deployment target
-        required: true
-        type: choice
-        options: [production]
-      staging_run_id:
-        description: Successful review-staging workflow run to promote
-        required: true
-        type: string
 
 permissions:
   contents: read
 
 jobs:
   container-quality:
-    if: github.event_name != 'workflow_dispatch'
-    name: Image scan and local Kubernetes smoke
+    name: Image scan and Compose smoke
     runs-on: ubuntu-latest
     permissions:
       contents: read
       security-events: write
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: stockhub
-          POSTGRES_USER: stockhub
-          POSTGRES_PASSWORD: stockhub-ci
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U stockhub -d stockhub"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 12
-    env:
-      STOCKHUB_POSTGRES_TEST_CONNECTION: Host=localhost;Port=5432;Database=stockhub;Username=stockhub;Password=stockhub-ci
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.x
-      - name: Run backend tests with PostgreSQL
-        run: dotnet test StockHub.sln --configuration Release --verbosity normal
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - name: Run frontend checks
-        run: |
-          npm ci --prefix frontend
-          npm --prefix frontend run lint
-          npm --prefix frontend test -- --run
-          npm --prefix frontend run contract:check
-          npm --prefix frontend run build
-      - name: Audit frontend dependencies
-        run: npm audit --prefix frontend --audit-level=high
       - name: Build production image
         run: docker build -t stockhub:ci .
       - name: Scan image and write SARIF
@@ -90,18 +44,10 @@ jobs:
           exit-code: '1'
       - name: Compose build, health, and route smoke
         run: bash scripts/check-compose-smoke.sh
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v4
-      - name: Install kind
-        uses: helm/kind-action@v1.12.0
-        with:
-          install_only: true
-      - name: Kubernetes migration and rollout smoke
-        run: bash scripts/check-kind-smoke.sh
 
   publish:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    name: Publish tested source image
+    if: github.event_name == 'push'
+    name: Validate release and publish immutable image
     needs: container-quality
     runs-on: ubuntu-latest
     permissions:
@@ -111,21 +57,30 @@ jobs:
       digest: ${{ steps.push.outputs.digest }}
     steps:
       - uses: actions/checkout@v4
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+        with:
+          fetch-depth: 0
+      - name: Verify milestone tag and closure
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: bash scripts/check-release-tag.sh "$RELEASE_TAG"
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Normalize image name
         run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - name: Resolve source commit
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Build and publish immutable image
         id: push
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.source.outputs.sha }}
       - name: Scan published digest before deployment
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -134,160 +89,3 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '1'
-
-  staging:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.STAGING_ENABLED == 'true'
-    name: Deploy review-staging
-    needs: publish
-    runs-on: ubuntu-latest
-    environment: review-staging
-    concurrency:
-      group: stockhub-review-staging
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-kubectl@v4
-      - name: Configure Kubernetes and deploy
-        env:
-          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
-          POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION }}
-          DEPLOY_HOST: ${{ vars.STOCKHUB_HOST }}
-          INGRESS_CLASS: ${{ vars.INGRESS_CLASS }}
-          DEPLOY_NAMESPACE: ${{ vars.KUBE_NAMESPACE }}
-          IMAGE_DIGEST: ${{ needs.publish.outputs.digest }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_FROM: ${{ secrets.SMTP_FROM }}
-          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          PUBLIC_BASE_URL: ${{ secrets.PUBLIC_BASE_URL }}
-        run: |
-          set -euo pipefail
-          : "${KUBE_CONFIG_B64:?Configure review-staging KUBE_CONFIG_B64}"
-          : "${POSTGRES_CONNECTION:?Configure review-staging POSTGRES_CONNECTION}"
-          : "${DEPLOY_HOST:?Configure review-staging STOCKHUB_HOST}"
-          : "${INGRESS_CLASS:?Configure review-staging INGRESS_CLASS}"
-          : "${DEPLOY_NAMESPACE:?Configure review-staging KUBE_NAMESPACE}"
-          export KUBECONFIG="$RUNNER_TEMP/kubeconfig"
-          printf '%s' "$KUBE_CONFIG_B64" | base64 -d > "$KUBECONFIG"
-          chmod 600 "$KUBECONFIG"
-          PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-https://$DEPLOY_HOST}"
-          kubectl -n "$DEPLOY_NAMESPACE" create secret generic stockhub-runtime \
-            --from-literal=postgres-connection="$POSTGRES_CONNECTION" \
-            --from-literal=google-client-id="${GOOGLE_CLIENT_ID:-}" \
-            --from-literal=google-client-secret="${GOOGLE_CLIENT_SECRET:-}" \
-            --from-literal=public-base-url="$PUBLIC_BASE_URL" \
-            --from-literal=smtp-host="${SMTP_HOST:-}" \
-            --from-literal=smtp-port="${SMTP_PORT:-}" \
-            --from-literal=smtp-from="${SMTP_FROM:-}" \
-            --from-literal=smtp-username="${SMTP_USERNAME:-}" \
-            --from-literal=smtp-password="${SMTP_PASSWORD:-}" \
-            --dry-run=client -o yaml | kubectl apply -f -
-          STOCKHUB_IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}@${IMAGE_DIGEST}" \
-            STOCKHUB_NAMESPACE="$DEPLOY_NAMESPACE" \
-            STOCKHUB_MIGRATION_ID="$GITHUB_SHA" \
-            STOCKHUB_HOST="$DEPLOY_HOST" \
-            STOCKHUB_INGRESS_CLASS="$INGRESS_CLASS" \
-            STOCKHUB_VERIFY_URL="https://$DEPLOY_HOST" \
-            bash scripts/deploy-k8s.sh
-          jq -n --arg digest "$IMAGE_DIGEST" --arg sha "$GITHUB_SHA" \
-            '{digest: $digest, sha: $sha}' > "$RUNNER_TEMP/staging-deployment.json"
-          echo "Deployed ${GITHUB_SHA} at ${IMAGE_DIGEST} to review-staging" >> "$GITHUB_STEP_SUMMARY"
-      - name: Record tested staging digest
-        uses: actions/upload-artifact@v4
-        with:
-          name: staging-deployment-record
-          path: ${{ runner.temp }}/staging-deployment.json
-          retention-days: 90
-
-  production:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.environment == 'production'
-    name: Promote digest to production
-    runs-on: ubuntu-latest
-    environment: production
-    permissions:
-      contents: read
-      actions: read
-    concurrency:
-      group: stockhub-production
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-kubectl@v4
-      - name: Verify successful staging run
-        env:
-          GH_TOKEN: ${{ github.token }}
-          STAGING_RUN_ID: ${{ inputs.staging_run_id }}
-        run: |
-          set -euo pipefail
-          [[ "$STAGING_RUN_ID" =~ ^[0-9]+$ ]] || exit 2
-          verified="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$STAGING_RUN_ID" \
-            --jq '.conclusion == "success" and .head_branch == "main" and .name == "Container security and Kubernetes delivery"')"
-          [[ "$verified" == true ]] || { echo "Staging run is not a successful main deployment" >&2; exit 1; }
-      - name: Download staged digest record
-        uses: actions/download-artifact@v4
-        with:
-          name: staging-deployment-record
-          run-id: ${{ inputs.staging_run_id }}
-          github-token: ${{ github.token }}
-          path: ${{ runner.temp }}/staging-record
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Validate image and configure cluster
-        env:
-          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
-          POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION }}
-          DEPLOY_HOST: ${{ vars.STOCKHUB_HOST }}
-          INGRESS_CLASS: ${{ vars.INGRESS_CLASS }}
-          DEPLOY_NAMESPACE: ${{ vars.KUBE_NAMESPACE }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_FROM: ${{ secrets.SMTP_FROM }}
-          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          PUBLIC_BASE_URL: ${{ secrets.PUBLIC_BASE_URL }}
-        run: |
-          set -euo pipefail
-          IMAGE_DIGEST="$(jq -r '.digest' "$RUNNER_TEMP/staging-record/staging-deployment.json")"
-          STAGED_SHA="$(jq -r '.sha' "$RUNNER_TEMP/staging-record/staging-deployment.json")"
-          [[ "$IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]] || exit 2
-          [[ "$STAGED_SHA" =~ ^[a-f0-9]{40}$ ]] || exit 2
-          git fetch --depth=1 origin "$STAGED_SHA"
-          git checkout --detach "$STAGED_SHA"
-          docker manifest inspect "ghcr.io/${GITHUB_REPOSITORY,,}@${IMAGE_DIGEST}" >/dev/null
-          : "${KUBE_CONFIG_B64:?Configure production KUBE_CONFIG_B64}"
-          : "${POSTGRES_CONNECTION:?Configure production POSTGRES_CONNECTION}"
-          : "${DEPLOY_HOST:?Configure production STOCKHUB_HOST}"
-          : "${INGRESS_CLASS:?Configure production INGRESS_CLASS}"
-          : "${DEPLOY_NAMESPACE:?Configure production KUBE_NAMESPACE}"
-          export KUBECONFIG="$RUNNER_TEMP/kubeconfig"
-          printf '%s' "$KUBE_CONFIG_B64" | base64 -d > "$KUBECONFIG"
-          chmod 600 "$KUBECONFIG"
-          PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-https://$DEPLOY_HOST}"
-          kubectl -n "$DEPLOY_NAMESPACE" create secret generic stockhub-runtime \
-            --from-literal=postgres-connection="$POSTGRES_CONNECTION" \
-            --from-literal=google-client-id="${GOOGLE_CLIENT_ID:-}" \
-            --from-literal=google-client-secret="${GOOGLE_CLIENT_SECRET:-}" \
-            --from-literal=public-base-url="$PUBLIC_BASE_URL" \
-            --from-literal=smtp-host="${SMTP_HOST:-}" \
-            --from-literal=smtp-port="${SMTP_PORT:-}" \
-            --from-literal=smtp-from="${SMTP_FROM:-}" \
-            --from-literal=smtp-username="${SMTP_USERNAME:-}" \
-            --from-literal=smtp-password="${SMTP_PASSWORD:-}" \
-            --dry-run=client -o yaml | kubectl apply -f -
-          STOCKHUB_IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}@${IMAGE_DIGEST}" \
-            STOCKHUB_NAMESPACE="$DEPLOY_NAMESPACE" \
-            STOCKHUB_MIGRATION_ID="$STAGED_SHA" \
-            STOCKHUB_HOST="$DEPLOY_HOST" \
-            STOCKHUB_INGRESS_CLASS="$INGRESS_CLASS" \
-            STOCKHUB_VERIFY_URL="https://$DEPLOY_HOST" \
-            bash scripts/deploy-k8s.sh
-          echo "Promoted ${IMAGE_DIGEST} to production from staged commit ${STAGED_SHA}" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: stockhub
+      POSTGRES_USER: stockhub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stockhub -d stockhub"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  stockhub:
+    image: ${STOCKHUB_IMAGE:?Set STOCKHUB_IMAGE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=stockhub;Username=stockhub;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      Database__ApplyMigrations: "false"
+      Authentication__SecureCookies: ${AUTHENTICATION_SECURE_COOKIES:-false}
+    ports:
+      - "127.0.0.1:${STOCKHUB_PORT:?Set STOCKHUB_PORT}:8080"
+    volumes:
+      - data-protection:/home/app/.aspnet/DataProtection-Keys
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/ready"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 12
+
+volumes:
+  postgres-data:
+  data-protection:

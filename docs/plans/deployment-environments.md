@@ -1,152 +1,92 @@
-# Deployment environments
+# Local deployment environments and milestone promotion
 
-Status: local container packaging and isolated self-hosted Kubernetes CD configured;
-shared cluster credentials, domains, and secrets pending (issue #48)
+Status: local-PC deployment path implemented in repository. The sync timer is
+installed and waits for branch protection plus explicit `init`. The dev stack was
+verified on 2026-09-29 with merged commit `146191eeed063c5165688f9f002a6f27c7d1fab5`:
+PostgreSQL and app containers healthy, `/ready` returned ready, and the frontend
+page responded. GitHub `dev` branch setup and tagged staging/prod promotion
+remain to be verified.
 
-## Environments
+## Release flow
 
-StockHub uses three lifecycle environments:
+1. Feature and fix branches open pull requests into protected `dev`. Required
+   checks pass before merge. A closed but unmerged PR does not deploy.
+2. The local sync timer fetches `origin/dev` every two minutes. When its commit
+   changes, it builds that exact commit and deploys it to the dev Compose stack.
+3. When the milestone implementation and pre-promotion evidence are ready on
+   `dev`, merge `dev` into protected `main` through a milestone PR. Verify the
+   merged code and checks on `main`. The closure report may remain `IN PROGRESS`
+   while this evidence is collected.
+4. Resolve every milestone issue, close the GitHub milestone, and merge the
+   final `PASS` closure report after its live milestone check succeeds. Create
+   an annotated `v0.<milestone-number>.0` tag on that final `main` commit.
+5. The timer accepts only new remote milestone tags that are annotated, point
+   to `main` history, contain exactly one passing closure report, and have a
+   closed GitHub milestone with zero open issues. It builds
+   the tagged commit, deploys it to staging, waits for `/ready`, then deploys
+   the same local image to production. A staging failure stops promotion.
 
-- `local`: developer-only execution with no shared GitHub secrets.
-- `review-staging`: the first shared deployment target after a hosting target
-  is selected. Deployments must come from `main` or an approved pull request
-  workflow, and must expose a rollback path.
-- `production`: a protected GitHub environment. Production deployment must be
-  explicitly approved, limited to `main`, and recorded with the deployed
-  commit, migration status, health verification, and rollback owner.
+The Compose project names are `dev-stockhub`, `staging-stockhub`, and
+`prod-stockhub`. Each is the local equivalent of a namespace and has its own
+PostgreSQL and Data Protection key volumes, random database password,
+configuration file, and port. All ports bind to `127.0.0.1`: dev uses 8081,
+staging uses 8082, and prod uses 8083. These are local lifecycle environments
+on one PC. They are unavailable while the PC or Docker Desktop is off. Public access,
+TLS, high availability, off-machine backups, and production operations remain
+future hosting work.
 
-## Required configuration before deployment
-
-The hosting decision must identify the following values before a shared
-deployment can run:
-
-- hosting provider and region;
-- frontend and backend runtime targets;
-- PostgreSQL connection and migration ownership;
-- domain, TLS, and cookie settings;
-- observability and alert destinations;
-- rollback mechanism and recovery-time target; and
-- named owners for staging and production approval.
-
-Secrets belong to GitHub Environments or the hosting provider's secret store,
-never to the repository. Expected secret categories are database credentials,
-application signing/encryption keys, external integration credentials, and
-observability ingestion credentials. Exact names remain deferred until the
-hosting target is approved.
-
-## Current delivery rule
-
-The repository now provides a local/reviewable Compose stack through
-`Dockerfile`, `docker-compose.yml`, and `scripts/check-compose-smoke.sh`. It
-builds the React bundle into the ASP.NET Core image, starts PostgreSQL with a
-health check, applies the Access migration, and exposes the app at one origin
-(`http://localhost:8080` by default). The local Compose password is a
-development default only; shared environments must override all database and
-cookie settings through environment or secret management.
-
-CI covers frontend, backend, PostgreSQL integration, container smoke, image
-vulnerability reporting, and ephemeral kind rollout on hosted runners. Main
-publishes the immutable digest to GHCR. A separate private
-`StockHub-Deployment` GitHub Actions task polls successful `main` publish
-runs and uses its dedicated self-hosted runner to deploy to persistent kind
-on this PC. The public repository has no self-hosted runner. Review-staging
-is disabled until a hosted target exists. A future manual production dispatch
-takes a successful staging run ID, retrieves its digest record, and requires
-the protected `production` environment. Shared activation is issue #48.
-
-## Persistent local Kubernetes target
-
-`scripts/setup-local-kind.sh` creates `kind-stockhub-local`, namespace
-`stockhub-local`, a generated local-only PostgreSQL secret, and a 2 Gi PVC.
-`deploy/kind-local.yaml` maps NodePort 30080 to `localhost:8080`. The private
-deployment task runs on a dedicated `stockhub-local` self-hosted runner: it
-selects only a successful public `main` publish run, pulls that digest, loads
-it into kind, runs the same migration and rollout script, and probes `/ready`.
-The runner and Docker Desktop must be online; GitHub queues deployments while
-the runner is offline. Public PR workflows cannot target this runner.
-
-On the configured local PC, the official GitHub runner is registered in the
-private deployment repo as `stockhub-local-pc` with the `stockhub-local` label
-and runs as the user service `stockhub-runner.service`. The private repository
-currently has only the owner as a collaborator, and its deployment job checks
-for `main`. GitHub Free does not provide branch protection for this private
-repository. To check or restart the local delivery target:
+## One-time local setup
 
 ```bash
-systemctl --user status stockhub-runner.service
-systemctl --user restart stockhub-runner.service
-kind get clusters
-kubectl --context kind-stockhub-local -n stockhub-local get pods,service,pvc
-curl --fail http://localhost:8080/ready
+bash scripts/setup-local-environments.sh
+# Create and protect the dev branch on GitHub before this step:
+bash scripts/sync-local-deployments.sh init
+bash scripts/install-local-sync-timer.sh
 ```
 
-Runner registration tokens are short-lived and must be obtained through
-`gh api` when reinstalling; no token or kubeconfig is stored in this repo.
-The user service depends on this PC's logged-in Docker Desktop session. If the
-PC is off or Docker is stopped, the GitHub deployment job waits or fails and
-can be rerun after the local target is restored.
+The setup script writes separate mode-600 `dev.env`, `staging.env`, and
+`prod.env` files in `~/.config/stockhub/`. Edit each file independently for
+its port, password, ASP.NET environment, and cookie setting. The sync script
+writes deployment state under `~/.local/state/stockhub/`. `init`
+records historical release tags without deploying them, then deploys current
+`dev`. `init` also unlocks the timer only after the protected branch is ready.
+The timer handles new commits and tags. To trigger a check immediately,
+run `bash scripts/sync-local-deployments.sh sync` or start the user service with
+`systemctl --user start stockhub-local-sync.service`. Keep Docker Desktop running
+and the user systemd manager active. The timer can be disabled with
+`systemctl --user disable --now stockhub-local-sync.timer`.
 
-To inspect the app locally:
+To inspect the three stacks:
 
 ```bash
-curl --fail http://localhost:8080/ready
+docker compose -p dev-stockhub --env-file ~/.config/stockhub/dev.env -f deploy/compose.local.yml ps
+docker compose -p staging-stockhub --env-file ~/.config/stockhub/staging.env -f deploy/compose.local.yml ps
+docker compose -p prod-stockhub --env-file ~/.config/stockhub/prod.env -f deploy/compose.local.yml ps
+curl --fail http://127.0.0.1:8081/ready
+curl --fail http://127.0.0.1:8082/ready
+curl --fail http://127.0.0.1:8083/ready
 ```
 
-The kind cluster and database PVC persist until the cluster is explicitly
-deleted. Back up needed data before deleting it. This local target does not
-expose a public production service.
+Production deployment takes a `pg_dump` backup before migrations in
+`~/.local/state/stockhub/backups/`. A failed health check attempts to restore
+the previous application image. Migrations are forward-only, so a database
+restore may still be needed after a failed release. Do not move or reuse a published tag; fix on
+`dev`, promote through `main`, and create a new version.
 
-## Kubernetes delivery contract
+## GitHub and CI requirements
 
-The root `Dockerfile` is the sole StockHub app image; it contains the API and
-frontend. PostgreSQL is a supporting service. `deploy/k8s/local-postgres.yaml`
-is an ephemeral fixture for kind only. Shared environments need a durable
-PostgreSQL instance.
+- Create `dev` from current `main`. Protect both branches with PRs, required
+  checks, and no direct or force pushes. Normal issue PRs target `dev`;
+  milestone promotion PRs target `main`.
+- Hosted GitHub Actions run repository, frontend, backend, container smoke, and
+  image security checks. No GitHub runner executes on this PC. Branch
+  protection is the gate before a merged `dev` commit can be fetched locally.
+- GitHub access is still needed to create/protect the branch and publish these
+  files. A public remote can be fetched by the local timer without a GitHub
+  token; private repositories need read-only credentials.
 
-Future `review-staging` and `production` GitHub environments require secrets
-`KUBE_CONFIG_B64` (base64 kubeconfig with namespace-scoped rights) and
-`POSTGRES_CONNECTION`, plus variables `KUBE_NAMESPACE`, `STOCKHUB_HOST`, and
-`INGRESS_CLASS`. The cluster also needs an ingress controller, a `stockhub-tls`
-certificate Secret in the pre-created namespace, and GHCR image pull access.
-
-The workflow creates or updates the runtime Secret, runs the `--migrate-only`
-Job, applies the app Deployment and Service, waits for rollout, configures
-Ingress, and probes the public `/ready` route. A failed rollout or probe
-restores the previous app image. Database migrations are not automatically
-rolled back, so schema changes need a backward-compatible rollout and a
-reviewed recovery plan.
-
-The app currently uses one replica and `Recreate` because ASP.NET Data
-Protection keys are pod-local. Shared durable keys are required before
-scaling or zero-downtime rollout; the current strategy briefly interrupts
-availability. Record the deployed digest, health result, and rollback owner
-in each environment deployment record.
-
-Local verification from the repository root:
-
-```bash
-bash scripts/check-compose-smoke.sh
-bash scripts/check-kind-smoke.sh
-```
-
-The kind script starts Kubernetes through Docker, runs an ephemeral database,
-and exercises the same migration and rollout script used by CD. Compose
-separately checks the local stack; Docker Compose does not itself run
-Kubernetes. Both checks run in GitHub CI before publishing. The image check
-also runs weekly to catch newly disclosed vulnerabilities;
-`.github/dependabot.yml` proposes Docker, GitHub Actions, npm, and NuGet
-updates through the same PR gates.
-
-## Requirement for new projects
-
-Every new deployable project must be containerized before it is considered
-implementation-ready. Its initial delivery must include a production-oriented
-`Dockerfile`, a `.dockerignore`, documented container startup, a health or
-readiness verification, and a CI build/smoke check. Multi-service projects must
-also provide a Compose or equivalent local orchestration definition. Runtime
-secrets and environment-specific settings must be supplied by the deployment
-environment, never embedded in the image.
-
-The project plan and milestone closure report must link the container files and
-verification evidence. Any exception requires an approved deviation and a
-tracked follow-up before implementation starts.
+`Dockerfile`, `docker-compose.yml`, and `scripts/check-compose-smoke.sh` remain
+the clean-checkout packaging and CI smoke path. `deploy/compose.local.yml`,
+`scripts/deploy-local.sh`, and `scripts/sync-local-deployments.sh` implement the
+three local stacks. Future Kubernetes files remain in the repository but are
+not part of this local deployment path.

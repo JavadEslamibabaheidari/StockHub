@@ -1,0 +1,7 @@
+[Unit]
+Description=Sync StockHub local deployments from GitHub
+
+[Service]
+Type=oneshot
+WorkingDirectory=@REPO@
+ExecStart=@REPO@/scripts/sync-local-deployments.sh sync
