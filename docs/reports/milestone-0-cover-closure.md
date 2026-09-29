@@ -1,6 +1,7 @@
 # Milestone closure report — 0 Cover
 
 status: PASS
+github_milestone_number: 2
 milestone: 0 Cover
 plan: docs/plans/milestone-0-cover.md
 mockup_evidence: docs/mockups/StockHub Final.html Cover source and docs/mockups/StockHub Design Review.pdf page 1; browser smoke check at http://127.0.0.1:5173/
