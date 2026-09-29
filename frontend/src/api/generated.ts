@@ -10,10 +10,13 @@ export type WorkspaceResponse = WorkspaceSummary & { vatNumber?: string | null; 
 export type SessionResponse = { userId: string; fullName: string; email: string; activeWorkspaceId?: string | null; workspaces: WorkspaceSummary[] };
 export type OnboardingTask = { key: string; title: string; status: string; handoff?: string | null };
 export type InvitationRequest = { email: string; role: WorkspaceRole };
+export type InvitationResponse = { email: string; role: WorkspaceRole; status: string };
+export type ProductRequest = { sku: string; name: string; onHand: number; basePrice: number; category?: string | null };
+export type ProductResponse = ProductRequest & { id: string };
 export class AccessApiError extends Error { constructor(public readonly status: number, public readonly problem: Problem) { super(problem.detail); } }
 export class AccessApiClient {
   constructor(private readonly baseUrl = '') {}
-  private async request<T>(path: string, init: RequestInit = {}): Promise<T> { const response = await fetch(`${this.baseUrl}${path}`, { credentials: 'include', ...init, headers: { 'Content-Type': 'application/json', ...init.headers } }); if (!response.ok) throw new AccessApiError(response.status, await response.json() as Problem); return response.status === 204 ? undefined as T : await response.json() as T; }
+  private async request<T>(path: string, init: RequestInit = {}): Promise<T> { const response = await fetch(`${this.baseUrl}${path}`, { credentials: 'include', ...init, headers: { 'Content-Type': 'application/json', ...init.headers } }); if (!response.ok) { const problem = await readProblem(response); throw new AccessApiError(response.status, problem); } return response.status === 204 ? undefined as T : await response.json() as T; }
   signUp(request: SignUpRequest) { return this.request<{ next: string }>('/api/auth/sign-up', { method: 'POST', body: JSON.stringify(request) }); }
   signIn(request: SignInRequest) { return this.request<{ next: string }>('/api/auth/sign-in', { method: 'POST', body: JSON.stringify(request) }); }
   signOut() { return this.request<void>('/api/auth/sign-out', { method: 'POST' }); }
@@ -25,5 +28,20 @@ export class AccessApiClient {
   setActiveWorkspace(workspaceId: string) { return this.request<void>(`/api/workspaces/${workspaceId}/active`, { method: 'PUT' }); }
   onboarding(workspaceId: string) { return this.request<OnboardingTask[]>(`/api/workspaces/${workspaceId}/onboarding`); }
   selectOnboardingAction(workspaceId: string, key: string) { return this.request<void>(`/api/workspaces/${workspaceId}/onboarding/actions`, { method: 'POST', body: JSON.stringify({ key }) }); }
+  products(workspaceId: string) { return this.request<ProductResponse[]>(`/api/workspaces/${workspaceId}/products`); }
+  importProducts(workspaceId: string, products: ProductRequest[]) { return this.request<ProductResponse[]>(`/api/workspaces/${workspaceId}/products/import`, { method: 'POST', body: JSON.stringify(products) }); }
   invite(workspaceId: string, request: InvitationRequest) { return this.request<{ status: string }>(`/api/workspaces/${workspaceId}/invitations`, { method: 'POST', body: JSON.stringify(request) }); }
+  invitation(token: string) { return this.request<InvitationResponse>(`/api/invitations/${encodeURIComponent(token)}`); }
+  acceptInvitation(token: string) { return this.request<{ status: string }>('/api/invitations/accept', { method: 'POST', body: JSON.stringify({ token }) }); }
+}
+async function readProblem(response: Response): Promise<Problem> {
+  const fallback: Problem = { title: `Request failed (${response.status})`, detail: response.statusText || 'The request could not be completed.', code: null }
+  const text = await response.text().catch(() => '')
+  if (!text) return fallback
+  try {
+    const parsed = JSON.parse(text) as Partial<Problem>
+    return { title: parsed.title || fallback.title, detail: parsed.detail || fallback.detail, code: parsed.code ?? null }
+  } catch {
+    return { ...fallback, detail: text }
+  }
 }

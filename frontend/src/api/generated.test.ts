@@ -43,4 +43,12 @@ describe('AccessApiClient origin', () => {
       'Idempotency-Key': 'request-1',
     })
   })
+  it('preserves status codes for empty API errors', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 401, statusText: 'Unauthorized' }))
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(new AccessApiClient().session()).rejects.toMatchObject({
+      status: 401,
+      problem: expect.objectContaining({ detail: 'Unauthorized' }),
+    })
+  })
 })

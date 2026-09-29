@@ -60,7 +60,9 @@ public interface IAccessStore
         DateTimeOffset expiresAt,
         CancellationToken cancellationToken);
 
-    Task<bool> InvitationExistsAsync(string tokenHash, CancellationToken cancellationToken);
+    Task<Invitation?> FindInvitationAsync(string tokenHash, CancellationToken cancellationToken);
+
+    Task<Guid?> AcceptInvitationAsync(string tokenHash, Guid userId, string normalizedEmail, CancellationToken cancellationToken);
 
     Task RecordOnboardingActionAsync(
         Guid userId,

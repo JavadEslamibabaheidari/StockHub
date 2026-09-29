@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -18,6 +19,7 @@ var connectionString = builder.Configuration.GetConnectionString("Postgres")
     ?? "Host=localhost;Port=5432;Database=stockhub;Username=stockhub;Password=stockhub";
 
 builder.Services.AddSingleton<IAccessStore>(_ => new PostgresAccessStore(connectionString));
+builder.Services.AddSingleton<IProductStore>(_ => new PostgresProductStore(connectionString));
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<IRecoveryEmailSender, SmtpRecoveryEmailSender>();
 
@@ -101,6 +103,7 @@ if (googleConfigured)
 }
 
 builder.Services.AddAuthorization();
+builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 
 var app = builder.Build();
@@ -590,6 +593,71 @@ app.MapPost(
     .RequireAuthorization()
     .WithTags("Onboarding");
 
+app.MapGet(
+    "/api/workspaces/{workspaceId:guid}/products",
+    async (
+        Guid workspaceId,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IProductStore productStore,
+        CancellationToken cancellationToken) =>
+    {
+        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var isMember = (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
+            .Any(workspace => workspace.Workspace.Id == workspaceId);
+
+        if (!isMember)
+        {
+            return Results.Forbid();
+        }
+
+        var products = await productStore.ListAsync(workspaceId, cancellationToken);
+        return Results.Ok(products.Select(ToResponse));
+    })
+    .RequireAuthorization()
+    .WithTags("Products");
+
+app.MapPost(
+    "/api/workspaces/{workspaceId:guid}/products/import",
+    async (
+        Guid workspaceId,
+        ProductRequest[] request,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IProductStore productStore,
+        CancellationToken cancellationToken) =>
+    {
+        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var membership = (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
+            .FirstOrDefault(workspace => workspace.Workspace.Id == workspaceId);
+
+        if (membership.Workspace is null)
+        {
+            return Results.Forbid();
+        }
+
+        var error = ValidateProducts(request);
+        if (error is not null)
+        {
+            return Results.UnprocessableEntity(error);
+        }
+
+        var products = await productStore.UpsertAsync(workspaceId, request, cancellationToken);
+        await accessStore.RecordOnboardingActionAsync(userId, workspaceId, "import-products", cancellationToken);
+
+        return Results.Ok(products.Select(ToResponse));
+    })
+    .RequireAuthorization()
+    .WithTags("Products");
+
 app.MapPost(
     "/api/workspaces/{workspaceId:guid}/invitations",
     async (
@@ -597,11 +665,29 @@ app.MapPost(
         InvitationRequest request,
         ClaimsPrincipal principal,
         IAccessStore store,
+        IRecoveryEmailSender emailSender,
+        IConfiguration configuration,
+        ILogger<Program> logger,
         CancellationToken cancellationToken) =>
     {
         if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
         {
             return Results.Unauthorized();
+        }
+
+        if (!AccessValidation.IsValidEmail(request.Email) || request.Role is WorkspaceRole.Owner)
+        {
+            return Results.UnprocessableEntity(new Problem(
+                "Validation failed",
+                "Enter a valid teammate email and choose a non-owner role.",
+                "invitation_invalid"));
+        }
+
+        if (!emailSender.IsConfigured)
+        {
+            return Results.Problem(
+                "Invitation email is not configured for this environment.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
         }
 
         var membership = (await store.ListWorkspacesAsync(userId, cancellationToken))
@@ -619,14 +705,33 @@ app.MapPost(
         await store.CreateInvitationAsync(
             tokenHash,
             workspaceId,
-            request.Email,
+            request.Email.Trim(),
             request.Role,
             DateTimeOffset.UtcNow.AddHours(72),
             cancellationToken);
 
+        var baseUri = new Uri(configuration["Application:PublicBaseUrl"]!, UriKind.Absolute);
+        var invitationLink = new Uri(baseUri, $"/#accept?token={Uri.EscapeDataString(rawToken)}");
+        try
+        {
+            await emailSender.SendInvitationAsync(
+                request.Email.Trim(),
+                invitationLink,
+                membership.Workspace.BusinessName,
+                request.Role,
+                cancellationToken);
+        }
+        catch (Exception exception) when (exception is System.Net.Mail.SmtpException or InvalidOperationException)
+        {
+            logger.LogError(exception, "Invitation email delivery failed");
+            return Results.Problem(
+                "Invitation email is temporarily unavailable. Please try again later.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+
         return Results.Accepted(
             $"/api/invitations/{rawToken}",
-            new { status = "requested", expiresInHours = 72 });
+            new { status = "sent", expiresInHours = 72 });
     })
     .RequireAuthorization()
     .WithTags("Invitations");
@@ -636,11 +741,62 @@ app.MapGet(
     async (string token, IAccessStore store, CancellationToken cancellationToken) =>
     {
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+        var invitation = await store.FindInvitationAsync(hash, cancellationToken);
 
-        return await store.InvitationExistsAsync(hash, cancellationToken)
-            ? Results.Ok(new { status = "pending" })
-            : Results.NotFound();
+        return invitation is null
+            ? Results.NotFound()
+            : Results.Ok(new InvitationResponse(invitation.Email, invitation.Role, "pending"));
     })
+    .WithTags("Invitations");
+
+app.MapPost(
+    "/api/invitations/accept",
+    async (
+        AcceptInvitationRequest request,
+        ClaimsPrincipal principal,
+        IAccessStore store,
+        HttpContext context,
+        CancellationToken cancellationToken) =>
+    {
+        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+            || !Guid.TryParse(principal.FindFirstValue("session_id"), out var sessionId))
+        {
+            return Results.Unauthorized();
+        }
+
+        if (string.IsNullOrEmpty(request.Token) || request.Token.Length != 64 || !request.Token.All(Uri.IsHexDigit))
+        {
+            return Results.UnprocessableEntity(new Problem(
+                "Invalid invitation",
+                "This invitation link is invalid or has expired.",
+                "invitation_invalid"));
+        }
+
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(request.Token)));
+        var normalizedEmail = principal.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+        var joinedWorkspaceId = await store.AcceptInvitationAsync(hash, userId, normalizedEmail, cancellationToken);
+        if (joinedWorkspaceId is null)
+        {
+            return Results.UnprocessableEntity(new Problem(
+                "Invalid invitation",
+                "This invitation is expired, already used, or belongs to another email address.",
+                "invitation_invalid"));
+        }
+
+        await store.SetActiveWorkspaceAsync(userId, sessionId, joinedWorkspaceId.Value, cancellationToken);
+        await SignIn(
+            context,
+            new User(
+                userId,
+                principal.FindFirstValue(ClaimTypes.Name) ?? string.Empty,
+                normalizedEmail,
+                string.Empty),
+            sessionId,
+            joinedWorkspaceId.Value);
+
+        return Results.Ok(new { status = "accepted" });
+    })
+    .RequireAuthorization()
     .WithTags("Invitations");
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
@@ -660,6 +816,44 @@ app.MapGet("/ready", async (CancellationToken cancellationToken) =>
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+static ProductResponse ToResponse(Product product) => new(
+    product.Id,
+    product.Sku,
+    product.Name,
+    product.OnHand,
+    product.BasePrice,
+    product.Category);
+
+static Problem? ValidateProducts(IReadOnlyList<ProductRequest> products)
+{
+    if (products.Count is 0 or > 500)
+    {
+        return new Problem("Validation failed", "Import between 1 and 500 products at a time.", "products_count_invalid");
+    }
+
+    var skus = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var product in products)
+    {
+        if (string.IsNullOrWhiteSpace(product.Sku)
+            || string.IsNullOrWhiteSpace(product.Name)
+            || product.Sku.Trim().Length > 80
+            || product.Name.Trim().Length > 200
+            || product.OnHand < 0
+            || product.BasePrice < 0)
+        {
+            return new Problem("Validation failed", "Each product needs a SKU, name, non-negative stock, and non-negative base price.", "product_invalid");
+        }
+
+        if (!skus.Add(product.Sku.Trim()))
+        {
+            return new Problem("Validation failed", "Each imported SKU must be unique.", "product_sku_duplicate");
+        }
+    }
+
+    return null;
+}
+
 
 static Task SignIn(HttpContext context, User user, Guid sessionId, Guid? activeWorkspaceId = null)
 {

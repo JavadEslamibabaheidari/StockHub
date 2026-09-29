@@ -24,9 +24,9 @@ free-trial billing action as the only permitted deferred access action.
   email without revealing whether an address exists. Reset changes the
   password and revokes existing sessions. The delivery credential is a runtime
   secret.
-- Every visible Access control has a real destination and a tested outcome.
-  The scope of controls on the onboarding dashboard is being confirmed with
-  the owner; the closure gate includes every control they identify.
+- Every visible control on pages 0 through 1.3 has a real destination and a
+  tested outcome. For page 1.4, the onboarding dashboard controls must work;
+  sidebar routes may open honest future-milestone handoff pages.
 - Cover no longer shows the roadmap Contents panel.
 
 ## Implementation and checks
@@ -49,8 +49,9 @@ free-trial billing action as the only permitted deferred access action.
 ## Deployment dependencies
 
 Google sign-in needs a Google Cloud web OAuth client with the deployed callback
-URL. Password recovery needs an outbound email sender and verified sender
-address. No such credentials are currently present in the local deployment.
+URL. Password recovery and invitation delivery need an outbound email sender
+and verified sender address. No such credentials are currently present in the
+local deployment.
 They must be supplied through runtime secrets, never committed to this repo.
 
 For the local Actions deployment served at `http://127.0.0.1:8080`, register
@@ -69,20 +70,20 @@ health/readiness endpoints, and CI image/kind smoke checks already exist.
 Auth changes must build in that image and pass the same smoke gates; any new
 mail test service belongs only in test/Compose configuration.
 
-## Verification in progress (2026-09-28)
+## Verification in progress (2026-09-29)
 
-- PostgreSQL-backed backend tests: 13 passed, including atomic signup, Google
-  identity linking/conflict, and single-use password reset with session
-  revocation.
-- Frontend TypeScript/lint, 9 tests, API contract alignment, and production
-  Vite build passed.
-- Production Docker image built. Existing Compose smoke passed on port 18092
-  because port 8080 is occupied by the previous deployment.
-- Local API and Mailpit check passed: signup 201, duplicate signup 409, session
-  200, reset email captured, reset 204, old session 401, token reuse 422, old
-  password 401, new password 200. Google challenge returned the expected
-  authorization redirect with state, nonce and PKCE using dummy credentials.
-- Browser confirmed Cover/signup/sign-in/recovery navigation and Cover panel
-  removal. Real Google callback, external inbox delivery, deployed app, and
-  remaining visible onboarding controls are still unverified. Milestone stays
-  open.
+- Backend build passed, and 15 backend tests passed, including atomic signup,
+  Google identity linking/conflict, single-use password reset with session
+  revocation, invitation email acceptance semantics, and product import/upsert
+  persistence when PostgreSQL integration is enabled.
+- Frontend tests passed: 10 tests, including same-origin API behavior and empty
+  401 error parsing. Production Vite build passed.
+- Page 1.4 now has working onboarding dashboard controls for CSV/manual product
+  import, product search, workspace switch, theme toggle, notifications, account
+  sign-out, sidebar collapse, invite routing, and platform picker handoffs.
+- Invitation creation now requires configured email delivery, sends a one-use
+  accept link, and lets the invited user accept only with the matching account
+  email.
+- Real Google callback, external inbox delivery, deployed app verification, and
+  provider secret setup remain open. Milestone stays open until those live checks
+  pass.

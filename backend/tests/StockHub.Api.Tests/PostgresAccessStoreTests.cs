@@ -108,4 +108,38 @@ public sealed class PostgresAccessStoreTests
         var retrySecond = await recreatedStore.CreateWorkspaceAsync(user.Id, request, retryKey, CancellationToken.None);
         Assert.Equal(retryFirst.Workspace.Id, retrySecond.Workspace.Id);
     }
+
+    [Fact]
+    public async Task Product_import_upserts_workspace_products()
+    {
+        var connectionString = Environment.GetEnvironmentVariable("STOCKHUB_POSTGRES_TEST_CONNECTION");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            return;
+        }
+
+        await PostgresDatabaseInitializer.ApplyAsync(connectionString, CancellationToken.None);
+        var accessStore = new PostgresAccessStore(connectionString);
+        var productStore = new PostgresProductStore(connectionString);
+        var user = await accessStore.CreateUserAsync($"Product User {Guid.NewGuid():N}", $"PRODUCT-{Guid.NewGuid():N}@EXAMPLE.COM", "hash", CancellationToken.None);
+        var workspace = await accessStore.CreateWorkspaceAsync(user.Id, new CreateWorkspaceRequest("Product Goods", "IT", "EUR", null), $"retry-{Guid.NewGuid():N}", CancellationToken.None);
+
+        var first = await productStore.UpsertAsync(
+            workspace.Workspace.Id,
+            new[] { new ProductRequest("SKU-1", "First Product", 5, 19.99m, "Phones") },
+            CancellationToken.None);
+        var second = await productStore.UpsertAsync(
+            workspace.Workspace.Id,
+            new[] { new ProductRequest("SKU-1", "Updated Product", 7, 21.50m, null) },
+            CancellationToken.None);
+        var products = await new PostgresProductStore(connectionString).ListAsync(workspace.Workspace.Id, CancellationToken.None);
+
+        Assert.Equal(first.Single().Id, second.Single().Id);
+        var product = Assert.Single(products);
+        Assert.Equal("Updated Product", product.Name);
+        Assert.Equal(7, product.OnHand);
+        Assert.Equal(21.50m, product.BasePrice);
+        Assert.Null(product.Category);
+    }
+
 }

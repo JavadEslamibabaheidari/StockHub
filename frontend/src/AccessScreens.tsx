@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { AccessApiClient, AccessApiError, type SessionResponse, type WorkspaceSummary } from './api/generated'
+import { AccessApiClient, AccessApiError, type ProductRequest, type ProductResponse, type SessionResponse, type WorkspaceSummary } from './api/generated'
 
 const api = new AccessApiClient()
 const go = (route: string) => { window.location.hash = route }
@@ -44,6 +44,8 @@ export function SignUp() {
       await api.signUp({ fullName: fullName.trim(), email: email.trim(), password })
       accountCreated = true
       setCreated(true)
+      const pendingInvite = sessionStorage.getItem('stockhub-pending-invite')
+      if (pendingInvite) { sessionStorage.removeItem('stockhub-pending-invite'); go(`accept?token=${pendingInvite}`); return }
       await api.session()
       go('workspace')
     }
@@ -74,7 +76,7 @@ export function SignIn() {
   }, [])
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(null)
-    try { await api.signIn({ email: email.trim(), password }); const session = await api.session(); go(session.activeWorkspaceId || session.workspaces.length ? 'onboarding' : 'workspace') }
+    try { await api.signIn({ email: email.trim(), password }); const pendingInvite = sessionStorage.getItem('stockhub-pending-invite'); if (pendingInvite) { sessionStorage.removeItem('stockhub-pending-invite'); go(`accept?token=${pendingInvite}`); return } const session = await api.session(); go(session.activeWorkspaceId || session.workspaces.length ? 'onboarding' : 'workspace') }
     catch (caught) { setError(caught instanceof AccessApiError && caught.status === 401 ? 'Email or password is incorrect.' : message(caught, 'We could not sign you in. Try again.')) }
     finally { setBusy(false) }
   }
@@ -124,19 +126,103 @@ export function Workspace() {
 }
 
 const nav = ['Dashboard', 'Inventory', 'Orders', 'Reservations', 'Platforms', 'Pricing rules', 'Reports', 'Team', 'Settings']
+const navRoutes = ['#onboarding', '#inventory', '#orders', '#reservations', '#platforms', '#pricing', '#reports', '#team', '#settings']
+const platformOptions = [
+  ['amazon', 'Amazon', 'Seller Central authorization comes in the Platforms milestone.'],
+  ['unieuro', 'Unieuro', 'Marketplace authorization comes in the Platforms milestone.'],
+  ['euronics', 'Euronics', 'Marketplace authorization comes in the Platforms milestone.'],
+  ['ebay', 'eBay', 'OAuth authorization comes in the Platforms milestone.'],
+] as const
+
+function parseCsv(text: string): ProductRequest[] {
+  const rows: string[][] = []
+  let row: string[] = []
+  let cell = ''
+  let quoted = false
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index]
+    const next = text[index + 1]
+    if (char === '"' && quoted && next === '"') { cell += '"'; index += 1; continue }
+    if (char === '"') { quoted = !quoted; continue }
+    if (char === ',' && !quoted) { row.push(cell); cell = ''; continue }
+    if ((char === '\n' || char === '\r') && !quoted) {
+      if (char === '\r' && next === '\n') index += 1
+      row.push(cell); rows.push(row); row = []; cell = ''; continue
+    }
+    cell += char
+  }
+  row.push(cell); rows.push(row)
+  const nonEmpty = rows.filter(item => item.some(value => value.trim()))
+  const data = nonEmpty[0]?.some(value => /sku/i.test(value)) ? nonEmpty.slice(1) : nonEmpty
+  return data.map((cells, index) => {
+    const [sku, name, onHand, basePrice, category] = cells
+    const product = {
+      sku: sku?.trim() || '',
+      name: name?.trim() || '',
+      onHand: Number(onHand),
+      basePrice: Number(String(basePrice || '').replace(',', '.')),
+      category: category?.trim() || null,
+    }
+    if (!product.sku || !product.name || !Number.isFinite(product.onHand) || !Number.isFinite(product.basePrice)) {
+      throw new Error(`Row ${index + 2} needs SKU, name, on hand, and base price.`)
+    }
+    return product
+  })
+}
+
+function ProductImporter({ workspaceId, products, refresh }: { workspaceId: string | null; products: ProductResponse[]; refresh: (products: ProductResponse[]) => void }) {
+  const [mode, setMode] = useState<'csv' | 'manual'>('csv')
+  const [draft, setDraft] = useState<ProductRequest>({ sku: '', name: '', onHand: 0, basePrice: 0, category: '' })
+  const [busy, setBusy] = useState(false)
+  const [status, setStatus] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  async function save(items: ProductRequest[]) {
+    if (!workspaceId) return
+    setBusy(true); setError(null); setStatus(null)
+    try { const saved = await api.importProducts(workspaceId, items); refresh(await api.products(workspaceId)); setStatus(`${saved.length} product${saved.length === 1 ? '' : 's'} saved.`) }
+    catch (caught) { setError(message(caught, 'Could not save products.')) }
+    finally { setBusy(false) }
+  }
+  async function upload(file: File | null) {
+    if (!file) return
+    try { await save(parseCsv(await file.text())) }
+    catch (caught) { setError(caught instanceof Error ? caught.message : 'Could not read this CSV.') }
+  }
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    await save([{ ...draft, sku: draft.sku.trim(), name: draft.name.trim(), category: draft.category?.trim() || null }])
+    setDraft({ sku: '', name: '', onHand: 0, basePrice: 0, category: '' })
+  }
+  return <div className="step-body"><div className="step-tabs"><button className={mode === 'csv' ? 'selected' : ''} type="button" onClick={() => setMode('csv')}>Upload CSV</button><button className={mode === 'manual' ? 'selected' : ''} type="button" onClick={() => setMode('manual')}>Add manually</button></div>{mode === 'csv' ? <label className="drop-zone"><input type="file" accept=".csv,text/csv" disabled={busy || !workspaceId} onChange={event => upload(event.target.files?.[0] ?? null)} /><span>↥</span><strong>Drop a CSV file here, or <u>browse</u></strong><small>Columns: SKU, name, on hand, base price, category (optional)</small></label> : <form className="manual-product-form" onSubmit={submit}><input required placeholder="SKU" value={draft.sku} onChange={event => setDraft({ ...draft, sku: event.target.value })} /><input required placeholder="Product name" value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} /><input required type="number" min="0" placeholder="On hand" value={draft.onHand} onChange={event => setDraft({ ...draft, onHand: Number(event.target.value) })} /><input required type="number" min="0" step="0.01" placeholder="Base price" value={draft.basePrice} onChange={event => setDraft({ ...draft, basePrice: Number(event.target.value) })} /><input placeholder="Category" value={draft.category ?? ''} onChange={event => setDraft({ ...draft, category: event.target.value })} /><button className="primary-button" disabled={busy || !workspaceId}>{busy ? 'Saving...' : 'Save product'}</button></form>}<a href="data:text/csv;charset=utf-8,SKU%2Cname%2Con%20hand%2Cbase%20price%2Ccategory%0A" download="stockhub-products-template.csv">Download CSV template</a>{products.length > 0 && <ul className="product-mini-list">{products.slice(0, 3).map(product => <li key={product.id}><b>{product.sku}</b><span>{product.name}</span><small>{product.onHand} on hand</small></li>)}</ul>}<ErrorText value={error} />{status && <p className="form-success" role="status">{status}</p>}</div>
+}
+
 export function Onboarding() {
-  const [session, setSession] = useState<SessionResponse | null>(null); const [workspace, setWorkspace] = useState<WorkspaceSummary | null>(null); const [error, setError] = useState<string | null>(null); const [open, setOpen] = useState(0)
-  useEffect(() => { let alive = true; api.session().then(data => { if (!alive) return; const current = data.workspaces.find(item => item.id === data.activeWorkspaceId) || data.workspaces[0]; if (!current) { go('workspace'); return } setSession(data); setWorkspace(current); api.onboarding(current.id).catch(caught => { if (alive) setError(message(caught, 'Could not load checklist.')) }) }).catch(caught => { if (alive) { if (caught instanceof AccessApiError && caught.status === 401) go('signin'); else setError(message(caught, 'Could not load your workspace.')) } }); return () => { alive = false } }, [])
+  const [session, setSession] = useState<SessionResponse | null>(null); const [workspace, setWorkspace] = useState<WorkspaceSummary | null>(null); const [products, setProducts] = useState<ProductResponse[]>([]); const [error, setError] = useState<string | null>(null); const [open, setOpen] = useState(0)
+  const [collapsed, setCollapsed] = useState(false); const [theme, setTheme] = useState(() => typeof localStorage === 'undefined' ? 'light' : localStorage.getItem('stockhub-theme') || 'light'); const [menu, setMenu] = useState<'workspace' | 'notifications' | 'account' | null>(null); const [query, setQuery] = useState(''); const [platform, setPlatform] = useState<(typeof platformOptions)[number] | null>(null)
+  const done = products.length > 0 ? 1 : 0
+  useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem('stockhub-theme', theme) }, [theme])
+  useEffect(() => { let alive = true; api.session().then(async data => { if (!alive) return; const current = data.workspaces.find(item => item.id === data.activeWorkspaceId) || data.workspaces[0]; if (!current) { go('workspace'); return } setSession(data); setWorkspace(current); setProducts(await api.products(current.id)); await api.onboarding(current.id) }).catch(caught => { if (alive) { if (caught instanceof AccessApiError && caught.status === 401) go('signin'); else setError(message(caught, 'Could not load your workspace.')) } }); return () => { alive = false } }, [])
+  async function chooseWorkspace(workspaceId: string) { try { await api.setActiveWorkspace(workspaceId); const data = await api.session(); const current = data.workspaces.find(item => item.id === workspaceId) || null; setSession(data); setWorkspace(current); setProducts(current ? await api.products(current.id) : []); setMenu(null) } catch (caught) { setError(message(caught, 'Could not switch workspace.')) } }
   async function select(key: string, route: string) { if (!workspace) return; try { await api.selectOnboardingAction(workspace.id, key); go(route) } catch (caught) { setError(message(caught, 'Could not open this step.')) } }
-  return <main className="dashboard-page"><div className="dashboard-shell"><aside className="dashboard-sidebar"><div className="workspace-switch"><b>{workspace?.businessName.slice(0, 2).toUpperCase() || 'SH'}</b><span><strong>{workspace?.businessName || 'Your workspace'}</strong><small>Owner · {session?.workspaces.length || 1} workspace</small></span><span aria-hidden="true">⌄</span></div><nav aria-label="Main navigation">{nav.map((item, index) => <a key={item} className={index === 0 ? 'active' : ''} href={index === 0 ? '#onboarding' : '#deferred'}><span aria-hidden="true">{['▦','◇','🛒','◷','♧','◇','▥','♧','☷'][index]}</span>{item}</a>)}</nav><div className="sidebar-bottom"><strong>Free trial</strong><a href="#deferred">Upgrade</a><small>14 days left</small></div></aside><section className="dashboard-main"><header className="dashboard-top"><span className="search-placeholder">⌕ &nbsp; Search products, SKUs, orders...</span><div><span className="platform-pill">● &nbsp; No platforms connected</span><span>☾</span><span>♧</span><span className="user-avatar">{session?.fullName?.slice(0, 2).toUpperCase() || 'SH'}</span><span>{session?.fullName || 'Your account'}</span><a className="dashboard-cover-link" href="#cover">Cover</a><button className="signout-button" onClick={async () => { try { await api.signOut(); go('signin') } catch (caught) { if (caught instanceof AccessApiError && caught.status === 401) go('signin'); else setError(message(caught, 'Could not sign out. Try again.')) } }}>Sign out</button></div></header><div className="onboarding-content"><h1>Welcome, {session?.fullName?.split(' ')[0] || 'there'}</h1><p>Three steps to start syncing stock and prices for {workspace?.businessName || 'your business'}.</p><div className="progress-line"><strong>0 of 3 done</strong><span role="progressbar" aria-valuemin={0} aria-valuemax={3} aria-valuenow={0} aria-label="Onboarding progress" /></div><ErrorText value={error} /><div className="onboarding-steps"><section className="onboarding-step"><button className="step-heading" onClick={() => setOpen(open === 0 ? -1 : 0)} aria-expanded={open === 0}><b>1</b><span><strong>Import products</strong><small>Upload a CSV or add products one by one</small></span><span aria-hidden="true">⌄</span></button>{open === 0 && <div className="step-body"><div className="step-tabs"><button className="selected" type="button">↥ Upload CSV</button><button type="button" onClick={() => select('import-products', 'deferred')}>＋ Add manually</button></div><label className="drop-zone"><input type="file" accept=".csv,text/csv" onChange={() => select('import-products', 'deferred')} /><span>↥</span><strong>Drop a CSV file here, or <u>browse</u></strong><small>Columns: SKU, name, on hand, base price, category (optional)</small></label><a href="data:text/csv;charset=utf-8,SKU%2Cname%2Con%20hand%2Cbase%20price%2Ccategory%0A" download="stockhub-products-template.csv">Download CSV template</a></div>}</section><section className="onboarding-step"><button className="step-heading" onClick={() => setOpen(open === 1 ? -1 : 1)} aria-expanded={open === 1}><b>2</b><span><strong>Connect your first platform</strong><small>Choose where you sell. You can add more later.</small></span><span aria-hidden="true">⌄</span></button>{open === 1 && <div className="step-body"><p>Amazon, Unieuro, Euronics and eBay are planned for the Platforms milestone.</p><button className="secondary-button" onClick={() => select('connect-platform', 'deferred')}>View platform handoff</button></div>}</section><section className="onboarding-step"><button className="step-heading" onClick={() => setOpen(open === 2 ? -1 : 2)} aria-expanded={open === 2}><b>3</b><span><strong>Invite your team</strong><small>Give your staff their own login and role</small></span><span aria-hidden="true">⌄</span></button>{open === 2 && <div className="step-body"><button className="secondary-button" onClick={() => select('invite-team', 'invite')}>Invite a teammate</button></div>}</section></div></div></section></div></main>
+  const matches = query.trim() ? products.filter(product => `${product.sku} ${product.name} ${product.category ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())) : []
+  return <main className={`dashboard-page ${collapsed ? 'sidebar-collapsed' : ''}`}><div className="dashboard-shell"><aside className="dashboard-sidebar"><button className="workspace-switch" type="button" onClick={() => setMenu(menu === 'workspace' ? null : 'workspace')}><b>{workspace?.businessName.slice(0, 2).toUpperCase() || 'SH'}</b><span><strong>{workspace?.businessName || 'Your workspace'}</strong><small>{workspace?.role || 'Owner'} · {session?.workspaces.length || 1} workspace</small></span><span aria-hidden="true">⌄</span></button>{menu === 'workspace' && <div className="dashboard-popover workspace-menu">{session?.workspaces.map(item => <button key={item.id} type="button" onClick={() => chooseWorkspace(item.id)}>{item.businessName}<small>{item.role}</small></button>)}<a href="#workspace">Create workspace</a></div>}<nav aria-label="Main navigation">{nav.map((item, index) => <a key={item} className={index === 0 ? 'active' : ''} href={navRoutes[index]}><span aria-hidden="true">{['▦','◇','🛒','◷','♧','◇','▥','♧','☷'][index]}</span>{item}</a>)}</nav><div className="sidebar-bottom"><strong>Free trial</strong><a href="#deferred">Upgrade</a><small>14 days left</small><button type="button" onClick={() => setCollapsed(!collapsed)}>Collapse</button></div></aside><section className="dashboard-main"><header className="dashboard-top"><div className="dashboard-search"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search products, SKUs, orders..." aria-label="Search products, SKUs, orders" />{query && <div className="dashboard-popover search-results">{matches.length ? matches.map(product => <button key={product.id} type="button" onClick={() => { setQuery(product.sku); setOpen(0) }}><b>{product.sku}</b><span>{product.name}</span></button>) : <p>No products found yet.</p>}</div>}</div><div><span className="platform-pill">● &nbsp; No platforms connected</span><button type="button" className="icon-button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? '☀' : '☾'}</button><button type="button" className="icon-button" onClick={() => setMenu(menu === 'notifications' ? null : 'notifications')}>♧</button><button type="button" className="account-button" onClick={() => setMenu(menu === 'account' ? null : 'account')}><span className="user-avatar">{session?.fullName?.slice(0, 2).toUpperCase() || 'SH'}</span><span>{session?.fullName || 'Your account'}</span></button></div>{menu === 'notifications' && <div className="dashboard-popover notification-menu"><strong>No notifications</strong><p>Connection and invite updates will appear here.</p></div>}{menu === 'account' && <div className="dashboard-popover account-menu"><a href="#cover">Cover page</a><button type="button" onClick={async () => { try { await api.signOut(); go('signin') } catch (caught) { if (caught instanceof AccessApiError && caught.status === 401) go('signin'); else setError(message(caught, 'Could not sign out. Try again.')) } }}>Sign out</button></div>}</header><div className="onboarding-content"><h1>Welcome, {session?.fullName?.split(' ')[0] || 'there'}</h1><p>Three steps to start syncing stock and prices for {workspace?.businessName || 'your business'}.</p><div className="progress-line"><strong>{done} of 3 done</strong><span role="progressbar" aria-valuemin={0} aria-valuemax={3} aria-valuenow={done} aria-label="Onboarding progress"><i style={{ width: `${done / 3 * 100}%` }} /></span></div><ErrorText value={error} /><div className="onboarding-steps"><section className="onboarding-step"><button className="step-heading" onClick={() => setOpen(open === 0 ? -1 : 0)} aria-expanded={open === 0}><b>1</b><span><strong>Import products</strong><small>Upload a CSV or add products one by one</small></span><span aria-hidden="true">⌄</span></button>{open === 0 && <ProductImporter workspaceId={workspace?.id || null} products={products} refresh={setProducts} />}</section><section className="onboarding-step"><button className="step-heading" onClick={() => setOpen(open === 1 ? -1 : 1)} aria-expanded={open === 1}><b>2</b><span><strong>Connect your first platform</strong><small>Choose where you sell. You can add more later.</small></span><span aria-hidden="true">⌄</span></button>{open === 1 && <div className="step-body"><div className="platform-picker">{platformOptions.map(option => <button key={option[0]} type="button" onClick={async () => { setPlatform(option); await select('connect-platform', 'onboarding') }}><strong>{option[1]}</strong><small>Open setup handoff</small></button>)}</div>{platform && <p className="form-success" role="status">{platform[1]} picker opened. {platform[2]}</p>}</div>}</section><section className="onboarding-step"><button className="step-heading" onClick={() => setOpen(open === 2 ? -1 : 2)} aria-expanded={open === 2}><b>3</b><span><strong>Invite your team</strong><small>Give your staff their own login and role</small></span><span aria-hidden="true">⌄</span></button>{open === 2 && <div className="step-body"><button className="secondary-button" onClick={() => select('invite-team', 'invite')}>Invite a teammate</button></div>}</section></div></div></section></div></main>
 }
 
 export function Invite() {
   const [email, setEmail] = useState(''); const [role, setRole] = useState<'Viewer' | 'WarehouseStaff' | 'Manager' | 'Admin'>('Viewer')
   const [workspaceId, setWorkspaceId] = useState<string | null>(null); const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null); const [sent, setSent] = useState(false)
   useEffect(() => { api.session().then(data => setWorkspaceId(data.activeWorkspaceId || data.workspaces[0]?.id || null)).catch(() => go('signin')) }, [])
-  async function submit(event: FormEvent) { event.preventDefault(); if (!workspaceId) return; setBusy(true); setError(null); try { await api.invite(workspaceId, { email: email.trim(), role }); setSent(true) } catch (caught) { setError(message(caught, 'Could not create the invitation request.')) } finally { setBusy(false) } }
-  return <Frame kind="deferred-page"><div className="deferred-content"><h1>Invite your team</h1><p>Give a teammate their own role in this workspace. Email delivery is planned for the Team milestone.</p>{sent ? <p role="status">Invitation request created. No email has been sent.</p> : <form className="access-form" onSubmit={submit}><label>Email<input required type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="teammate@company.it" /></label><label>Role<select value={role} onChange={event => setRole(event.target.value as typeof role)}><option value="Viewer">Viewer</option><option value="WarehouseStaff">Warehouse staff</option><option value="Manager">Manager</option><option value="Admin">Admin</option></select></label><ErrorText value={error} /><button className="primary-button" disabled={busy || !workspaceId}>{busy ? 'Creating request…' : 'Create invitation request'}</button></form>}<p><a href="#onboarding">Return to the checklist</a></p></div></Frame>
+  async function submit(event: FormEvent) { event.preventDefault(); if (!workspaceId) return; setBusy(true); setError(null); try { await api.invite(workspaceId, { email: email.trim(), role }); setSent(true) } catch (caught) { setError(message(caught, 'Could not send the invitation.')) } finally { setBusy(false) } }
+  return <Frame kind="deferred-page"><div className="deferred-content"><h1>Invite your team</h1><p>Give a teammate their own login and role in this workspace.</p>{sent ? <p role="status">Invitation email sent. The link can be used once within 72 hours.</p> : <form className="access-form" onSubmit={submit}><label>Email<input required type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="teammate@company.it" /></label><label>Role<select value={role} onChange={event => setRole(event.target.value as typeof role)}><option value="Viewer">Viewer</option><option value="WarehouseStaff">Warehouse staff</option><option value="Manager">Manager</option><option value="Admin">Admin</option></select></label><ErrorText value={error} /><button className="primary-button" disabled={busy || !workspaceId}>{busy ? 'Sending...' : 'Send invitation'}</button></form>}<p><a href="#onboarding">Return to the checklist</a></p></div></Frame>
+}
+
+export function AcceptInvite() {
+  const token = typeof window === 'undefined' ? '' : new URLSearchParams(window.location.hash.split('?')[1] || '').get('token') || ''
+  const [status, setStatus] = useState('Checking invitation...')
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => { if (!token) { setError('This invitation link is missing a token.'); return } api.invitation(token).then(invitation => setStatus(`Invitation for ${invitation.email} as ${invitation.role}. Sign in with that email, then accept.`)).catch(caught => setError(message(caught, 'This invitation link is invalid or expired.'))) }, [token])
+  async function accept() { setError(null); try { await api.acceptInvitation(token); go('onboarding') } catch (caught) { if (caught instanceof AccessApiError && caught.status === 401) { sessionStorage.setItem('stockhub-pending-invite', token); go('signin'); return } setError(message(caught, 'Could not accept this invitation.')) } }
+  return <Frame kind="deferred-page"><div className="deferred-content"><h1>Accept invitation</h1><p>{status}</p><ErrorText value={error} />{token && <button className="primary-button" type="button" onClick={accept}>Accept invitation</button>}<p><a href="#signin">Sign in</a> · <a href="#signup">Create account</a></p></div></Frame>
 }
 
 export function Deferred({ legal = false }: { legal?: boolean }) {

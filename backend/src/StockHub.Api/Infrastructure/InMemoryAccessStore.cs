@@ -248,12 +248,29 @@ public sealed class InMemoryAccessStore : IAccessStore
         return Task.CompletedTask;
     }
 
-    public Task<bool> InvitationExistsAsync(string tokenHash, CancellationToken cancellationToken)
+    public Task<Invitation?> FindInvitationAsync(string tokenHash, CancellationToken cancellationToken)
     {
         var exists = _invitations.TryGetValue(tokenHash, out var invitation)
-            && invitation.ExpiresAt > DateTimeOffset.UtcNow;
+            && invitation.ExpiresAt > DateTimeOffset.UtcNow
+            && invitation.ConsumedAt is null;
 
-        return Task.FromResult(exists);
+        return Task.FromResult(exists ? invitation : null);
+    }
+
+    public Task<Guid?> AcceptInvitationAsync(string tokenHash, Guid userId, string normalizedEmail, CancellationToken cancellationToken)
+    {
+        if (!_invitations.TryGetValue(tokenHash, out var invitation)
+            || invitation.ExpiresAt <= DateTimeOffset.UtcNow
+            || invitation.ConsumedAt is not null
+            || !string.Equals(invitation.Email, normalizedEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult<Guid?>(null);
+        }
+
+        _memberships.TryAdd((userId, invitation.WorkspaceId), new Membership(userId, invitation.WorkspaceId, invitation.Role));
+        _invitations[tokenHash] = invitation with { ConsumedAt = DateTimeOffset.UtcNow };
+
+        return Task.FromResult<Guid?>(invitation.WorkspaceId);
     }
 
     public Task RecordOnboardingActionAsync(

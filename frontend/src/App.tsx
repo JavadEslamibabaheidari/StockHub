@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Deferred, ForgotPassword, Invite, Onboarding, ResetPassword, SignIn, SignUp, Workspace } from './AccessScreens'
+import { AcceptInvite, Deferred, ForgotPassword, Invite, Onboarding, ResetPassword, SignIn, SignUp, Workspace } from './AccessScreens'
 
 const accessRouteHashes = [
   '#signup',
@@ -8,9 +8,18 @@ const accessRouteHashes = [
   '#onboarding',
   '#invite',
   '#forgot',
+  '#accept',
   '#reset',
   '#legal',
   '#deferred',
+  '#inventory',
+  '#orders',
+  '#reservations',
+  '#platforms',
+  '#pricing',
+  '#reports',
+  '#team',
+  '#settings',
 ] as const
 
 function Logo() {
@@ -84,13 +93,14 @@ export default function App() {
     window.addEventListener('hashchange', update)
     return () => window.removeEventListener('hashchange', update)
   }, [])
-  if (accessRouteHashes.includes(hash as (typeof accessRouteHashes)[number]) || hash.startsWith('#reset?')) {
+  if (accessRouteHashes.includes(hash as (typeof accessRouteHashes)[number]) || hash.startsWith('#reset?') || hash.startsWith('#accept?')) {
     if (hash === '#signup') return <SignUp />
     if (hash === '#signin') return <SignIn />
     if (hash === '#workspace') return <Workspace />
     if (hash === '#onboarding') return <Onboarding />
     if (hash === '#invite') return <Invite />
     if (hash === '#forgot') return <ForgotPassword />
+    if (hash === '#accept' || hash.startsWith('#accept?')) return <AcceptInvite />
     if (hash === '#reset' || hash.startsWith('#reset?')) return <ResetPassword />
     if (hash === '#legal') return <Deferred legal />
     return <Deferred />

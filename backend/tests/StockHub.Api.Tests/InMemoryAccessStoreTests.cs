@@ -100,4 +100,30 @@ public sealed class InMemoryAccessStoreTests
 
         Assert.NotEqual(first.Workspace.Slug, second.Workspace.Slug);
     }
+
+    [Fact]
+    public async Task Invitation_acceptance_matches_email_and_is_single_use()
+    {
+        var store = new InMemoryAccessStore();
+        var owner = await store.CreateUserAsync("Owner", "OWNER@EXAMPLE.COM", "hash", CancellationToken.None);
+        var invited = await store.CreateUserAsync("Invited", "INVITED@EXAMPLE.COM", "hash", CancellationToken.None);
+        var workspace = await store.CreateWorkspaceAsync(owner.Id, new("Acme Goods", "IT", "EUR", null), "workspace", CancellationToken.None);
+
+        await store.CreateInvitationAsync(
+            "token-hash",
+            workspace.Workspace.Id,
+            "invited@example.com",
+            WorkspaceRole.Viewer,
+            DateTimeOffset.UtcNow.AddHours(1),
+            CancellationToken.None);
+
+        Assert.Null(await store.AcceptInvitationAsync("token-hash", owner.Id, owner.NormalizedEmail, CancellationToken.None));
+        Assert.Equal(workspace.Workspace.Id, await store.AcceptInvitationAsync("token-hash", invited.Id, invited.NormalizedEmail, CancellationToken.None));
+        Assert.Null(await store.AcceptInvitationAsync("token-hash", invited.Id, invited.NormalizedEmail, CancellationToken.None));
+
+        var memberships = await store.ListWorkspacesAsync(invited.Id, CancellationToken.None);
+        var membership = Assert.Single(memberships);
+        Assert.Equal(WorkspaceRole.Viewer, membership.Role);
+    }
+
 }

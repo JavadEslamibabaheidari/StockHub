@@ -35,7 +35,7 @@ Google provider credentials and production identity-provider operations remain c
 
 ## Missing coverage and follow-ups
 
-No Access closure-blocking gaps remain. Future-module handoffs remain recorded in the roadmap and Access plan: Inventory owns import execution, Platforms owns authorization and synchronization, and Team owns delivery and administration of invitations.
+Access remains blocked until deployed verification proves real Google sign-in and external email delivery for password recovery and invitations. Page 1.4 dashboard controls now have implementation coverage for product import, platform picker handoff, invitation routing, workspace switch, search, theme, notifications, account menu, sign-out, sidebar collapse, and later-milestone navigation. Start free trial remains the only explicitly deferred Access action.
 
 ## Evidence and verification
 
@@ -47,4 +47,4 @@ No Access closure-blocking gaps remain. Future-module handoffs remain recorded i
 
 ## Closure verdict
 
-PASS. Milestone 1 Access meets the approved plan, roadmap, mockup, ADR, knowledge, code, test, configuration, and GitHub tracking gates. The milestone is ready to close after this report is committed and the milestone shows zero open issues.
+BLOCKED. Milestone 1 Access is not ready to close until the runtime Google OAuth client and outbound email sender are configured, deployed through GitHub Actions, and verified against real provider flows.
