@@ -5,6 +5,8 @@
     "/api/auth/sign-up": { "post": { "operationId": "signUp", "responses": { "201": { "description": "Authenticated" }, "409": { "$ref": "#/components/responses/Problem" }, "422": { "$ref": "#/components/responses/Problem" } } } },
     "/api/auth/sign-in": { "post": { "operationId": "signIn", "responses": { "200": { "description": "Authenticated" }, "401": { "$ref": "#/components/responses/Problem" }, "422": { "$ref": "#/components/responses/Problem" } } } },
     "/api/auth/sign-out": { "post": { "operationId": "signOut", "responses": { "204": { "description": "Signed out" } } } },
+    "/api/auth/password-reset/request": { "post": { "operationId": "requestPasswordReset", "responses": { "202": { "description": "A reset email is sent when an account exists" }, "422": { "$ref": "#/components/responses/Problem" }, "503": { "$ref": "#/components/responses/Problem" } } } },
+    "/api/auth/password-reset/confirm": { "post": { "operationId": "confirmPasswordReset", "responses": { "204": { "description": "Password changed and sessions revoked" }, "422": { "$ref": "#/components/responses/Problem" } } } },
     "/api/auth/session": { "get": { "operationId": "getSession", "responses": { "200": { "$ref": "#/components/responses/Session" }, "401": { "$ref": "#/components/responses/Problem" } } } },
     "/api/workspaces": { "get": { "operationId": "listWorkspaces", "responses": { "200": { "$ref": "#/components/responses/WorkspaceList" } } }, "post": { "operationId": "createWorkspace", "parameters": [{ "$ref": "#/components/parameters/IdempotencyKey" }], "responses": { "201": { "$ref": "#/components/responses/Workspace" }, "422": { "$ref": "#/components/responses/Problem" } } } },
     "/api/workspaces/{workspaceId}/active": { "put": { "operationId": "setActiveWorkspace", "parameters": [{ "$ref": "#/components/parameters/WorkspaceId" }], "responses": { "204": { "description": "Active workspace updated" }, "403": { "$ref": "#/components/responses/Problem" } } } },
@@ -12,8 +14,10 @@
     "/api/workspaces/{workspaceId}/onboarding/actions": { "post": { "operationId": "selectOnboardingAction", "parameters": [{ "$ref": "#/components/parameters/WorkspaceId" }], "responses": { "202": { "description": "Handoff selected" }, "403": { "$ref": "#/components/responses/Problem" } } } },
     "/api/workspaces/{workspaceId}/invitations": { "post": { "operationId": "createInvitation", "parameters": [{ "$ref": "#/components/parameters/WorkspaceId" }], "responses": { "202": { "description": "Invitation requested" }, "403": { "$ref": "#/components/responses/Problem" } } } },
     "/api/invitations/{token}": { "get": { "operationId": "getInvitation", "responses": { "200": { "description": "Pending invitation" }, "404": { "$ref": "#/components/responses/Problem" } } } },
+    "/api/auth/google/availability": { "get": { "operationId": "getGoogleAvailability", "responses": { "200": { "description": "Whether provider configuration is present" } } } },
     "/api/auth/google/start": { "get": { "operationId": "startGoogleSignIn", "responses": { "302": { "description": "Provider redirect" }, "503": { "$ref": "#/components/responses/Problem" } } } },
-    "/api/auth/google/callback": { "get": { "operationId": "googleCallback", "responses": { "503": { "$ref": "#/components/responses/Problem" } } } }
+    "/api/auth/google/callback": { "get": { "operationId": "googleCallback", "responses": { "302": { "description": "Provider callback handled by OpenID Connect middleware" } } } },
+    "/api/auth/google/complete": { "get": { "operationId": "completeGoogleSignIn", "responses": { "302": { "description": "StockHub session established or safe error route" } } } }
   },
   "components": {
     "parameters": {

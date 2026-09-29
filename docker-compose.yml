@@ -26,6 +26,15 @@ services:
       ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-stockhub};Username=${POSTGRES_USER:-stockhub};Password=${POSTGRES_PASSWORD:-stockhub-local-only}
       Database__ApplyMigrations: "true"
       Authentication__SecureCookies: "false"
+      Authentication__Google__ClientId: ${STOCKHUB_GOOGLE_CLIENT_ID:-}
+      Authentication__Google__ClientSecret: ${STOCKHUB_GOOGLE_CLIENT_SECRET:-}
+      Application__PublicBaseUrl: ${STOCKHUB_PUBLIC_BASE_URL:-http://localhost:8080}
+      Email__Smtp__Host: ${STOCKHUB_SMTP_HOST:-}
+      Email__Smtp__Port: ${STOCKHUB_SMTP_PORT:-}
+      Email__Smtp__From: ${STOCKHUB_SMTP_FROM:-}
+      Email__Smtp__Username: ${STOCKHUB_SMTP_USERNAME:-}
+      Email__Smtp__Password: ${STOCKHUB_SMTP_PASSWORD:-}
+      Email__Smtp__UseTls: ${STOCKHUB_SMTP_USE_TLS:-true}
     ports:
       - "${STOCKHUB_PORT:-8080}:8080"
 

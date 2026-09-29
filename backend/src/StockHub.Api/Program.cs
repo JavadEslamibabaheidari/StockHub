@@ -1,8 +1,11 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
@@ -17,9 +20,11 @@ var connectionString = builder.Configuration.GetConnectionString("Postgres")
     ?? "Host=localhost;Port=5432;Database=stockhub;Username=stockhub;Password=stockhub";
 
 builder.Services.AddSingleton<IAccessStore>(_ => new PostgresAccessStore(connectionString));
+builder.Services.AddSingleton<IProductStore>(_ => new PostgresProductStore(connectionString));
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddSingleton<IRecoveryEmailSender, SmtpRecoveryEmailSender>();
 
-builder.Services
+var authenticationBuilder = builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -53,9 +58,61 @@ builder.Services
                 context.RejectPrincipal();
             }
         };
+    })
+    .AddCookie("External", options =>
+    {
+        options.Cookie.Name = "stockhub.external";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = builder.Configuration.GetValue(
+            "Authentication:SecureCookies",
+            !builder.Environment.IsDevelopment())
+            ? CookieSecurePolicy.Always
+            : CookieSecurePolicy.SameAsRequest;
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
     });
 
+var googleConfigured = !string.IsNullOrWhiteSpace(builder.Configuration["Authentication:Google:ClientId"])
+    && !string.IsNullOrWhiteSpace(builder.Configuration["Authentication:Google:ClientSecret"]);
+if (googleConfigured)
+{
+    authenticationBuilder.AddOpenIdConnect("Google", options =>
+    {
+        options.Authority = "https://accounts.google.com";
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+        options.ResponseType = "code";
+        options.UsePkce = true;
+        options.SignInScheme = "External";
+        options.CallbackPath = "/api/auth/google/callback";
+        options.MapInboundClaims = false;
+        options.SaveTokens = false;
+        options.Scope.Clear();
+        options.Scope.Add("openid");
+        options.Scope.Add("email");
+        options.Scope.Add("profile");
+        options.Events = new OpenIdConnectEvents
+        {
+            OnRemoteFailure = context =>
+            {
+                context.HandleResponse();
+                context.Response.Redirect("/?authError=google#signin");
+                return Task.CompletedTask;
+            }
+        };
+    });
+}
+
 builder.Services.AddAuthorization();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
+        | ForwardedHeaders.XForwardedHost
+        | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 
 var app = builder.Build();
@@ -77,6 +134,7 @@ app.UseExceptionHandler(exceptionApp => exceptionApp.Run(async context =>
     await Results.Problem("An unexpected error occurred.", statusCode: 500).ExecuteAsync(context);
 }));
 
+app.UseForwardedHeaders();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseAuthentication();
@@ -104,25 +162,29 @@ app.MapPost(
         {
             return Results.Conflict(new Problem(
                 "Unable to create account",
-                "The submitted account could not be created.",
+                "This email cannot create a new account. Try signing in or resetting your password.",
                 "account_unavailable"));
         }
 
         var draft = new User(Guid.Empty, request.FullName, normalized, string.Empty);
         var passwordHash = hasher.HashPassword(draft, request.Password);
         User user;
+        Session session;
         try
         {
-            user = await store.CreateUserAsync(request.FullName, normalized, passwordHash, cancellationToken);
+            (user, session) = await store.CreateUserWithSessionAsync(
+                request.FullName,
+                normalized,
+                passwordHash,
+                cancellationToken);
         }
         catch (InvalidOperationException exception) when (exception.Message == "duplicate_user")
         {
             return Results.Conflict(new Problem(
                 "Unable to create account",
-                "The submitted account could not be created.",
+                "This email cannot create a new account. Try signing in or resetting your password.",
                 "account_unavailable"));
         }
-        var session = await store.CreateSessionAsync(user.Id, cancellationToken);
 
         await SignIn(context, user, session.Id);
 
@@ -176,6 +238,98 @@ app.MapPost(
         return Results.NoContent();
     })
     .RequireAuthorization()
+    .WithTags("Auth");
+
+app.MapPost(
+    "/api/auth/password-reset/request",
+    async (
+        PasswordResetRequest request,
+        IAccessStore store,
+        IRecoveryEmailSender emailSender,
+        IConfiguration configuration,
+        ILogger<Program> logger,
+        CancellationToken cancellationToken) =>
+    {
+        if (!AccessValidation.IsValidEmail(request.Email))
+        {
+            return Results.UnprocessableEntity(new Problem(
+                "Validation failed",
+                "Enter a valid email address.",
+                "email_invalid"));
+        }
+
+        if (!emailSender.IsConfigured)
+        {
+            return Results.Problem(
+                "Password recovery email is not configured for this environment.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+
+        var user = await store.FindUserAsync(request.Email.Trim().ToUpperInvariant(), cancellationToken);
+        if (user is not null)
+        {
+            var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            var tokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+            await store.CreatePasswordResetAsync(
+                user.Id,
+                tokenHash,
+                DateTimeOffset.UtcNow.AddMinutes(30),
+                cancellationToken);
+
+            var baseUri = new Uri(configuration["Application:PublicBaseUrl"]!, UriKind.Absolute);
+            var resetLink = new Uri(baseUri, $"/#reset?token={Uri.EscapeDataString(token)}");
+            try
+            {
+                await emailSender.SendPasswordResetAsync(request.Email.Trim(), resetLink, cancellationToken);
+            }
+            catch (Exception exception) when (exception is System.Net.Mail.SmtpException or InvalidOperationException)
+            {
+                logger.LogError(exception, "Password recovery email delivery failed");
+            }
+        }
+
+        return Results.Accepted(value: new { message = "If an account uses this email, a reset link is on its way." });
+    })
+    .WithTags("Auth");
+
+app.MapPost(
+    "/api/auth/password-reset/confirm",
+    async (
+        PasswordResetConfirmRequest request,
+        IAccessStore store,
+        IPasswordHasher<User> hasher,
+        CancellationToken cancellationToken) =>
+    {
+        if (string.IsNullOrEmpty(request.NewPassword) || request.NewPassword.Length < 8)
+        {
+            return Results.UnprocessableEntity(new Problem(
+                "Validation failed",
+                "Password must be at least 8 characters.",
+                "password_too_short"));
+        }
+
+        if (string.IsNullOrEmpty(request.Token) || request.Token.Length != 64 || !request.Token.All(Uri.IsHexDigit))
+        {
+            return Results.UnprocessableEntity(new Problem(
+                "Invalid link",
+                "This password reset link is invalid or has expired.",
+                "reset_invalid"));
+        }
+
+        var tokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(request.Token)));
+        var passwordHash = hasher.HashPassword(
+            new User(Guid.Empty, string.Empty, string.Empty, string.Empty),
+            request.NewPassword);
+        if (!await store.ResetPasswordAsync(tokenHash, passwordHash, cancellationToken))
+        {
+            return Results.UnprocessableEntity(new Problem(
+                "Invalid link",
+                "This password reset link is invalid or has expired.",
+                "reset_invalid"));
+        }
+
+        return Results.NoContent();
+    })
     .WithTags("Auth");
 
 app.MapGet(
@@ -304,11 +458,15 @@ app.MapPut(
     .WithTags("Workspaces");
 
 app.MapGet(
+    "/api/auth/google/availability",
+    () => Results.Ok(new { available = googleConfigured }))
+    .WithTags("Auth");
+
+app.MapGet(
     "/api/auth/google/start",
-    (IConfiguration configuration) =>
+    () =>
     {
-        if (string.IsNullOrWhiteSpace(configuration["Authentication:Google:ClientId"])
-            || string.IsNullOrWhiteSpace(configuration["Authentication:Google:ClientSecret"]))
+        if (!googleConfigured)
         {
             return Results.Problem(
                 "Google sign-in is not configured for this environment.",
@@ -316,16 +474,68 @@ app.MapGet(
                 extensions: new Dictionary<string, object?> { ["code"] = "google_not_configured" });
         }
 
-        return Results.Redirect("/api/auth/google/callback?state=configuration-required");
+        return Results.Challenge(
+            new AuthenticationProperties { RedirectUri = "/api/auth/google/complete" },
+            ["Google"]);
     })
     .WithTags("Auth");
 
 app.MapGet(
-    "/api/auth/google/callback",
-    () => Results.Problem(
-        "Google sign-in requires a configured provider adapter.",
-        statusCode: StatusCodes.Status503ServiceUnavailable,
-        extensions: new Dictionary<string, object?> { ["code"] = "google_adapter_unavailable" }))
+    "/api/auth/google/complete",
+    async (HttpContext context, IAccessStore store, CancellationToken cancellationToken) =>
+    {
+        var external = await context.AuthenticateAsync("External");
+        if (!external.Succeeded || external.Principal is null)
+        {
+            return Results.Redirect("/?authError=google#signin");
+        }
+
+        var subject = external.Principal.FindFirstValue("sub");
+        var email = external.Principal.FindFirstValue("email");
+        var name = external.Principal.FindFirstValue("name");
+        var emailVerified = string.Equals(
+            external.Principal.FindFirstValue("email_verified"),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(subject)
+            || string.IsNullOrWhiteSpace(email)
+            || !AccessValidation.IsValidEmail(email)
+            || !emailVerified)
+        {
+            await context.SignOutAsync("External");
+            return Results.Redirect("/?authError=google-unverified#signin");
+        }
+
+        var normalizedEmail = email.Trim().ToUpperInvariant();
+        var emailDomain = email.Split('@')[1];
+        var hostedDomain = external.Principal.FindFirstValue("hd");
+        var googleOwnsAddress = emailDomain.Equals("gmail.com", StringComparison.OrdinalIgnoreCase)
+            || emailDomain.Equals("googlemail.com", StringComparison.OrdinalIgnoreCase)
+            || (hostedDomain is not null
+                && hostedDomain.Equals(emailDomain, StringComparison.OrdinalIgnoreCase));
+
+        User user;
+        try
+        {
+            user = await store.GetOrCreateGoogleUserAsync(
+                subject,
+                normalizedEmail,
+                string.IsNullOrWhiteSpace(name) ? email.Split('@')[0] : name,
+                googleOwnsAddress,
+                cancellationToken);
+        }
+        catch (InvalidOperationException exception) when (exception.Message == "external_account_conflict")
+        {
+            await context.SignOutAsync("External");
+            return Results.Redirect("/?authError=google-link#signin");
+        }
+
+        var session = await store.CreateSessionAsync(user.Id, cancellationToken);
+        await context.SignOutAsync("External");
+        await SignIn(context, user, session.Id);
+        var hasWorkspace = (await store.ListWorkspacesAsync(user.Id, cancellationToken)).Count > 0;
+        return Results.Redirect(hasWorkspace ? "/#onboarding" : "/#workspace");
+    })
     .WithTags("Auth");
 
 app.MapGet(
@@ -390,6 +600,71 @@ app.MapPost(
     .RequireAuthorization()
     .WithTags("Onboarding");
 
+app.MapGet(
+    "/api/workspaces/{workspaceId:guid}/products",
+    async (
+        Guid workspaceId,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IProductStore productStore,
+        CancellationToken cancellationToken) =>
+    {
+        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var isMember = (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
+            .Any(workspace => workspace.Workspace.Id == workspaceId);
+
+        if (!isMember)
+        {
+            return Results.Forbid();
+        }
+
+        var products = await productStore.ListAsync(workspaceId, cancellationToken);
+        return Results.Ok(products.Select(ToResponse));
+    })
+    .RequireAuthorization()
+    .WithTags("Products");
+
+app.MapPost(
+    "/api/workspaces/{workspaceId:guid}/products/import",
+    async (
+        Guid workspaceId,
+        ProductRequest[] request,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IProductStore productStore,
+        CancellationToken cancellationToken) =>
+    {
+        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var membership = (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
+            .FirstOrDefault(workspace => workspace.Workspace.Id == workspaceId);
+
+        if (membership.Workspace is null)
+        {
+            return Results.Forbid();
+        }
+
+        var error = ValidateProducts(request);
+        if (error is not null)
+        {
+            return Results.UnprocessableEntity(error);
+        }
+
+        var products = await productStore.UpsertAsync(workspaceId, request, cancellationToken);
+        await accessStore.RecordOnboardingActionAsync(userId, workspaceId, "import-products", cancellationToken);
+
+        return Results.Ok(products.Select(ToResponse));
+    })
+    .RequireAuthorization()
+    .WithTags("Products");
+
 app.MapPost(
     "/api/workspaces/{workspaceId:guid}/invitations",
     async (
@@ -397,11 +672,29 @@ app.MapPost(
         InvitationRequest request,
         ClaimsPrincipal principal,
         IAccessStore store,
+        IRecoveryEmailSender emailSender,
+        IConfiguration configuration,
+        ILogger<Program> logger,
         CancellationToken cancellationToken) =>
     {
         if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
         {
             return Results.Unauthorized();
+        }
+
+        if (!AccessValidation.IsValidEmail(request.Email) || request.Role is WorkspaceRole.Owner)
+        {
+            return Results.UnprocessableEntity(new Problem(
+                "Validation failed",
+                "Enter a valid teammate email and choose a non-owner role.",
+                "invitation_invalid"));
+        }
+
+        if (!emailSender.IsConfigured)
+        {
+            return Results.Problem(
+                "Invitation email is not configured for this environment.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
         }
 
         var membership = (await store.ListWorkspacesAsync(userId, cancellationToken))
@@ -419,14 +712,33 @@ app.MapPost(
         await store.CreateInvitationAsync(
             tokenHash,
             workspaceId,
-            request.Email,
+            request.Email.Trim(),
             request.Role,
             DateTimeOffset.UtcNow.AddHours(72),
             cancellationToken);
 
+        var baseUri = new Uri(configuration["Application:PublicBaseUrl"]!, UriKind.Absolute);
+        var invitationLink = new Uri(baseUri, $"/#accept?token={Uri.EscapeDataString(rawToken)}");
+        try
+        {
+            await emailSender.SendInvitationAsync(
+                request.Email.Trim(),
+                invitationLink,
+                membership.Workspace.BusinessName,
+                request.Role,
+                cancellationToken);
+        }
+        catch (Exception exception) when (exception is System.Net.Mail.SmtpException or InvalidOperationException)
+        {
+            logger.LogError(exception, "Invitation email delivery failed");
+            return Results.Problem(
+                "Invitation email is temporarily unavailable. Please try again later.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+
         return Results.Accepted(
             $"/api/invitations/{rawToken}",
-            new { status = "requested", expiresInHours = 72 });
+            new { status = "sent", expiresInHours = 72 });
     })
     .RequireAuthorization()
     .WithTags("Invitations");
@@ -436,11 +748,62 @@ app.MapGet(
     async (string token, IAccessStore store, CancellationToken cancellationToken) =>
     {
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+        var invitation = await store.FindInvitationAsync(hash, cancellationToken);
 
-        return await store.InvitationExistsAsync(hash, cancellationToken)
-            ? Results.Ok(new { status = "pending" })
-            : Results.NotFound();
+        return invitation is null
+            ? Results.NotFound()
+            : Results.Ok(new InvitationResponse(invitation.Email, invitation.Role, "pending"));
     })
+    .WithTags("Invitations");
+
+app.MapPost(
+    "/api/invitations/accept",
+    async (
+        AcceptInvitationRequest request,
+        ClaimsPrincipal principal,
+        IAccessStore store,
+        HttpContext context,
+        CancellationToken cancellationToken) =>
+    {
+        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+            || !Guid.TryParse(principal.FindFirstValue("session_id"), out var sessionId))
+        {
+            return Results.Unauthorized();
+        }
+
+        if (string.IsNullOrEmpty(request.Token) || request.Token.Length != 64 || !request.Token.All(Uri.IsHexDigit))
+        {
+            return Results.UnprocessableEntity(new Problem(
+                "Invalid invitation",
+                "This invitation link is invalid or has expired.",
+                "invitation_invalid"));
+        }
+
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(request.Token)));
+        var normalizedEmail = principal.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+        var joinedWorkspaceId = await store.AcceptInvitationAsync(hash, userId, normalizedEmail, cancellationToken);
+        if (joinedWorkspaceId is null)
+        {
+            return Results.UnprocessableEntity(new Problem(
+                "Invalid invitation",
+                "This invitation is expired, already used, or belongs to another email address.",
+                "invitation_invalid"));
+        }
+
+        await store.SetActiveWorkspaceAsync(userId, sessionId, joinedWorkspaceId.Value, cancellationToken);
+        await SignIn(
+            context,
+            new User(
+                userId,
+                principal.FindFirstValue(ClaimTypes.Name) ?? string.Empty,
+                normalizedEmail,
+                string.Empty),
+            sessionId,
+            joinedWorkspaceId.Value);
+
+        return Results.Ok(new { status = "accepted" });
+    })
+    .RequireAuthorization()
     .WithTags("Invitations");
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
@@ -460,6 +823,44 @@ app.MapGet("/ready", async (CancellationToken cancellationToken) =>
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+static ProductResponse ToResponse(Product product) => new(
+    product.Id,
+    product.Sku,
+    product.Name,
+    product.OnHand,
+    product.BasePrice,
+    product.Category);
+
+static Problem? ValidateProducts(IReadOnlyList<ProductRequest> products)
+{
+    if (products.Count is 0 or > 500)
+    {
+        return new Problem("Validation failed", "Import between 1 and 500 products at a time.", "products_count_invalid");
+    }
+
+    var skus = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var product in products)
+    {
+        if (string.IsNullOrWhiteSpace(product.Sku)
+            || string.IsNullOrWhiteSpace(product.Name)
+            || product.Sku.Trim().Length > 80
+            || product.Name.Trim().Length > 200
+            || product.OnHand < 0
+            || product.BasePrice < 0)
+        {
+            return new Problem("Validation failed", "Each product needs a SKU, name, non-negative stock, and non-negative base price.", "product_invalid");
+        }
+
+        if (!skus.Add(product.Sku.Trim()))
+        {
+            return new Problem("Validation failed", "Each imported SKU must be unique.", "product_sku_duplicate");
+        }
+    }
+
+    return null;
+}
+
 
 static Task SignIn(HttpContext context, User user, Guid sessionId, Guid? activeWorkspaceId = null)
 {

@@ -49,6 +49,57 @@ public sealed class PostgresAccessStore(string connectionString) : IAccessStore
         }
     }
 
+    public async Task<(User User, Session Session)> CreateUserWithSessionAsync(
+        string fullName,
+        string normalizedEmail,
+        string passwordHash,
+        CancellationToken cancellationToken)
+    {
+        var user = new User(Guid.NewGuid(), fullName.Trim(), normalizedEmail, passwordHash);
+        var session = new Session(Guid.NewGuid(), user.Id, null, DateTimeOffset.UtcNow.AddHours(8));
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            await using (var userCommand = new NpgsqlCommand(
+                "INSERT INTO users(id, full_name, email, password_hash) VALUES (@id, @name, @email, @hash)",
+                connection,
+                transaction))
+            {
+                userCommand.Parameters.AddWithValue("id", user.Id);
+                userCommand.Parameters.AddWithValue("name", user.FullName);
+                userCommand.Parameters.AddWithValue("email", user.NormalizedEmail);
+                userCommand.Parameters.AddWithValue("hash", user.PasswordHash);
+                await userCommand.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await using (var sessionCommand = new NpgsqlCommand(
+                "INSERT INTO sessions(id, user_id, expires_at) VALUES (@id, @user, @expires)",
+                connection,
+                transaction))
+            {
+                sessionCommand.Parameters.AddWithValue("id", session.Id);
+                sessionCommand.Parameters.AddWithValue("user", user.Id);
+                sessionCommand.Parameters.AddWithValue("expires", session.ExpiresAt);
+                await sessionCommand.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            return (user, session);
+        }
+        catch (PostgresException exception) when (exception.SqlState == "23505")
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            throw new InvalidOperationException("duplicate_user", exception);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+    }
+
     public async Task<Session> CreateSessionAsync(Guid userId, CancellationToken cancellationToken)
     {
         var session = new Session(Guid.NewGuid(), userId, null, DateTimeOffset.UtcNow.AddHours(8));
@@ -91,6 +142,173 @@ public sealed class PostgresAccessStore(string connectionString) : IAccessStore
         await using var command = new NpgsqlCommand("DELETE FROM sessions WHERE id = @id", connection);
         command.Parameters.AddWithValue("id", sessionId);
         await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task CreatePasswordResetAsync(
+        Guid userId,
+        string tokenHash,
+        DateTimeOffset expiresAt,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await using (var remove = new NpgsqlCommand(
+            "DELETE FROM password_reset_tokens WHERE user_id = @user",
+            connection,
+            transaction))
+        {
+            remove.Parameters.AddWithValue("user", userId);
+            await remove.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await using (var insert = new NpgsqlCommand(
+            "INSERT INTO password_reset_tokens(token_hash, user_id, expires_at) VALUES (@hash, @user, @expires)",
+            connection,
+            transaction))
+        {
+            insert.Parameters.AddWithValue("hash", tokenHash);
+            insert.Parameters.AddWithValue("user", userId);
+            insert.Parameters.AddWithValue("expires", expiresAt);
+            await insert.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    public async Task<bool> ResetPasswordAsync(
+        string tokenHash,
+        string passwordHash,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        Guid userId;
+        await using (var lookup = new NpgsqlCommand(
+            "SELECT user_id FROM password_reset_tokens WHERE token_hash = @hash AND expires_at > now() AND consumed_at IS NULL FOR UPDATE",
+            connection,
+            transaction))
+        {
+            lookup.Parameters.AddWithValue("hash", tokenHash);
+            var found = await lookup.ExecuteScalarAsync(cancellationToken);
+            if (found is not Guid id)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return false;
+            }
+
+            userId = id;
+        }
+
+        await using (var update = new NpgsqlCommand(
+            "UPDATE users SET password_hash = @password WHERE id = @user",
+            connection,
+            transaction))
+        {
+            update.Parameters.AddWithValue("password", passwordHash);
+            update.Parameters.AddWithValue("user", userId);
+            await update.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await using (var sessions = new NpgsqlCommand(
+            "DELETE FROM sessions WHERE user_id = @user",
+            connection,
+            transaction))
+        {
+            sessions.Parameters.AddWithValue("user", userId);
+            await sessions.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await using (var tokens = new NpgsqlCommand(
+            "DELETE FROM password_reset_tokens WHERE user_id = @user",
+            connection,
+            transaction))
+        {
+            tokens.Parameters.AddWithValue("user", userId);
+            await tokens.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<User> GetOrCreateGoogleUserAsync(
+        string subject,
+        string normalizedEmail,
+        string fullName,
+        bool allowExistingAccountLink,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        await using (var bySubject = new NpgsqlCommand(
+            "SELECT u.id, u.full_name, u.email::text, u.password_hash FROM external_identities e JOIN users u ON u.id = e.user_id WHERE e.provider = 'google' AND e.subject = @subject",
+            connection,
+            transaction))
+        {
+            bySubject.Parameters.AddWithValue("subject", subject);
+            await using var reader = await bySubject.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                var linkedUser = ReadUser(reader);
+                await reader.DisposeAsync();
+                await transaction.CommitAsync(cancellationToken);
+                return linkedUser;
+            }
+        }
+
+        User user;
+        bool userAlreadyExists;
+        await using (var byEmail = new NpgsqlCommand(
+            "SELECT id, full_name, email::text, password_hash FROM users WHERE email = @email FOR UPDATE",
+            connection,
+            transaction))
+        {
+            byEmail.Parameters.AddWithValue("email", normalizedEmail);
+            await using var reader = await byEmail.ExecuteReaderAsync(cancellationToken);
+            userAlreadyExists = await reader.ReadAsync(cancellationToken);
+            user = userAlreadyExists
+                ? ReadUser(reader)
+                : new User(Guid.NewGuid(), fullName.Trim(), normalizedEmail, string.Empty);
+        }
+
+        if (userAlreadyExists && !allowExistingAccountLink)
+        {
+            throw new InvalidOperationException("external_account_conflict");
+        }
+
+        if (!userAlreadyExists)
+        {
+            await using var insertUser = new NpgsqlCommand(
+                "INSERT INTO users(id, full_name, email, password_hash) VALUES (@id, @name, @email, @hash) ON CONFLICT (email) DO NOTHING",
+                connection,
+                transaction);
+            insertUser.Parameters.AddWithValue("id", user.Id);
+            insertUser.Parameters.AddWithValue("name", user.FullName);
+            insertUser.Parameters.AddWithValue("email", user.NormalizedEmail);
+            insertUser.Parameters.AddWithValue("hash", user.PasswordHash);
+            if (await insertUser.ExecuteNonQueryAsync(cancellationToken) == 0)
+            {
+                throw new InvalidOperationException("external_account_conflict");
+            }
+        }
+
+        try
+        {
+            await using var link = new NpgsqlCommand(
+                "INSERT INTO external_identities(provider, subject, user_id) VALUES ('google', @subject, @user)",
+                connection,
+                transaction);
+            link.Parameters.AddWithValue("subject", subject);
+            link.Parameters.AddWithValue("user", user.Id);
+            await link.ExecuteNonQueryAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return user;
+        }
+        catch (PostgresException exception) when (exception.SqlState == "23505")
+        {
+            throw new InvalidOperationException("external_account_conflict", exception);
+        }
     }
 
     public async Task<IReadOnlyList<(Workspace Workspace, WorkspaceRole Role)>> ListWorkspacesAsync(
@@ -281,15 +499,99 @@ public sealed class PostgresAccessStore(string connectionString) : IAccessStore
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    public async Task<bool> InvitationExistsAsync(string tokenHash, CancellationToken cancellationToken)
+    public async Task<Invitation?> FindInvitationAsync(string tokenHash, CancellationToken cancellationToken)
     {
         await using var connection = await OpenConnectionAsync(cancellationToken);
         await using var command = new NpgsqlCommand(
-            "SELECT EXISTS (SELECT 1 FROM invitations WHERE token_hash = @hash AND consumed_at IS NULL AND expires_at > now())",
+            """
+            SELECT workspace_id, email::text, role, expires_at, consumed_at
+            FROM invitations
+            WHERE token_hash = @hash AND consumed_at IS NULL AND expires_at > now()
+            """,
             connection);
         command.Parameters.AddWithValue("hash", tokenHash);
 
-        return (bool)(await command.ExecuteScalarAsync(cancellationToken) ?? false);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken))
+        {
+            return null;
+        }
+
+        return new Invitation(
+            reader.GetGuid(0),
+            reader.GetString(1),
+            ParseRole(reader.GetString(2)),
+            reader.GetFieldValue<DateTimeOffset>(3),
+            reader.IsDBNull(4) ? null : reader.GetFieldValue<DateTimeOffset>(4));
+    }
+
+    public async Task<Guid?> AcceptInvitationAsync(string tokenHash, Guid userId, string normalizedEmail, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            Guid workspaceId;
+            WorkspaceRole role;
+            await using (var lookup = new NpgsqlCommand(
+                """
+                SELECT workspace_id, role
+                FROM invitations
+                WHERE token_hash = @hash
+                  AND email = @email::citext
+                  AND consumed_at IS NULL
+                  AND expires_at > now()
+                FOR UPDATE
+                """,
+                connection,
+                transaction))
+            {
+                lookup.Parameters.AddWithValue("hash", tokenHash);
+                lookup.Parameters.AddWithValue("email", normalizedEmail);
+                await using var reader = await lookup.ExecuteReaderAsync(cancellationToken);
+                if (!await reader.ReadAsync(cancellationToken))
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return null;
+                }
+
+                workspaceId = reader.GetGuid(0);
+                role = ParseRole(reader.GetString(1));
+            }
+
+            await using (var membership = new NpgsqlCommand(
+                """
+                INSERT INTO memberships(user_id, workspace_id, role)
+                VALUES (@user, @workspace, @role)
+                ON CONFLICT (user_id, workspace_id) DO NOTHING
+                """,
+                connection,
+                transaction))
+            {
+                membership.Parameters.AddWithValue("user", userId);
+                membership.Parameters.AddWithValue("workspace", workspaceId);
+                membership.Parameters.AddWithValue("role", role.ToString());
+                await membership.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await using (var consume = new NpgsqlCommand(
+                "UPDATE invitations SET consumed_at = now() WHERE token_hash = @hash",
+                connection,
+                transaction))
+            {
+                consume.Parameters.AddWithValue("hash", tokenHash);
+                await consume.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            return workspaceId;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            throw;
+        }
     }
 
     public async Task RecordOnboardingActionAsync(
@@ -388,23 +690,26 @@ public static class PostgresDatabaseInitializer
 {
     public static async Task ApplyAsync(string connectionString, CancellationToken cancellationToken)
     {
-        var migrationPath = Path.Combine(AppContext.BaseDirectory, "Database", "Migrations", "001_access.sql");
-        if (!File.Exists(migrationPath))
-        {
-            throw new FileNotFoundException("Access database migration was not published.", migrationPath);
-        }
-
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
         try
         {
-            await using var command = new NpgsqlCommand(
-                await File.ReadAllTextAsync(migrationPath, cancellationToken),
-                connection,
-                transaction);
-            await command.ExecuteNonQueryAsync(cancellationToken);
+            foreach (var migrationName in new[] { "001_access.sql", "002_auth_completion.sql", "003_onboarding_products.sql" })
+            {
+                var migrationPath = Path.Combine(AppContext.BaseDirectory, "Database", "Migrations", migrationName);
+                if (!File.Exists(migrationPath))
+                {
+                    throw new FileNotFoundException("Access database migration was not published.", migrationPath);
+                }
+
+                await using var command = new NpgsqlCommand(
+                    await File.ReadAllTextAsync(migrationPath, cancellationToken),
+                    connection,
+                    transaction);
+                await command.ExecuteNonQueryAsync(cancellationToken);
+            }
             await transaction.CommitAsync(cancellationToken);
         }
         catch
