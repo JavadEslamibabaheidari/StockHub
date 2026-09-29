@@ -24,7 +24,7 @@ evidence_last_updated: 2026-09-29
 | handoffs | Later-milestone actions must be clear and not pretend complete | Sidebar routes and Dashboard detail panels name owning future milestones | Browser verified Inventory route shows Coming next and no action marked complete | PASS locally | Future module implementation remains in owning milestones |
 | tests | Important flows covered | Backend Dashboard store test; frontend Dashboard route render test; existing Access tests preserved | `dotnet test`, `npm test`, `npm run contract:check`, `npm run build` passed locally | PASS locally | CI pending |
 | deployment | Containerized app must build and run with readiness | Docker Compose build/start on port 18082 with PostgreSQL migration 004 | Compose image built; `/ready` returned `{"status":"ready"}` | PASS locally | GitHub Actions and deployment workflow pending |
-| github | Issues, PR, docs, closure evidence synchronized | Dashboard implementation issue and PR to be linked before closure | Dashboard implementation issue #67 created under Milestone 2; PR pending after branch push | PENDING | Owner: PR checks and deployment |
+| github | Issues, PR, docs, closure evidence synchronized | Dashboard implementation issue and PR to be linked before closure | Dashboard implementation issue #67 closed by merged PR #68 | PASS | PR #68 checks passed; main delivery run 36616827440 succeeded; review-staging and production promotion skipped by configured gates |
 
 ## Deliberate deviations
 
@@ -34,11 +34,11 @@ evidence_last_updated: 2026-09-29
 
 ## Missing coverage and follow-ups
 
-- CI results are pending until the PR is opened and GitHub Actions completes.
-- Deployment through GitHub Actions is pending and must occur only after PR checks pass.
+- Milestone 2 still has open cross-cutting delivery gate issue #47 assigned to the same GitHub milestone. Do not close the GitHub milestone until #47 is resolved or intentionally moved.
+- Review-staging and production promotion remained skipped by repository gates in the main delivery workflow. Shared hosted deployment activation remains outside this Dashboard screen PR.
 - Milestone 1 Access remains blocked by Google OAuth and email provider configuration; this Dashboard work does not close that milestone.
 
-## Local evidence collected on 2026-09-29
+## Local and GitHub evidence collected on 2026-09-29
 
 - `dotnet build StockHub.sln --no-restore` passed.
 - `dotnet test StockHub.sln --no-restore` passed: 16 tests.
@@ -49,7 +49,9 @@ evidence_last_updated: 2026-09-29
 - `curl http://127.0.0.1:18082/ready` returned ready.
 - Local API flow verified disposable signup, workspace activation, first-use dashboard, first-sync action, product import, retry, adjust on hand, resolve mismatch, restock, low-stock expansion, and persisted product on-hand value.
 - In-app browser verified sign-in, Dashboard first-use controls, first-sync screen, Upload CSV, Invite environment blocker, live dashboard, search, reservation handoff, retry, adjust on hand, use StockHub count, restock, low-stock expansion, later-milestone handoff, and sign-out.
+- PR #68 passed required GitHub checks and was squash-merged as `444c1da9f2962e68f723357990fd9a920c1ffdaa`.
+- Main GitHub Actions run `36616827440` completed successfully: `Image scan and local Kubernetes smoke` passed and `Publish tested source image` passed. `Deploy review-staging` and `Promote digest to production` were skipped by their configured workflow conditions.
 
 ## Closure verdict
 
-IN PROGRESS. Local implementation and browser verification are complete, but Milestone 2 must remain open until the PR is pushed, GitHub Actions passes, GitHub tracking is synchronized, and the approved GitHub Actions deployment step is completed after checks pass.
+IN PROGRESS. Dashboard screen implementation is merged and the main GitHub Actions delivery workflow succeeded. Keep Milestone 2 open while cross-cutting delivery gate issue #47 remains open, unless the owner intentionally moves that issue out of the Dashboard milestone.
