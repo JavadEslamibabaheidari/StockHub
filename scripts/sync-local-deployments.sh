@@ -30,11 +30,11 @@ if [[ "$mode" == init ]]; then
   echo "Recorded existing release tags; future tags will be deployed"
 fi
 
-if [[ ! -f "$state_dir/dev.sha" || "$(cat "$state_dir/dev.sha")" != "$dev_commit" ]]; then
-  "$repo/scripts/deploy-local.sh" dev "$dev_commit"
-  printf '%s\n' "$dev_commit" > "$state_dir/dev.sha"
-fi
 if [[ "$mode" == init ]]; then
+  if [[ ! -f "$state_dir/dev.sha" || "$(cat "$state_dir/dev.sha")" != "$dev_commit" ]]; then
+    "$repo/scripts/deploy-local.sh" dev "$dev_commit"
+    printf '%s\n' "$dev_commit" > "$state_dir/dev.sha"
+  fi
   touch "$state_dir/initialized"
   exit 0
 fi
@@ -67,3 +67,9 @@ for tag in "${remote_tags[@]}"; do
   rm -rf "$release_dir"
   trap - EXIT
 done
+
+# A failed dev build must not hold back a valid milestone release.
+if [[ ! -f "$state_dir/dev.sha" || "$(cat "$state_dir/dev.sha")" != "$dev_commit" ]]; then
+  "$repo/scripts/deploy-local.sh" dev "$dev_commit"
+  printf '%s\n' "$dev_commit" > "$state_dir/dev.sha"
+fi

@@ -47,7 +47,10 @@ bash scripts/install-local-sync-timer.sh
 
 The setup script writes separate mode-600 `dev.env`, `staging.env`, and
 `prod.env` files in `~/.config/stockhub/`. Edit each file independently for
-its port, password, ASP.NET environment, and cookie setting. The sync script
+its port, password, public base URL, ASP.NET environment, cookie setting,
+Google OAuth credentials, and SMTP settings. The optional provider settings
+are blank until configured, and each environment can use different credentials.
+The sync script
 writes deployment state under `~/.local/state/stockhub/`. `init`
 records historical release tags without deploying them, then deploys current
 `dev`. `init` also unlocks the timer only after the protected branch is ready.

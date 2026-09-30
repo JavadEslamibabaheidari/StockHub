@@ -25,6 +25,15 @@ services:
       ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=stockhub;Username=stockhub;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
       Database__ApplyMigrations: "false"
       Authentication__SecureCookies: ${AUTHENTICATION_SECURE_COOKIES:-false}
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      Application__PublicBaseUrl: ${PUBLIC_BASE_URL:?Set PUBLIC_BASE_URL}
+      Email__Smtp__Host: ${SMTP_HOST:-}
+      Email__Smtp__Port: ${SMTP_PORT:-587}
+      Email__Smtp__From: ${SMTP_FROM:-}
+      Email__Smtp__Username: ${SMTP_USERNAME:-}
+      Email__Smtp__Password: ${SMTP_PASSWORD:-}
+      Email__Smtp__UseTls: ${SMTP_USE_TLS:-true}
     ports:
       - "127.0.0.1:${STOCKHUB_PORT:?Set STOCKHUB_PORT}:8080"
     volumes:
