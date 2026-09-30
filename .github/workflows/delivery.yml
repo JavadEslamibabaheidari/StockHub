@@ -196,7 +196,7 @@ jobs:
             '{digest: $digest, sha: $sha}' > "$RUNNER_TEMP/staging-deployment.json"
           echo "Deployed ${GITHUB_SHA} at ${IMAGE_DIGEST} to review-staging" >> "$GITHUB_STEP_SUMMARY"
       - name: Record tested staging digest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: staging-deployment-record
           path: ${{ runner.temp }}/staging-deployment.json
