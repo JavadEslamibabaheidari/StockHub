@@ -12,6 +12,7 @@ commit="$2"
 [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || usage
 
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export DOCKER_CONTEXT="${STOCKHUB_DOCKER_CONTEXT:-desktop-linux}"
 if [[ "$target" != dev ]]; then
   release_tag="${STOCKHUB_RELEASE_TAG:-}"
   [[ "$release_tag" =~ ^v0\.[0-9]+\.0$ ]] || {

@@ -18,6 +18,7 @@ RUN dotnet publish backend/src/StockHub.Api/StockHub.Api.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 RUN apt-get update \
+    && apt-get upgrade --yes --no-install-recommends \
     && apt-get install --no-install-recommends --yes curl \
     && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /home/app/.aspnet/DataProtection-Keys \

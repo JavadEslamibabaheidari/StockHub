@@ -39,6 +39,7 @@ future hosting work.
 
 ```bash
 bash scripts/setup-local-environments.sh
+systemctl --user enable --now docker-desktop.service
 # Create and protect the dev branch on GitHub before this step:
 bash scripts/sync-local-deployments.sh init
 bash scripts/install-local-sync-timer.sh
@@ -53,7 +54,9 @@ records historical release tags without deploying them, then deploys current
 The timer handles new commits and tags. To trigger a check immediately,
 run `bash scripts/sync-local-deployments.sh sync` or start the user service with
 `systemctl --user start stockhub-local-sync.service`. Keep Docker Desktop running
-and the user systemd manager active. The timer can be disabled with
+and the user systemd manager active. The deployment script selects the
+`desktop-linux` Docker context by default, and both containers restart after
+Docker Desktop restarts. The timer can be disabled with
 `systemctl --user disable --now stockhub-local-sync.timer`.
 
 To inspect the three stacks:
