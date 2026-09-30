@@ -4,16 +4,16 @@ Status: hard pre-implementation gate
 
 ## Purpose
 
-Before application implementation begins, StockHub must use a pull-request
-delivery model with CI as the merge gate. Direct changes to `main` are not
-allowed.
+StockHub uses a pull-request delivery model with CI as the merge gate. Direct
+changes to `dev` and `main` are not allowed.
 
 This policy applies to documentation, infrastructure, and future application
 changes.
 
 ## Current GitHub protections
 
-`main` is protected with:
+`main` has the protections below. Apply the same required checks and push
+restrictions to `dev` before enabling automatic dev deployment:
 
 - admin enforcement enabled;
 - strict required status checks;
@@ -26,19 +26,29 @@ changes.
 - disabled force pushes;
 - disabled branch deletion;
 - repository auto-merge enabled; and
-- branch deletion after merge enabled.
+- branch deletion after merge enforced by `.github/workflows/delete-merged-branch.yml`
+  for same-repository pull requests merged into `main`.
+
+Pull requests from forks are intentionally excluded because their source branch
+belongs to another repository. The default branch and unmerged branches are
+never targeted.
 
 ## Required delivery flow
 
-All changes must follow this path:
+Issue changes follow this path:
 
-1. Create a new branch from current `main`.
-2. Open a pull request for the branch.
+1. Create a new branch from current `dev`.
+2. Open a pull request into `dev`.
 3. Let CI run on the pull request.
 4. Resolve review comments and conversations when present.
-5. Keep the branch up to date with `main` so strict checks pass.
+5. Keep the branch up to date with `dev` so strict checks pass.
 6. Merge only after required checks pass.
 7. Use auto-merge where practical.
+
+At milestone closure, merge `dev` into `main` by pull request after the closure
+report passes. Tag the resulting `main` commit with an annotated
+`v0.<milestone-number>.0` tag. See
+[deployment-environments.md](deployment-environments.md) for promotion gates.
 
 No app implementation should begin until this gate is in place and the
 roadmap/spec is approved.
@@ -81,25 +91,17 @@ Production deployment must not run directly from arbitrary branches.
 
 Recommended lifecycle:
 
-- PR branches trigger CI and may trigger optional preview or review
-  deployments.
-- Approved PRs with passing checks may auto-merge to `main`.
-- Merge or push to `main` publishes the digest. The private
-  `StockHub-Deployment` Actions task selects a successful publish run and
-  deploys its image to persistent local kind through the dedicated runner.
-- Shared review-staging CD activates only after a hosted target is configured.
-- Production promotes the digest recorded by a successful review-staging run
-  through a manual dispatch and protected GitHub environment.
+- PR branches trigger CI.
+- Merged issue PRs push to `dev`; the local PC sync timer builds that protected
+  commit and deploys it to the dev Compose stack.
+- A passing milestone closure is promoted to `main`; its annotated version tag
+  deploys the same locally built image to staging and then production after
+  staging health verification.
+- The three current targets bind to localhost on the developer PC. External
+  production hosting and access require a separate deployment decision.
 
-The `Image scan and local Kubernetes smoke` check must be required on `main`.
-It reports SARIF findings, blocks fixable high/critical vulnerabilities, and
-tests Compose and kind before publishing. Configure production approvers and
-main-only deployment rules before enabling promotion. The workflow fails on
-missing cluster or database configuration.
-
-After each milestone closes, synchronize its report and GitHub milestone,
-then create one annotated `v0.<milestone-number>.0` tag on verified `main`.
-See [the delivery gate](production-delivery-gate.md) for the current rollout.
+Production CD must be gated and explicit. It should not be introduced as a
+side-effect of early app scaffolding.
 
 ## Tracking
 

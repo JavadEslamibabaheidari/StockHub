@@ -1,21 +1,21 @@
-# Production delivery gate before Dashboard
+# Local delivery gate for Dashboard
 
-Status: implementation in progress; local self-hosted CD and GitHub gates pending
+Status: local Compose dev deployment verified; automatic branch and tag promotion pending
 Tracking: [issue #47](https://github.com/JavadEslamibabaheidari/StockHub/issues/47), milestone `2 Dashboard`
 
 ## Goal and scope
 
-Before Dashboard implementation advances, make the existing StockHub app image
-the tested artifact that GitHub Actions can publish and deploy to persistent
-Kubernetes on the owner's local PC.
-This is a delivery prerequisite within the mockup-led roadmap, not another
+Run StockHub on the owner's PC as three isolated local environments. GitHub
+Actions builds, tests, scans, and publishes the image; the PC fetches protected
+`dev` commits and milestone tags and deploys without a self-hosted runner.
+This is a delivery requirement within the Dashboard milestone, not another
 product milestone. Cover is closed. Access was later reopened after live
 review, so its earlier PASS report and tag are historical records; current
 status is in [project status](../project-status.md).
 
 The checkout has one deployable project: the root Dockerfile builds the React
 frontend into the ASP.NET Core API image. PostgreSQL is a supporting service
-with a Compose image and an ephemeral kind test fixture. No second app
+with a Compose image. The older kind test fixture remains for future work; no second app
 repository or frontend-only production image is required.
 
 ## Deliverables and acceptance
@@ -23,51 +23,56 @@ repository or frontend-only production image is required.
 | Work | Deliverable | Required evidence |
 |---|---|---|
 | Image | Root `Dockerfile` and `.dockerignore`, non-root runtime, `/health` and database `/ready` | Clean image build and Compose startup/route smoke |
-| Database | `--migrate-only` entry point and Kubernetes Job before application rollout | Migration Job completes against fresh PostgreSQL |
-| Local Kubernetes | App Deployment, Service, optional TLS Ingress, local PostgreSQL fixture, deployment and kind smoke scripts | Kind rollout 1/1 and HTTP/API smoke pass; cluster cleaned up |
+| Database | `--migrate-only` entry point before app startup; separate PostgreSQL volume per environment | Migration completes against fresh PostgreSQL; production backup taken before migration |
+| Local environments | `dev-stockhub`, `staging-stockhub`, and `prod-stockhub` Compose projects, localhost ports, independent private config files, and persistent session keys | Each project validates, has its own database and Data Protection volume, and exposes only its localhost port |
 | CI security | Image scan with SARIF upload and fixable HIGH/CRITICAL gate; weekly rescan and dependency update PRs | Security report visible on GitHub and no gating findings |
-| Registry | Main-only GHCR publish tagged by source SHA; retain immutable digest | Published digest recorded by the workflow |
-| Local CD | Private `StockHub-Deployment` Actions task with the dedicated self-hosted runner; persistent kind with PostgreSQL volume and localhost port; pull published digest, migrate, roll out, verify `/ready` | Successful private Actions run, deployed digest, and live `http://localhost:8080` |
-| Future shared CD | Staging and production workflow definitions with environment-scoped secrets and protected digest promotion | Issue #48 remains open until hosted cluster deployment runs pass |
-| Governance | Require `Image scan and local Kubernetes smoke` on main, synchronize issue #47 and this plan, tag closed milestones | Branch protection, issue and milestone state, and annotated tags verified |
+| Registry | Protected `dev` and milestone-tag GHCR publish tagged by source SHA; retain immutable digest | Published digest recorded by the workflow; local deployment independently builds the exact source commit |
+| Local CD | Poll protected `dev` and new annotated milestone tags from the PC; build the exact commit once, migrate, start, and verify `/ready` | Latest merged Dashboard commit live on localhost:8081; automated branch/tag path demonstrated |
+| Staging and prod | Promote a passing milestone tag to staging then prod using the same local image | Both stacks healthy on localhost:8082 and :8083; failed staging blocks prod |
+| Future shared CD | External hosting, TLS, secrets, backups, and protected promotion | Issue #48 remains open until a hosted deployment is selected and verified |
+| Governance | Require `Image scan and Compose smoke` on `dev` and `main`, synchronize issue #47 and this plan, tag closed milestones | Branch protection, issue and milestone state, and annotated tags verified |
 
 ## Dependencies and decisions
 
-- The local PC must be on with Docker Desktop and the dedicated GitHub runner
-  running. The runner belongs only to the private `StockHub-Deployment` repo.
-  Public StockHub PR and main workflows use hosted runners; the private task
-  polls successful protected-main publish runs and deploys their image. The
-  kind cluster and PostgreSQL volume persist until explicitly deleted.
+- The local PC must be on with Docker Desktop and the user sync timer running.
+  Public StockHub PR and publishing workflows use hosted runners only. No
+  GitHub job executes on the owner's PC. The PC fetches the public repository
+  using read-only Git access and builds the exact protected commit locally.
+- The three private config files live under `~/.config/stockhub/` as `dev.env`,
+  `staging.env`, and `prod.env`, each with a distinct password and port. They
+  must remain outside Git and mode 600. Compose project names prefix every
+  resource with `dev-`, `staging-`, or `prod-`.
 - A future shared target needs a pre-created Kubernetes namespace, restricted
   kubeconfig, durable PostgreSQL, an ingress controller, DNS, TLS Secret,
   GHCR pull access, and an owner for staging and production rollback.
   GitHub environment secrets and variables supply these at runtime.
-- Future production must use the same digest that a successful staging run recorded.
-  No arbitrary branch deployment or mutable-tag rebuild is allowed.
-- The current app uses one replica and `Recreate`: Data Protection keys are
-  pod-local, so scaling would invalidate cookie sessions. This causes a short
-  deployment interruption. Shared durable key storage and zero-downtime
-  rollout are a follow-up before horizontal scaling.
+- Local prod must use the same commit image built for staging. No arbitrary
+  branch deployment or mutable tag rebuild is allowed.
+- Local Compose runs one app instance per project and persists its Data
+  Protection keys in a project-specific volume. Deployment may briefly
+  interrupt requests. Shared key storage and zero-downtime rollout remain a
+  follow-up for future hosted multi-replica deployment.
 - Migration rollback is not automatic. Schema changes must remain compatible
   with the preceding image and have a reviewed recovery procedure.
-- GitHub Actions cannot prove a shared deployment until environment values
-  and cluster access are configured. Issue #48 tracks that activation. Issue
-  #47 requires a real self-hosted local deployment run before closure.
+- Issue #48 tracks future shared hosting. Issue #47 requires a real local
+  Compose deployment and the automated protected branch/tag sync before closure.
 
 ## Verification sequence
 
 1. Run backend and frontend CI-equivalent checks.
 2. Build and smoke the image with `scripts/check-compose-smoke.sh`.
 3. Scan the final image and resolve gating findings.
-4. Run `scripts/check-kind-smoke.sh` through Docker and verify migration,
-   rollout, readiness, routes, and cleanup.
-5. Register the dedicated runner, create the persistent local kind cluster,
-   and verify the same published image path on localhost.
-6. Merge the focused PR after CI and branch protection pass. Main publishes
-   the digest; the private deployment task selects a successful publish run
-   and deploys that digest to local kind.
-7. Record the run link, digest, and live URL in issue #47. Shared staging and
-   production activation follows issue #48 when a hosted cluster exists.
+4. Run `scripts/setup-local-environments.sh`, confirm private config modes,
+   and validate the three distinct Compose project names and localhost ports.
+5. Build the latest protected commit and verify local dev migration, readiness,
+   and frontend routes. On 2026-09-29, commit `146191eeed063c5165688f9f002a6f27c7d1fab5`
+   passed this check on localhost:8081.
+6. Create and protect `dev`, publish the local sync scripts, initialize the
+   timer, and demonstrate a merged PR automatically updating dev.
+7. Close the GitHub milestone with zero open issues, then tag its passing
+   `main` commit; prove staging health and prod promotion
+   of the same local image. Record commit, image ID, and live URLs in issue #47.
+   Shared hosting activation follows issue #48.
 
 ## Milestone tagging
 

@@ -1,6 +1,7 @@
 # StockHub AI Development Workflow
 
-Status: active governance; milestone 1 start gate is open after verified Cover closure
+Status: active governance; current milestone state is recorded in
+`docs/project-status.md`
 
 ## Purpose
 
@@ -30,20 +31,28 @@ work exists.
 6. Confirm the start gate: product scope, API/data/auth decisions, frontend
    behavior, backend behavior, testing, delivery, and GitHub tracking are
    implementation-ready.
-7. Implement one persisted issue at a time through a branch and pull request.
+7. Implement one persisted issue at a time through a branch and pull request
+   into `dev`. A merged PR deploys to the dev environment after CI and image
+   checks.
    Keep backend and frontend work separately testable, with generated API
    contracts as the boundary.
 8. After each issue, verify its acceptance criteria, tests, documentation, and
    GitHub status before moving to the next issue.
-9. Before milestone closure, run the closure hook and attach its report to the
-   milestone PR or final milestone issue.
-10. Close the GitHub milestone only when every issue is complete, the closure
-   report passes, and all deliberate deviations, missing coverage, and
-   follow-ups are recorded.
+9. Collect and verify closure evidence while the report remains `IN PROGRESS`
+   or `BLOCKED`. Resolve every issue and record deliberate deviations, missing
+   coverage, and follow-ups.
+10. Promote implementation from `dev` to `main` by milestone PR once the
+    pre-promotion evidence is accepted. Verify the merged code and checks,
+    close every issue and the GitHub milestone, then mark the final report
+    `PASS` and run the closure validator and live milestone guard. Merge that
+    final report to `main` before tagging its commit for local staging and
+    prod as described in `docs/plans/deployment-environments.md`.
 
 Implementation must not bypass the persisted issue sequence. If a missing
 requirement appears, create or update a GitHub issue under the milestone,
 update the local plan, and only then implement it.
+Use `docs/project-status.md` to report merged code, published image, and live
+dev, staging, and prod deployments as separate states.
 
 ## Previous milestone and start gate order
 
@@ -69,6 +78,12 @@ Each issue is completed independently and reports:
 - deliberate deviations and follow-ups; and
 - GitHub issue, branch, pull request, and board state.
 
+Any issue that creates a new deployable project must also report the
+containerization evidence required by the repository `AGENTS.md`: Dockerfile,
+`.dockerignore`, local container startup documentation, health/readiness check,
+and an automated CI build/smoke check. The issue is not implementation-ready
+without this delivery path unless an approved, tracked deviation is recorded.
+
 Only the main integration task may advance the milestone after reviewing that
 report and resolving conflicts or gaps.
 
@@ -79,8 +94,10 @@ report must compare the final implementation to the approved mockup/spec,
 milestone plan, persisted issues, accepted ADRs, knowledge, roadmap, code,
 tests, configuration, deployment evidence, and GitHub tracking.
 
-No milestone may be marked closed locally or on GitHub without a passing
-closure report.
+The GitHub milestone is closed after its issues and closure evidence are
+accepted. Its final report can then pass the live GitHub milestone guard. Do
+not mark the milestone fully closed in local project status or create its
+release tag until that `PASS` report is merged and both checks succeed.
 
 ## Legacy wording
 
@@ -104,7 +121,9 @@ linked tracking:
 - backend and frontend build, lint, unit, integration, contract, and end-to-end
   checks are named;
 - configuration, migration, local-development, review, and deployment impact
-  are understood;
+  are understood, including the required Dockerfile, container startup path,
+  health/readiness verification, and CI container smoke check for every new
+  deployable project;
 - the GitHub milestone, issues, labels, board state, branch protection, and CI
   checks are verified or an explicit synchronization blocker is recorded; and
 - no implementation-blocking decision remains open.
