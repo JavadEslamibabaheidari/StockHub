@@ -4,4 +4,5 @@ public sealed record Invitation(
     Guid WorkspaceId,
     string Email,
     WorkspaceRole Role,
-    DateTimeOffset ExpiresAt);
+    DateTimeOffset ExpiresAt,
+    DateTimeOffset? ConsumedAt = null);

@@ -7,6 +7,7 @@ on:
       - 'docs/reports/**'
       - 'docs/ai-development-workflow.md'
       - 'scripts/check-milestone-closure.sh'
+      - 'scripts/check-tracking-status.sh'
 
 permissions:
   contents: read
@@ -51,6 +52,6 @@ jobs:
             if grep -Eq '^status:[[:space:]]*PASS[[:space:]]*$' "$report"; then
               bash scripts/check-milestone-closure.sh "$report"
             else
-              echo "Closure report is explicitly blocked; final PASS validation is deferred: $report"
+              echo "Closure report is not PASS; final closure validation is deferred: $report"
             fi
           done <<< '${{ steps.report.outputs.paths }}'

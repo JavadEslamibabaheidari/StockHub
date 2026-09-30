@@ -1,3 +1,5 @@
+SELECT pg_advisory_xact_lock(71054003);
+
 CREATE EXTENSION IF NOT EXISTS citext;
 
 CREATE TABLE IF NOT EXISTS schema_migrations (

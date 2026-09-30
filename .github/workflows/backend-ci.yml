@@ -2,28 +2,8 @@ name: Backend CI
 
 on:
   pull_request:
-    paths:
-      - 'backend/**'
-      - 'StockHub.sln'
-      - 'contracts/**'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - 'scripts/check-compose-smoke.sh'
-      - 'docs/plans/**'
-      - 'docs/reports/**'
-      - '.github/workflows/backend-ci.yml'
   push:
     branches: [main]
-    paths:
-      - 'backend/**'
-      - 'StockHub.sln'
-      - 'contracts/**'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - 'scripts/check-compose-smoke.sh'
-      - 'docs/plans/**'
-      - 'docs/reports/**'
-      - '.github/workflows/backend-ci.yml'
 
 permissions:
   contents: read
@@ -53,7 +33,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.x
       - name: Restore dependencies

@@ -13,11 +13,28 @@ public interface IAccessStore
         string passwordHash,
         CancellationToken cancellationToken);
 
+    Task<(User User, Session Session)> CreateUserWithSessionAsync(
+        string fullName,
+        string normalizedEmail,
+        string passwordHash,
+        CancellationToken cancellationToken);
+
     Task<Session> CreateSessionAsync(Guid userId, CancellationToken cancellationToken);
 
     Task<Session?> FindSessionAsync(Guid sessionId, CancellationToken cancellationToken);
 
     Task ClearSessionAsync(Guid sessionId, CancellationToken cancellationToken);
+
+    Task CreatePasswordResetAsync(Guid userId, string tokenHash, DateTimeOffset expiresAt, CancellationToken cancellationToken);
+
+    Task<bool> ResetPasswordAsync(string tokenHash, string passwordHash, CancellationToken cancellationToken);
+
+    Task<User> GetOrCreateGoogleUserAsync(
+        string subject,
+        string normalizedEmail,
+        string fullName,
+        bool allowExistingAccountLink,
+        CancellationToken cancellationToken);
 
     Task<IReadOnlyList<(Workspace Workspace, WorkspaceRole Role)>> ListWorkspacesAsync(
         Guid userId,
@@ -43,7 +60,9 @@ public interface IAccessStore
         DateTimeOffset expiresAt,
         CancellationToken cancellationToken);
 
-    Task<bool> InvitationExistsAsync(string tokenHash, CancellationToken cancellationToken);
+    Task<Invitation?> FindInvitationAsync(string tokenHash, CancellationToken cancellationToken);
+
+    Task<Guid?> AcceptInvitationAsync(string tokenHash, Guid userId, string normalizedEmail, CancellationToken cancellationToken);
 
     Task RecordOnboardingActionAsync(
         Guid userId,

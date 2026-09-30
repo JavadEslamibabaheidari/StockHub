@@ -26,6 +26,7 @@
 <!-- State "None" when not applicable. Do not include secrets. -->
 
 - [ ] This pull request does not deploy directly from an arbitrary branch to production.
+- [ ] Delivery claims distinguish PR checks, merged code, published digest, and verified target deployment; skipped jobs are named.
 
 ## Security and data impact
 
@@ -44,4 +45,5 @@
 - [ ] Mockup/spec, plan, acceptance criteria, accepted ADRs, knowledge, roadmap, code, tests, configuration, and GitHub tracking are mapped.
 - [ ] Deliberate deviations are listed with rationale, approval, owner, follow-up issue, and target milestone.
 - [ ] Missing coverage and follow-ups are listed with evidence; none are implicit.
-- [ ] If this closes a milestone, the closure report passes `scripts/check-milestone-closure.sh` and is linked here.
+- [ ] If this advances a milestone, the report names its current GitHub issue state and remains `BLOCKED` or `IN PROGRESS` until closure.
+- [ ] A final `PASS` report links a closed GitHub milestone with zero open issues and passes `scripts/check-milestone-closure.sh` and `scripts/check-tracking-status.sh`.
