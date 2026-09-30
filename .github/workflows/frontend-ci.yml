@@ -2,13 +2,6 @@ name: Frontend CI
 
 on:
   pull_request:
-    paths:
-      - 'frontend/**'
-      - 'contracts/**'
-      - 'scripts/check-access-contract.mjs'
-      - 'docs/plans/**'
-      - 'docs/reports/**'
-      - '.github/workflows/frontend-ci.yml'
   push:
     branches:
       - main
