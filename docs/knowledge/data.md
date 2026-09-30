@@ -35,3 +35,8 @@ case-insensitive email uniqueness, owner-role constraints, ISO code columns,
 and tenant foreign keys. The application store is behind `IAccessStore` so the
 PostgreSQL adapter can be introduced without sharing domain entities across
 the API/frontend boundary.
+
+
+## Dashboard read model state
+
+Milestone 2 adds workspace-scoped `dashboard_states` in `004_dashboard_state.sql`. The table stores Dashboard UI/action state such as first-sync mode, Euronics retry, mismatch resolution, restock handoff, expanded low-stock items, and the current detail panel. Product counts still live in `products`; Dashboard on-hand adjustments update product persistence through the product store. Real connector, reservation, order, and inventory ledgers remain owned by their future modules.

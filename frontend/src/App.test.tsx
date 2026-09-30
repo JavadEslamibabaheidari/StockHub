@@ -32,33 +32,11 @@ describe('Milestone 0 Cover', () => {
     expect(markup.match(/class="status-pill/g)).toHaveLength(4)
   })
 
-  it('exposes a named roadmap navigation and the current cover section', () => {
+  it('shows account actions without the roadmap panel', () => {
     const markup = renderToStaticMarkup(<App />)
-
-    expect(markup).toContain('aria-label="StockHub roadmap contents"')
-    expect(markup).toContain('aria-current="page"')
-    expect(markup.match(/aria-current="page"/g)).toHaveLength(1)
-    expect(markup).toContain('Cover is the first live section')
-  })
-
-  it('keeps every approved roadmap screen name in the contents index', () => {
-    const markup = renderToStaticMarkup(<App />)
-
-    expect(markup.match(/class="section-number"/g)).toHaveLength(13)
-
-    for (const screen of [
-      '3.5 Product detail all platforms failing',
-      '4.5 Order detail return flow',
-      '4.6 Order detail cancel confirmation',
-      '4.7 Orders Warehouse staff view',
-      '5.1 Reservations',
-      '7.1 Pricing rules',
-      '9.1 Team',
-      '10.2 Settings Appearance',
-      '11.2 Inventory dark quick view open',
-    ]) {
-      expect(markup).toContain(screen)
-    }
+    expect(markup).toContain('Create your account')
+    expect(markup).toContain('Sign in')
+    expect(markup).not.toContain('StockHub roadmap contents')
   })
 
   it('keeps responsive, focus, and reduced-motion safeguards in the Cover stylesheet', () => {
@@ -78,15 +56,38 @@ describe('Milestone 1 Access', () => {
     expect(markup).toContain('Create your account')
     expect(markup).toContain('aria-describedby="signup-guidance"')
     expect(markup).toContain('Terms')
+    expect(markup).toContain('Continue with Google')
+    expect(markup).toContain('Up and running in')
     Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
   })
 
-  it('renders the workspace and honest onboarding handoff routes', () => {
+  it('renders the workspace and onboarding routes', () => {
     const originalWindow = globalThis.window
-    for (const [hash, expected] of [['#workspace', 'Create your workspace'], ['#onboarding', 'A steady start'], ['#invite', 'Invite your team']] as const) {
+    for (const [hash, expected] of [['#workspace', 'Create your workspace'], ['#onboarding', 'Welcome, there'], ['#dashboard', 'Loading dashboard'], ['#invite', 'Invite your team']] as const) {
       Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash }, addEventListener: () => {}, removeEventListener: () => {} } })
       expect(renderToStaticMarkup(<App />)).toContain(expected)
     }
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+  })
+
+  it('renders password recovery and reset routes', () => {
+    const originalWindow = globalThis.window
+    for (const [hash, expected] of [['#forgot', 'Send reset link'], ['#reset?token=ABC', 'Update password']] as const) {
+      Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash }, addEventListener: () => {}, removeEventListener: () => {} } })
+      expect(renderToStaticMarkup(<App />)).toContain(expected)
+    }
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+  })
+})
+
+
+describe('Milestone 2 Dashboard route', () => {
+  it('routes #dashboard to the Dashboard application shell', () => {
+    const originalWindow = globalThis.window
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash: '#dashboard' }, addEventListener: () => {}, removeEventListener: () => {} } })
+    const markup = renderToStaticMarkup(<App />)
+    expect(markup).toContain('dashboard-page')
+    expect(markup).toContain('Loading dashboard')
     Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
   })
 })

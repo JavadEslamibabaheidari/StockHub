@@ -1,6 +1,6 @@
 # Milestone 0 — Cover
 
-Status: implemented locally; closure pending branch, PR, CI, and GitHub verification
+Status: closed; PR #18 merged and GitHub Milestone 0 has zero open issues
 
 ## Goal
 

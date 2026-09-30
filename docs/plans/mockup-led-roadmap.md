@@ -1,7 +1,7 @@
 # StockHub Mockup-Led Roadmap
 
 Status: roadmap structure approved; architecture baseline accepted in PR #14;
-Milestone 0 Cover is closed; Milestone 1 Access is complete and closed after PRs #38, #43, and #44
+Milestone 0 Cover is closed; Milestone 1 Access implementation is merged but closure remains blocked by external Google OAuth and email provider verification; Milestone 2 Dashboard is active
 
 ## Source of truth
 
@@ -66,16 +66,18 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-The next milestone is `2 Dashboard`. `1 Access` is complete and closed. Milestone `0 Cover` is closed with its
-closure hook and zero open GitHub issues. Access is complete after corrective PRs #38, #43, and #44;
-all persistence, packaging, and same-origin gaps were closed; the runtime
-now uses PostgreSQL persistence and has verified container and same-origin
-production routing.
+The active product milestone is `2 Dashboard`. Milestone `0 Cover` is closed with its
+closure hook and zero open GitHub issues. Milestone `1 Access` implementation is merged,
+but closure remains blocked until Google OAuth and outbound email provider setup are
+configured and verified in deployment. Access persistence, packaging, and same-origin gaps
+were closed; the runtime uses PostgreSQL persistence and a containerized one-origin route.
 
-The next product milestone is `2 Dashboard`. Before its implementation
-advances, complete the cross-cutting [production delivery gate](production-delivery-gate.md)
-tracked in issue #47. It adds image security, local Kubernetes verification,
-and GitHub Actions deployment without creating a parallel product milestone.
+Dashboard implementation is merged under
+[milestone-2-dashboard.md](milestone-2-dashboard.md). Its cross-cutting
+[delivery gate](production-delivery-gate.md), tracked in issue #47, remains
+open. The delivery environment task is replacing the earlier Kubernetes
+assumption with separate local dev, staging, and production Compose targets;
+that change requires its own verification before the gate can close.
 Each completed milestone receives one annotated `v0.<number>.0` tag after its
 closure and checks are verified.
 
@@ -114,11 +116,12 @@ Implementation can begin only after:
 - GitHub milestone and issue state matches this roadmap; and
 - the project board is available or its access gap is recorded.
 
-The detailed implementation plan is
-[docs/plans/milestone-1-access.md](milestone-1-access.md). It must cover both
-backend and frontend work. The implementation gate was satisfied because the local checkout
-and authenticated GitHub verification are available. Closure passed
-after issues #39–#41 and the final evidence audit completed.
+The Access implementation plan is
+[milestone-1-access.md](milestone-1-access.md), with current remediation in
+[milestone-1-access-remediation.md](milestone-1-access-remediation.md).
+Access closure is blocked until issues #27, #35, and #65 are completed and
+the deployed provider and email flows are verified. The earlier closure claim
+was superseded by live review; see [project status](../project-status.md).
 
 ## Milestone closure gate
 

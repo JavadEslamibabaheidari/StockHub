@@ -9,8 +9,9 @@ Before Dashboard implementation advances, make the existing StockHub app image
 the tested artifact that GitHub Actions can publish and deploy to persistent
 Kubernetes on the owner's local PC.
 This is a delivery prerequisite within the mockup-led roadmap, not another
-product milestone. Cover and Access were already closed on `main`; their
-closure reports remain historical records.
+product milestone. Cover is closed. Access was later reopened after live
+review, so its earlier PASS report and tag are historical records; current
+status is in [project status](../project-status.md).
 
 The checkout has one deployable project: the root Dockerfile builds the React
 frontend into the ASP.NET Core API image. PostgreSQL is a supporting service
@@ -78,6 +79,7 @@ after checking their historical closure and commit targets. Dashboard gets
 
 ## Previous milestone hook
 
-Access was closed on GitHub with zero open milestone issues and a PASS report
-on merged `main` in PRs #45 and #46. This plan does not reopen Access or
-rewrite its closure evidence.
+Access was once closed after PRs #45 and #46, then reopened after live review.
+Issues #27, #35, and #65 currently block its closure. Dashboard issue #47
+remains open independently; neither milestone should inherit the old Access
+PASS verdict.

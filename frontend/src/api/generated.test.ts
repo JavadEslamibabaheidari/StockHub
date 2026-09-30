@@ -25,4 +25,30 @@ describe('AccessApiClient origin', () => {
     )
     expect(String(fetchMock.mock.calls[0]?.[0])).not.toMatch(/^https?:\/\//)
   })
+
+  it('retains JSON content type when sending an idempotency key', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: 'workspace-1' }), {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    await new AccessApiClient().createWorkspace(
+      { businessName: 'Rossi Elettronica', country: 'IT', currency: 'EUR' },
+      'request-1',
+    )
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(init.headers).toMatchObject({
+      'Content-Type': 'application/json',
+      'Idempotency-Key': 'request-1',
+    })
+  })
+  it('preserves status codes for empty API errors', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 401, statusText: 'Unauthorized' }))
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(new AccessApiClient().session()).rejects.toMatchObject({
+      status: 401,
+      problem: expect.objectContaining({ detail: 'Unauthorized' }),
+    })
+  })
 })

@@ -1,7 +1,8 @@
 # Milestone closure report — <milestone>
 
-status: <PASS only after review>
+status: <BLOCKED or IN PROGRESS until GitHub is closed with zero open issues; then PASS>
 milestone: <roadmap milestone>
+github_milestone_number: <number from GitHub milestone URL>
 plan: <plan path>
 mockup_evidence: <mockup screens and immutable evidence>
 adr_evidence: <accepted ADR paths, revision, and review evidence>

@@ -41,6 +41,56 @@ spec:
                 secretKeyRef:
                   name: stockhub-runtime
                   key: postgres-connection
+            - name: Authentication__Google__ClientId
+              valueFrom:
+                secretKeyRef:
+                  name: stockhub-runtime
+                  key: google-client-id
+                  optional: true
+            - name: Authentication__Google__ClientSecret
+              valueFrom:
+                secretKeyRef:
+                  name: stockhub-runtime
+                  key: google-client-secret
+                  optional: true
+            - name: Application__PublicBaseUrl
+              valueFrom:
+                secretKeyRef:
+                  name: stockhub-runtime
+                  key: public-base-url
+                  optional: true
+            - name: Email__Smtp__Host
+              valueFrom:
+                secretKeyRef:
+                  name: stockhub-runtime
+                  key: smtp-host
+                  optional: true
+            - name: Email__Smtp__Port
+              valueFrom:
+                secretKeyRef:
+                  name: stockhub-runtime
+                  key: smtp-port
+                  optional: true
+            - name: Email__Smtp__From
+              valueFrom:
+                secretKeyRef:
+                  name: stockhub-runtime
+                  key: smtp-from
+                  optional: true
+            - name: Email__Smtp__Username
+              valueFrom:
+                secretKeyRef:
+                  name: stockhub-runtime
+                  key: smtp-username
+                  optional: true
+            - name: Email__Smtp__Password
+              valueFrom:
+                secretKeyRef:
+                  name: stockhub-runtime
+                  key: smtp-password
+                  optional: true
+            - name: Email__Smtp__UseTls
+              value: "true"
           startupProbe:
             httpGet:
               path: /ready
@@ -72,8 +122,12 @@ spec:
           volumeMounts:
             - name: data-protection
               mountPath: /home/app/.aspnet/DataProtection-Keys
+            - name: temp
+              mountPath: /tmp
       volumes:
         - name: data-protection
+          emptyDir: {}
+        - name: temp
           emptyDir: {}
 ---
 apiVersion: v1

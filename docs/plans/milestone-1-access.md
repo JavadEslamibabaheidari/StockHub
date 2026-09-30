@@ -1,6 +1,6 @@
 # Milestone 1 — Access
 
-Status: COMPLETE — corrective work delivered, verified, and closed on 2026-09-27
+Status: REOPENED — live access defects are tracked in `milestone-1-access-remediation.md`; previous closure is superseded pending deployed verification of every agreed control.
 
 ## Goal
 

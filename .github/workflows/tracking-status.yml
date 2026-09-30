@@ -1,0 +1,28 @@
+name: Tracking status consistency
+
+on:
+  pull_request:
+    paths:
+      - 'docs/reports/**'
+      - 'docs/project-status.md'
+      - 'scripts/check-tracking-status.sh'
+      - '.github/workflows/tracking-status.yml'
+  push:
+    branches: [main]
+  schedule:
+    - cron: '31 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  milestone-state:
+    name: Compare reports with GitHub milestones
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/check-tracking-status.sh
