@@ -18,7 +18,7 @@ RUN dotnet publish backend/src/StockHub.Api/StockHub.Api.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 RUN apt-get update \
-    && apt-get install --no-install-recommends --yes curl \
+    && apt-get install --no-install-recommends --yes curl libssl3t64 \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=backend-build /app/publish ./
 COPY --from=frontend-build /src/frontend/dist ./wwwroot
