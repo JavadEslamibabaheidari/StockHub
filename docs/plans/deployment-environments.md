@@ -1,11 +1,11 @@
 # Local deployment environments and milestone promotion
 
-Status: local-PC deployment path implemented in repository. The sync timer is
-installed and waits for branch protection plus explicit `init`. The dev stack was
-verified on 2026-09-29 with merged commit `146191eeed063c5165688f9f002a6f27c7d1fab5`:
-PostgreSQL and app containers healthy, `/ready` returned ready, and the frontend
-page responded. GitHub `dev` branch setup and tagged staging/prod promotion
-remain to be verified.
+Status: protected `dev` and the localhost dev stack verified on 2026-09-30.
+PR #71 passed required checks and merged as `1788e945c1902f4fdf229805f3371bb5453e404a`.
+The timer deployed that exact commit to dev; PostgreSQL and app containers are
+healthy, `/ready` returned ready, and the frontend returned HTTP 200. The dev
+push image scan, Compose smoke, and image publication passed. Tagged staging
+and prod promotion awaits a completed milestone.
 
 ## Release flow
 
@@ -40,7 +40,6 @@ future hosting work.
 ```bash
 bash scripts/setup-local-environments.sh
 systemctl --user enable --now docker-desktop.service
-# Create and protect the dev branch on GitHub before this step:
 bash scripts/sync-local-deployments.sh init
 bash scripts/install-local-sync-timer.sh
 ```
@@ -50,8 +49,7 @@ The setup script writes separate mode-600 `dev.env`, `staging.env`, and
 its port, password, public base URL, ASP.NET environment, cookie setting,
 Google OAuth credentials, and SMTP settings. The optional provider settings
 are blank until configured, and each environment can use different credentials.
-The sync script
-writes deployment state under `~/.local/state/stockhub/`. `init`
+The sync script writes deployment state under `~/.local/state/stockhub/`. `init`
 records historical release tags without deploying them, then deploys current
 `dev`. `init` also unlocks the timer only after the protected branch is ready.
 The timer handles new commits and tags. To trigger a check immediately,
@@ -65,9 +63,9 @@ Docker Desktop restarts. The timer can be disabled with
 To inspect the three stacks:
 
 ```bash
-docker compose -p dev-stockhub --env-file ~/.config/stockhub/dev.env -f deploy/compose.local.yml ps
-docker compose -p staging-stockhub --env-file ~/.config/stockhub/staging.env -f deploy/compose.local.yml ps
-docker compose -p prod-stockhub --env-file ~/.config/stockhub/prod.env -f deploy/compose.local.yml ps
+docker ps --filter label=com.docker.compose.project=dev-stockhub
+docker ps --filter label=com.docker.compose.project=staging-stockhub
+docker ps --filter label=com.docker.compose.project=prod-stockhub
 curl --fail http://127.0.0.1:8081/ready
 curl --fail http://127.0.0.1:8082/ready
 curl --fail http://127.0.0.1:8083/ready
@@ -87,9 +85,12 @@ restore may still be needed after a failed release. Do not move or reuse a publi
 - Hosted GitHub Actions run repository, frontend, backend, container smoke, and
   image security checks. No GitHub runner executes on this PC. Branch
   protection is the gate before a merged `dev` commit can be fetched locally.
-- GitHub access is still needed to create/protect the branch and publish these
-  files. A public remote can be fetched by the local timer without a GitHub
-  token; private repositories need read-only credentials.
+- The current `main` branch rule still names the former Kubernetes smoke check.
+  Update it to `Image scan and Compose smoke` when preparing the first
+  `dev`-to-`main` milestone PR. Existing open dependency PRs target `main`
+  and still run the old workflow.
+- The local timer fetches this public remote without a GitHub token; private
+  repositories need read-only credentials.
 
 `Dockerfile`, `docker-compose.yml`, and `scripts/check-compose-smoke.sh` remain
 the clean-checkout packaging and CI smoke path. `deploy/compose.local.yml`,
