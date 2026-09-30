@@ -47,7 +47,7 @@ jobs:
       STOCKHUB_POSTGRES_TEST_CONNECTION: Host=localhost;Port=5432;Database=stockhub;Username=stockhub;Password=stockhub-ci
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.x
       - name: Run backend tests with PostgreSQL
