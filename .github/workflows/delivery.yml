@@ -93,9 +93,26 @@ jobs:
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
       - name: Install kind
-        uses: helm/kind-action@v1.15.0
-        with:
-          install_only: true
+        env:
+          KIND_VERSION: v0.33.0
+        run: |
+          set -euo pipefail
+          arch=amd64
+          curl --fail --silent --show-error --location \
+            --output kind \
+            "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-${arch}"
+          curl --fail --silent --show-error --location \
+            --output kind.sha256sum \
+            "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-${arch}.sha256sum"
+          expected="$(awk '{print $1}' kind.sha256sum)"
+          actual="$(sha256sum kind | awk '{print $1}')"
+          if [[ -z "$expected" || "$actual" != "$expected" ]]; then
+            echo "kind checksum mismatch" >&2
+            exit 1
+          fi
+          chmod +x kind
+          sudo mv kind /usr/local/bin/kind
+          kind version
       - name: Kubernetes migration and rollout smoke
         run: bash scripts/check-kind-smoke.sh
 
