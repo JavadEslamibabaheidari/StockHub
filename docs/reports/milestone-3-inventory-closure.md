@@ -1,6 +1,6 @@
 # Milestone closure report - 3 Inventory
 
-status: IN PROGRESS
+status: PASS
 github_milestone_number: 4
 milestone: 3 Inventory
 plan: docs/plans/milestone-3-inventory.md
@@ -11,23 +11,23 @@ roadmap_evidence: docs/plans/mockup-led-roadmap.md milestone 3 Inventory
 code_evidence: backend/src/StockHub.Api/Contracts/InventoryContracts.cs; backend/src/StockHub.Api/Program.cs; frontend/src/InventoryScreens.tsx; frontend/src/App.tsx; frontend/src/api/generated.ts; frontend/src/App.test.tsx; frontend/src/api/generated.test.ts; frontend/src/styles.css
 tests_evidence: cd frontend && npm test PASS 14 tests; cd frontend && npm run build PASS; cd frontend && npm run contract:check PASS; dotnet test StockHub.sln PASS 16 tests; browser smoke PASS for Inventory, Dashboard, and Sign-in routes
 configuration_evidence: no new deployable project; existing Dockerfile, docker-compose.yml, readiness endpoint, and Kubernetes manifests remain the deployment path
-github_evidence: issues #74, #75, #76, #77, #78 open under GitHub milestone 3 Inventory pending PR merge and deployment verification
+github_evidence: PR #79 merged to main at ca6b54059a31fac2cedb2f179d84a6f731228989; issues #74, #75, #76, #77, and #78 are closed; GitHub milestone 3 Inventory is closed with zero open issues; main delivery run 36866938760 passed and published ghcr.io/javadeslamibabaheidari/stockhub@sha256:805096315203e3d735c23eb8c0f3e727895ba675f070d64cdedd5a73c6ff4b55
 previous_milestone_hook: PASS - GitHub milestone 2 Dashboard is closed with zero open issues
 
 ## Alignment matrix
 
 | ID | Source / expected outcome | Implementation or configuration | Test / evidence | Status | Reason, owner, follow-up issue, target milestone |
 |---|---|---|---|---|---|
-| 3.1 | Inventory list with sync warning, filters, selected rows, stock equation, platform status | Inventory API list projection; `#inventory` route; Inventory table styles | Frontend route test; browser smoke; backend test suite compile | PASS | Owner: engineering; follow-up: #78 until merge/deploy; target: 3 Inventory |
+| 3.1 | Inventory list with sync warning, filters, selected rows, stock equation, platform status | Inventory API list projection; `#inventory` route; Inventory table styles | Frontend route test; browser smoke; backend test suite compile | PASS | Owner: engineering; follow-up: none; target complete |
 | 3.2 | Empty state with import CSV, add product, template handoff | `#inventory-empty`; template download; explicit import/manual-add panels | Frontend route test; browser smoke | PASS | Full import review remains future Inventory hardening; owner: engineering; follow-up: #76; target: Inventory hardening |
-| 3.3 | Warehouse staff view can adjust on hand but not prices | Staff route, capability model, row steppers, backend role capability response | Frontend route test; browser smoke | PASS | Owner: engineering; follow-up: #75 until merge; target: 3 Inventory |
+| 3.3 | Warehouse staff view can adjust on hand but not prices | Staff route, capability model, row steppers, backend role capability response | Frontend route test; browser smoke | PASS | Owner: engineering; follow-up: none; target complete |
 | 3.4 | Product detail shows stock, listings, pricing, audit log | Inventory detail projection; `#inventory-detail`; product detail UI | Frontend route test; browser smoke | PASS | Pricing automation handed to milestone 7; owner: engineering; follow-up: #77; target: 3 Inventory |
 | 3.5 | All-platforms-failing state with oversell warning, pause, retry | `allFailing` detail projection; `#inventory-detail-failing` | Frontend route test; browser smoke | PASS | Live connector repair belongs to milestone 6; owner: engineering; follow-up: #77; target: 3 Inventory |
-| REG | Previous pages do not diverge | Current `origin/main` used; Dashboard and Sign-in routes preserved | `npm test`; browser smoke for `#dashboard` and `#signin` | PASS | Owner: engineering; follow-up: #78 until post-merge verification; target: 3 Inventory |
+| REG | Previous pages do not diverge | Current `origin/main` used; Dashboard and Sign-in routes preserved | `npm test`; browser smoke for `#dashboard` and `#signin`; PR and main CI passed | PASS | Owner: engineering; follow-up: none; target complete |
 | BTN | Buttons/icons functional unless future-owned | Inventory controls update local/API state or open explicit panels naming future milestones | Browser smoke and code review | PASS | Owner: engineering; follow-up: future owning milestones for import hardening, Platforms, Pricing rules, Reports |
-| API | Backend and frontend delivered together | Inventory contracts and endpoints plus generated TypeScript client methods | `dotnet test`, `npm test`, `contract:check` | PASS | Owner: engineering; follow-up: #78 until merged/deployed |
-| DEPLOY | Latest deployed pod contains changes | Existing deployment path unchanged | Pending PR merge and deployment check | IN_PROGRESS | Owner: engineering; follow-up: #78; target: 3 Inventory |
-| GITHUB | Issues/PRs closed and merged to main | Issues #74-#78 created | Pending PR and closure | IN_PROGRESS | Owner: engineering; follow-up: #78; target: 3 Inventory |
+| API | Backend and frontend delivered together | Inventory contracts and endpoints plus generated TypeScript client methods | `dotnet test`, `npm test`, `contract:check`, PR CI, and main delivery run passed | PASS | Owner: engineering; follow-up: none; target complete |
+| DEPLOY | Latest deployed pod contains changes | Existing deployment path unchanged; CI kind pod smoke uses the latest source image | Main delivery run 36866938760 passed Kubernetes migration and rollout smoke for ca6b540 and published digest sha256:805096315203e3d735c23eb8c0f3e727895ba675f070d64cdedd5a73c6ff4b55 | PASS | Owner: engineering; follow-up: none; target complete |
+| GITHUB | Issues/PRs closed and merged to main | PR #79 merged; issues #74-#78 closed; milestone 4 closed | `scripts/check-tracking-status.sh` passes against live GitHub state | PASS | Owner: engineering; follow-up: none; target complete |
 
 ## Deliberate deviations
 
@@ -46,8 +46,9 @@ previous_milestone_hook: PASS - GitHub milestone 2 Dashboard is closed with zero
 
 ## Missing coverage and follow-ups
 
-- PR merge, issue closure, and deployed pod freshness remain pending. Owner:
-  engineering. Follow-up: #78. Target: 3 Inventory.
+- No Milestone 3 issues remain open in GitHub. Future hardening remains owned
+  by the upcoming Platforms, Pricing rules, and Inventory hardening milestones
+  named in the deviations above.
 
 ## Evidence and verification
 
@@ -65,9 +66,21 @@ previous_milestone_hook: PASS - GitHub milestone 2 Dashboard is closed with zero
   - `#signin`
 - GitHub previous milestone check: `2 Dashboard` is closed with zero open
   issues.
+- PR #79 merged to `main` as `ca6b54059a31fac2cedb2f179d84a6f731228989`.
+- GitHub issues #74, #75, #76, #77, and #78 are closed; milestone 4
+  `3 Inventory` is closed with zero open issues.
+- PR #79 checks passed: backend build/test, frontend test/build, Compose
+  smoke, repository sanity, tracking status, closure validation, Trivy, and
+  image scan plus local Kubernetes smoke.
+- Main delivery run 36866938760 passed for `ca6b54059a31fac2cedb2f179d84a6f731228989`:
+  backend tests, frontend checks, image scan, Compose smoke, kind Kubernetes
+  migration and rollout smoke, and `Publish tested source image`.
+- Published immutable image:
+  `ghcr.io/javadeslamibabaheidari/stockhub@sha256:805096315203e3d735c23eb8c0f3e727895ba675f070d64cdedd5a73c6ff4b55`.
 
 ## Closure verdict
 
-IN PROGRESS. The implementation and local verification pass. Final closure is
-waiting for PR merge to `main`, issue closure, and deployed pod freshness
-verification.
+PASS. Milestone 3 Inventory is merged to `main`, all milestone issues are
+closed, the GitHub milestone is closed with zero open issues, and the
+post-merge main delivery run verified the latest source image through local
+Kubernetes pod smoke before publishing the immutable image digest above.
