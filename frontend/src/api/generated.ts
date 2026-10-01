@@ -13,6 +13,14 @@ export type InvitationRequest = { email: string; role: WorkspaceRole };
 export type InvitationResponse = { email: string; role: WorkspaceRole; status: string };
 export type ProductRequest = { sku: string; name: string; onHand: number; basePrice: number; category?: string | null };
 export type ProductResponse = ProductRequest & { id: string };
+export type InventoryCapabilities = { canAdjustOnHand: boolean; canChangePrice: boolean; canManageListings: boolean };
+export type InventoryPlatformStatus = { platform: string; code: string; status: string; detail: string; availableShown: number; listed: boolean };
+export type InventoryProductSummary = ProductResponse & { category: string; reserved: number; available: number; stockStatus: string; platforms: InventoryPlatformStatus[] };
+export type InventoryListResponse = { totalProducts: number; syncSummary: string; products: InventoryProductSummary[]; capabilities: InventoryCapabilities };
+export type InventoryPricingRow = { platform: string; rule: string; adjustment: string; finalPrice: number; fees: number; margin: number; status: string };
+export type InventoryAuditEntry = { kind: string; title: string; detail: string; when: string };
+export type InventoryProductDetail = { product: InventoryProductSummary; safetyBufferEnabled: boolean; lowStockAlertAt: number; syncAlert: string; pricing: InventoryPricingRow[]; auditLog: InventoryAuditEntry[]; capabilities: InventoryCapabilities };
+export type InventoryActionResponse = { status: string; product: InventoryProductSummary };
 export type DashboardMetricResponse = { key: string; label: string; value: string; hint: string; tone: string };
 export type DashboardReservationResponse = { id: string; productName: string; platform: string; orderNumber: string; quantity: string; timeLeft: string; progressPercent: number };
 export type DashboardPlatformSaleResponse = { platform: string; percent: number; tone: string };
@@ -43,6 +51,10 @@ export class AccessApiClient {
   selectOnboardingAction(workspaceId: string, key: string) { return this.request<void>(`/api/workspaces/${workspaceId}/onboarding/actions`, { method: 'POST', body: JSON.stringify({ key }) }); }
   products(workspaceId: string) { return this.request<ProductResponse[]>(`/api/workspaces/${workspaceId}/products`); }
   importProducts(workspaceId: string, products: ProductRequest[]) { return this.request<ProductResponse[]>(`/api/workspaces/${workspaceId}/products/import`, { method: 'POST', body: JSON.stringify(products) }); }
+  inventory(workspaceId: string, demo = false) { return this.request<InventoryListResponse>(`/api/workspaces/${workspaceId}/inventory/products${demo ? '?demo=true' : ''}`); }
+  inventoryProduct(workspaceId: string, productId: string, options: { allFailing?: boolean; demo?: boolean } = {}) { const params = new URLSearchParams(); if (options.allFailing) params.set('allFailing', 'true'); if (options.demo) params.set('demo', 'true'); const query = params.toString(); return this.request<InventoryProductDetail>(`/api/workspaces/${workspaceId}/inventory/products/${productId}${query ? `?${query}` : ''}`); }
+  adjustInventoryOnHand(workspaceId: string, productId: string, onHand: number) { return this.request<InventoryActionResponse>(`/api/workspaces/${workspaceId}/inventory/products/${productId}/on-hand`, { method: 'PATCH', body: JSON.stringify({ onHand }) }); }
+  retryInventorySync(workspaceId: string, productId: string) { return this.request<InventoryActionResponse>(`/api/workspaces/${workspaceId}/inventory/products/${productId}/retry-sync`, { method: 'POST' }); }
   dashboard(workspaceId: string) { return this.request<DashboardSnapshotResponse>(`/api/workspaces/${workspaceId}/dashboard`); }
   dashboardAction(workspaceId: string, request: DashboardActionRequest) { return this.request<DashboardActionResultResponse>(`/api/workspaces/${workspaceId}/dashboard/actions`, { method: 'POST', body: JSON.stringify(request) }); }
   invite(workspaceId: string, request: InvitationRequest) { return this.request<{ status: string }>(`/api/workspaces/${workspaceId}/invitations`, { method: 'POST', body: JSON.stringify(request) }); }

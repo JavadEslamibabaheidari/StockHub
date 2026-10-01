@@ -51,4 +51,18 @@ describe('AccessApiClient origin', () => {
       problem: expect.objectContaining({ detail: 'Unauthorized' }),
     })
   })
+
+  it('uses workspace-scoped Inventory API paths', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ totalProducts: 0, syncSummary: 'No platforms connected', products: [], capabilities: { canAdjustOnHand: true, canChangePrice: true, canManageListings: true } }), {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    await new AccessApiClient().inventory('workspace-1', true)
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/workspaces/workspace-1/inventory/products?demo=true',
+      expect.objectContaining({ credentials: 'include' }),
+    )
+  })
 })

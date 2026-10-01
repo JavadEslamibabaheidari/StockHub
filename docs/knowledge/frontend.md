@@ -52,3 +52,17 @@ current acceptance gate.
 Dashboard now has a dedicated `#dashboard` route implemented in `frontend/src/DashboardScreens.tsx`. Sign-in and workspace creation route to Dashboard when a workspace exists, while `#onboarding` remains available for the Access checklist. The Dashboard screens cover first use, first sync, and live operations. Visible controls either work inside Dashboard or open honest future-milestone handoffs. The frontend consumes Dashboard methods added to `frontend/src/api/generated.ts`; the Access contract check still guards the Access operations.
 
 Local verification for the Dashboard branch used the Docker Compose app on port 18082 and browser-tested sign-in, first-use controls, first sync, product import, live dashboard actions, later-milestone handoff navigation, and sign-out.
+
+## Milestone 3 Inventory
+
+Inventory routes are hash-addressable as `#inventory`, `#inventory-empty`,
+`#inventory-staff`, `#inventory-detail`, and `#inventory-detail-failing`.
+`frontend/src/InventoryScreens.tsx` renders the approved Inventory list, empty
+state, Warehouse staff view, product detail, and all-platforms-failing detail.
+The screens use the generated API client when a session/workspace exists and
+fall back to deterministic preview data for unauthenticated visual review.
+
+Inventory is integrated with existing Dashboard/product import work. The API
+uses workspace products for real data, supports on-hand adjustment through the
+product persistence path, and keeps CSV import hardening, marketplace repair,
+and pricing-rule automation as explicit future handoffs.

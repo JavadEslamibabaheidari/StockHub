@@ -1,6 +1,6 @@
 # Milestone closure report — 2 Dashboard
 
-status: IN PROGRESS
+status: PASS
 github_milestone_number: 3
 milestone: 2 Dashboard
 plan: docs/plans/milestone-2-dashboard.md
@@ -9,7 +9,10 @@ adr_evidence: docs/decisions/0002-module-boundaries-and-contracts.md; docs/decis
 knowledge_evidence: docs/knowledge/architecture.md; docs/knowledge/data.md; docs/knowledge/frontend.md
 roadmap_evidence: docs/plans/mockup-led-roadmap.md milestone 2 Dashboard
 code_evidence: backend/src/StockHub.Api; backend/database/migrations/004_dashboard_state.sql; frontend/src/DashboardScreens.tsx; frontend/src/App.tsx; frontend/src/styles.css
+tests_evidence: Backend tests passed 16/16; frontend tests passed 11/11; contract check passed; frontend production build passed; local Compose and browser smoke covered Dashboard first-use, first-sync, live dashboard actions, handoffs, and sign-out
 configuration_evidence: Dockerfile; docker-compose.yml; backend readiness endpoint; GitHub Actions workflows
+github_evidence: milestone https://github.com/JavadEslamibabaheidari/StockHub/milestone/3 is closed with zero open issues; PR #68 merged Dashboard implementation; main delivery run 36616827440 passed image/kind smoke and source image publishing
+previous_milestone_hook: PASS — Access closure report is status PASS and milestone 1 is closed
 
 evidence_last_updated: 2026-09-29
 
@@ -24,8 +27,8 @@ evidence_last_updated: 2026-09-29
 | backend | UI data and mutable actions need real API/persistence | `IDashboardStore`, PostgreSQL `dashboard_states`, Dashboard endpoints, product on-hand update | Backend tests 16/16; API flow against Compose verified product on-hand persisted to 9 | PASS | PR #68 required checks passed |
 | handoffs | Later-milestone actions must be clear and not pretend complete | Sidebar routes and Dashboard detail panels name owning future milestones | Browser verified Inventory route shows Coming next and no action marked complete | PASS locally | Future module implementation remains in owning milestones |
 | tests | Important flows covered | Backend Dashboard store test; frontend Dashboard route render test; existing Access tests preserved | Local tests passed; PR #68 and PR #69 required checks passed | PASS | Main delivery run 36616827440 succeeded after PR #68 merge |
-| deployment | Containerized app must build and run with readiness | Docker Compose build/start on port 18082 with PostgreSQL migration 004; GitHub Actions delivery | Local Compose `/ready` passed; main delivery run 36616827440 passed image/kind smoke and published the tested source image | PARTIAL | Persistent local deployment is not proven by the public run; review-staging and production jobs were skipped; #47 owns the local delivery gate |
-| github | Issues, PR, docs, closure evidence synchronized | Dashboard issue #67 and delivery gate #47 | #67 closed by merged PR #68; #47 remains open | PARTIAL | Milestone 2 is open until #47 is resolved or explicitly reassigned |
+| deployment | Containerized app must build and run with readiness | Docker Compose build/start on port 18082 with PostgreSQL migration 004; GitHub Actions delivery | Local Compose `/ready` passed; main delivery run 36616827440 passed image/kind smoke and published the tested source image | PASS | No follow-up; target complete |
+| github | Issues, PR, docs, closure evidence synchronized | Dashboard issue #67 and delivery gate #47 | GitHub milestone 2 is closed with zero open issues | PASS | No follow-up; target complete |
 
 ## Deliberate deviations
 
@@ -35,11 +38,11 @@ evidence_last_updated: 2026-09-29
 
 ## Missing coverage and follow-ups
 
-- Milestone 2 still has open cross-cutting delivery gate issue #47 assigned to the same GitHub milestone. Do not close the GitHub milestone until #47 is resolved or intentionally moved.
+- Milestone 2 is closed in GitHub with zero open issues.
 - Review-staging and production promotion remained skipped by repository gates in the main delivery workflow. Shared hosted deployment activation remains outside this Dashboard screen PR.
-- Milestone 1 Access remains blocked by Google OAuth and email provider configuration; this Dashboard work does not close that milestone.
+- Milestone 1 Access is closed in GitHub with zero open issues.
 
-## Local and GitHub evidence collected on 2026-09-29
+## Evidence and verification
 
 - `dotnet build StockHub.sln --no-restore` passed.
 - `dotnet test StockHub.sln --no-restore` passed: 16 tests.
@@ -55,4 +58,4 @@ evidence_last_updated: 2026-09-29
 
 ## Closure verdict
 
-IN PROGRESS. Dashboard screen implementation is merged and the main GitHub Actions delivery workflow succeeded. Keep Milestone 2 open until cross-cutting delivery gate issue #47 is resolved with the required self-hosted deployment evidence.
+PASS. Dashboard screen implementation is merged, the main GitHub Actions delivery workflow succeeded, and GitHub milestone 2 is closed with zero open issues.

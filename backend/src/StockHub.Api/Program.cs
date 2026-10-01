@@ -666,6 +666,133 @@ app.MapPost(
     .RequireAuthorization()
     .WithTags("Products");
 
+app.MapGet(
+    "/api/workspaces/{workspaceId:guid}/inventory/products",
+    async (
+        Guid workspaceId,
+        bool? demo,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IProductStore productStore,
+        CancellationToken cancellationToken) =>
+    {
+        var membership = await FindWorkspaceMembership(principal, accessStore, workspaceId, cancellationToken);
+        if (membership is null)
+        {
+            return Results.Forbid();
+        }
+
+        var products = await productStore.ListAsync(workspaceId, cancellationToken);
+        return Results.Ok(BuildInventoryList(products, membership.Value.Role, demo == true));
+    })
+    .RequireAuthorization()
+    .WithTags("Inventory");
+
+app.MapGet(
+    "/api/workspaces/{workspaceId:guid}/inventory/products/{productId:guid}",
+    async (
+        Guid workspaceId,
+        Guid productId,
+        bool? allFailing,
+        bool? demo,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IProductStore productStore,
+        CancellationToken cancellationToken) =>
+    {
+        var membership = await FindWorkspaceMembership(principal, accessStore, workspaceId, cancellationToken);
+        if (membership is null)
+        {
+            return Results.Forbid();
+        }
+
+        var products = await productStore.ListAsync(workspaceId, cancellationToken);
+        var summary = BuildInventoryRows(products, demo == true).FirstOrDefault(product => product.Id == productId);
+        if (summary is null)
+        {
+            return Results.NotFound(new Problem(
+                "Product not found",
+                "This product is no longer available in the workspace.",
+                "product_not_found"));
+        }
+
+        return Results.Ok(BuildInventoryDetail(summary, membership.Value.Role, allFailing == true));
+    })
+    .RequireAuthorization()
+    .WithTags("Inventory");
+
+app.MapPatch(
+    "/api/workspaces/{workspaceId:guid}/inventory/products/{productId:guid}/on-hand",
+    async (
+        Guid workspaceId,
+        Guid productId,
+        AdjustOnHandRequest request,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IProductStore productStore,
+        CancellationToken cancellationToken) =>
+    {
+        var membership = await FindWorkspaceMembership(principal, accessStore, workspaceId, cancellationToken);
+        if (membership is null)
+        {
+            return Results.Forbid();
+        }
+
+        if (!InventoryCapabilitiesFor(membership.Value.Role).CanAdjustOnHand || request.OnHand < 0)
+        {
+            return Results.UnprocessableEntity(new Problem(
+                "Invalid on-hand count",
+                "On hand must be zero or greater.",
+                "invalid_on_hand"));
+        }
+
+        var updated = await productStore.UpdateOnHandAsync(workspaceId, productId, request.OnHand, cancellationToken);
+        if (updated is null)
+        {
+            return Results.NotFound(new Problem(
+                "Product not found",
+                "This product is no longer available in the workspace.",
+                "product_not_found"));
+        }
+
+        return Results.Ok(new InventoryActionResponse("adjusted", BuildInventoryRow(updated, index: 0)));
+    })
+    .RequireAuthorization()
+    .WithTags("Inventory");
+
+app.MapPost(
+    "/api/workspaces/{workspaceId:guid}/inventory/products/{productId:guid}/retry-sync",
+    async (
+        Guid workspaceId,
+        Guid productId,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IProductStore productStore,
+        CancellationToken cancellationToken) =>
+    {
+        var membership = await FindWorkspaceMembership(principal, accessStore, workspaceId, cancellationToken);
+        if (membership is null)
+        {
+            return Results.Forbid();
+        }
+
+        var product = (await productStore.ListAsync(workspaceId, cancellationToken))
+            .FirstOrDefault(item => item.Id == productId);
+        if (product is null)
+        {
+            return Results.NotFound(new Problem(
+                "Product not found",
+                "This product is no longer available in the workspace.",
+                "product_not_found"));
+        }
+
+        return Results.Accepted(
+            $"/api/workspaces/{workspaceId}/inventory/products/{productId}",
+            new InventoryActionResponse("retry_queued", BuildInventoryRow(product, index: 0)));
+    })
+    .RequireAuthorization()
+    .WithTags("Inventory");
+
 
 app.MapGet(
     "/api/workspaces/{workspaceId:guid}/dashboard",
@@ -1005,6 +1132,171 @@ static async Task<bool> IsWorkspaceMember(
     CancellationToken cancellationToken) =>
     (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
     .Any(workspace => workspace.Workspace.Id == workspaceId);
+
+static async Task<(Workspace Workspace, WorkspaceRole Role)?> FindWorkspaceMembership(
+    ClaimsPrincipal principal,
+    IAccessStore accessStore,
+    Guid workspaceId,
+    CancellationToken cancellationToken)
+{
+    if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+    {
+        return null;
+    }
+
+    foreach (var membership in await accessStore.ListWorkspacesAsync(userId, cancellationToken))
+    {
+        if (membership.Workspace.Id == workspaceId)
+        {
+            return membership;
+        }
+    }
+
+    return null;
+}
+
+static InventoryListResponse BuildInventoryList(
+    IReadOnlyList<Product> products,
+    WorkspaceRole role,
+    bool demo)
+{
+    var rows = BuildInventoryRows(products, demo);
+    var total = rows.Count == 0 ? 0 : Math.Max(rows.Count, demo ? 1240 : rows.Count);
+
+    return new InventoryListResponse(
+        total,
+        rows.Count == 0 ? "No platforms connected" : "3 of 4 synced · Euronics failed",
+        rows,
+        InventoryCapabilitiesFor(role));
+}
+
+static IReadOnlyList<InventoryProductSummary> BuildInventoryRows(
+    IReadOnlyList<Product> products,
+    bool demo)
+{
+    var source = products.Count == 0 && demo ? DemoInventoryProducts() : products;
+
+    return source.Select(BuildInventoryRow).ToArray();
+}
+
+static InventoryProductSummary BuildInventoryRow(Product product, int index)
+{
+    var reserved = ReservedFor(index, product.OnHand);
+    var available = Math.Max(0, product.OnHand - reserved);
+    var category = string.IsNullOrWhiteSpace(product.Category) ? "General" : product.Category;
+
+    return new InventoryProductSummary(
+        product.Id,
+        product.Sku,
+        product.Name,
+        category,
+        product.OnHand,
+        reserved,
+        available,
+        product.BasePrice,
+        InventoryStockStatus(available),
+        InventoryPlatforms(available, product.OnHand == 0));
+}
+
+static InventoryProductDetail BuildInventoryDetail(
+    InventoryProductSummary product,
+    WorkspaceRole role,
+    bool allFailing)
+{
+    var visibleProduct = allFailing
+        ? product with
+        {
+            Platforms = product.Platforms.Select(platform => platform with
+            {
+                Status = "Failed",
+                Detail = platform.Platform switch
+                {
+                    "Amazon" => "Sync failed · Rate limit reached · retrying in 2 min",
+                    "Unieuro" => "Sync failed · Service unavailable (503)",
+                    "Euronics" => "Sync failed · API token expired",
+                    _ => "Sync failed · Connection timed out"
+                }
+            }).ToArray()
+        }
+        : product;
+
+    return new InventoryProductDetail(
+        visibleProduct,
+        SafetyBufferEnabled: false,
+        LowStockAlertAt: 5,
+        allFailing
+            ? "No platform is receiving updates for this product"
+            : "Euronics sync failed 12 min ago",
+        InventoryPricing(product.BasePrice, allFailing),
+        InventoryAudit(product),
+        InventoryCapabilitiesFor(role));
+}
+
+static InventoryCapabilities InventoryCapabilitiesFor(WorkspaceRole role) =>
+    role == WorkspaceRole.WarehouseStaff
+        ? new InventoryCapabilities(CanAdjustOnHand: true, CanChangePrice: false, CanManageListings: false)
+        : new InventoryCapabilities(
+            CanAdjustOnHand: role is WorkspaceRole.Owner or WorkspaceRole.Admin or WorkspaceRole.Manager,
+            CanChangePrice: role is WorkspaceRole.Owner or WorkspaceRole.Admin or WorkspaceRole.Manager,
+            CanManageListings: role is WorkspaceRole.Owner or WorkspaceRole.Admin or WorkspaceRole.Manager);
+
+static IReadOnlyList<InventoryPlatformStatus> InventoryPlatforms(int available, bool outOfStock) =>
+[
+    new("Amazon", "Am", "Synced", $"Live · {available} available", available, true),
+    new("Unieuro", "Un", "Synced", $"Live · {available} available", available, true),
+    new("Euronics", "Eu", "Failed", "Sync failed · API token expired", available + 2, true),
+    new("eBay", "eB", outOfStock ? "Not Listed" : "Synced", outOfStock ? "Not listed" : $"Live · {available} available", available, !outOfStock)
+];
+
+static IReadOnlyList<InventoryPricingRow> InventoryPricing(decimal basePrice, bool failing) =>
+[
+    new("Amazon", "Marketplace fees", "+5.0%", Math.Round(basePrice * 1.05m, 2), Math.Round(basePrice * .084m, 2), Math.Round(basePrice * .101m, 2), failing ? "Sync failed" : "Synced"),
+    new("Unieuro", "Base price", "—", basePrice, Math.Round(basePrice * .1m, 2), Math.Round(basePrice * .044m, 2), failing ? "Sync failed" : "Synced"),
+    new("Euronics", "Promo", "-20.00", Math.Max(0, basePrice - 20m), Math.Round(basePrice * .088m, 2), Math.Round(basePrice * .036m, 2), "Sync failed"),
+    new("eBay", "Base price", "—", basePrice, Math.Round(basePrice * .08m, 2), Math.Round(basePrice * .064m, 2), failing ? "Sync failed" : "Not listed")
+];
+
+static IReadOnlyList<InventoryAuditEntry> InventoryAudit(InventoryProductSummary product) =>
+[
+    new("Reserved", "Reserved 1 on Amazon", $"Order AMZ-7742 · Available {product.Available + 1} → {product.Available}", "2 min ago"),
+    new("Reserved", "Reserved 1 on Unieuro", "Order UNI-48213 · Available 5 → 4", "8 min ago"),
+    new("Released", "Reservation expired on Unieuro", "Available 4 → 5", "14 min ago"),
+    new("Order", "Order completed on Euronics", "On hand 6 → 5", "1 h ago"),
+    new("Adjusted", "On hand adjusted by Luca Bianchi", "On hand 2 → 6 · stock count", "25 Sep 2026, 16:05"),
+    new("Pricing", "Euronics price changed by rule", "€799.00 → €779.00 · Galaxy S24 promo", "15 Sep 2026, 00:00")
+];
+
+static int ReservedFor(int index, int onHand)
+{
+    if (onHand <= 0)
+    {
+        return 0;
+    }
+
+    return index switch
+    {
+        0 => 1,
+        1 => Math.Min(2, onHand),
+        2 or 5 or 6 => 1,
+        _ => 0
+    };
+}
+
+static string InventoryStockStatus(int available) =>
+    available == 0 ? "Out of stock" : available <= 5 ? "Low stock" : "In stock";
+
+static IReadOnlyList<Product> DemoInventoryProducts() =>
+[
+    new(Guid.Parse("11111111-1111-4111-8111-111111111111"), Guid.Empty, "DLG-ECAM22-110", "De'Longhi Magnifica S", 42, 349m, "Coffee"),
+    new(Guid.Parse("22222222-2222-4222-8222-222222222222"), Guid.Empty, "SAM-S921B-128-BK", "Samsung Galaxy S24 128GB", 5, 799m, "Phones"),
+    new(Guid.Parse("33333333-3333-4333-8333-333333333333"), Guid.Empty, "DYS-V15-DET", "Dyson V15 Detect", 18, 649m, "Home"),
+    new(Guid.Parse("44444444-4444-4444-8444-444444444444"), Guid.Empty, "SNY-WH1000XM5-B", "Sony WH-1000XM5", 0, 379m, "Audio"),
+    new(Guid.Parse("55555555-5555-4555-8555-555555555555"), Guid.Empty, "PHL-HD9650-90", "Philips Airfryer XXL", 27, 229m, "Kitchen"),
+    new(Guid.Parse("66666666-6666-4666-8666-666666666666"), Guid.Empty, "NIN-HEG-001-W", "Nintendo Switch OLED", 3, 349m, "Gaming"),
+    new(Guid.Parse("77777777-7777-4777-8777-777777777777"), Guid.Empty, "APL-MTJY3ZM-A", "Apple AirPods Pro 2", 64, 279m, "Audio"),
+    new(Guid.Parse("88888888-8888-4888-8888-888888888888"), Guid.Empty, "GPR-CHDHX-121", "GoPro HERO12 Black", 4, 399m, "Cameras"),
+    new(Guid.Parse("99999999-9999-4999-8999-999999999999"), Guid.Empty, "IRB-C755840", "iRobot Roomba Combo j7", 5, 599m, "Home")
+];
 
 static DashboardSnapshotResponse BuildDashboardSnapshot(
     DashboardWorkspaceState state,
