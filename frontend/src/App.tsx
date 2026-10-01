@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AcceptInvite, Deferred, ForgotPassword, Invite, Onboarding, ResetPassword, SignIn, SignUp, Workspace } from './AccessScreens'
 import { Dashboard } from './DashboardScreens'
+import { Inventory, InventoryEmpty, ProductDetail } from './InventoryScreens'
 
 const accessRouteHashes = [
   '#signup',
@@ -15,6 +16,10 @@ const accessRouteHashes = [
   '#legal',
   '#deferred',
   '#inventory',
+  '#inventory-empty',
+  '#inventory-staff',
+  '#inventory-detail',
+  '#inventory-detail-failing',
   '#orders',
   '#reservations',
   '#platforms',
@@ -95,12 +100,23 @@ export default function App() {
     window.addEventListener('hashchange', update)
     return () => window.removeEventListener('hashchange', update)
   }, [])
-  if (accessRouteHashes.includes(hash as (typeof accessRouteHashes)[number]) || hash.startsWith('#reset?') || hash.startsWith('#accept?')) {
+  if (
+    accessRouteHashes.includes(hash as (typeof accessRouteHashes)[number])
+    || hash.startsWith('#reset?')
+    || hash.startsWith('#accept?')
+    || hash.startsWith('#inventory-detail?')
+    || hash.startsWith('#inventory-detail-failing?')
+  ) {
     if (hash === '#signup') return <SignUp />
     if (hash === '#signin') return <SignIn />
     if (hash === '#workspace') return <Workspace />
     if (hash === '#onboarding') return <Onboarding />
     if (hash === '#dashboard') return <Dashboard />
+    if (hash === '#inventory') return <Inventory />
+    if (hash === '#inventory-empty') return <InventoryEmpty />
+    if (hash === '#inventory-staff') return <Inventory staff />
+    if (hash === '#inventory-detail' || hash.startsWith('#inventory-detail?')) return <ProductDetail />
+    if (hash === '#inventory-detail-failing' || hash.startsWith('#inventory-detail-failing?')) return <ProductDetail allFailing />
     if (hash === '#invite') return <Invite />
     if (hash === '#forgot') return <ForgotPassword />
     if (hash === '#accept' || hash.startsWith('#accept?')) return <AcceptInvite />

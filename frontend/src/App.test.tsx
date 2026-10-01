@@ -91,3 +91,29 @@ describe('Milestone 2 Dashboard route', () => {
     Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
   })
 })
+
+describe('Milestone 3 Inventory routes', () => {
+  it('renders the Inventory list, empty, staff, detail, and failure states', () => {
+    const originalWindow = globalThis.window
+    for (const [hash, expected] of [
+      ['#inventory', '1,240 products'],
+      ['#inventory-empty', 'No products yet'],
+      ['#inventory-staff', 'Warehouse staff'],
+      ['#inventory-detail', 'Activity and audit log'],
+      ['#inventory-detail-failing', 'No platform is receiving updates'],
+    ] as const) {
+      Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash }, addEventListener: () => {}, removeEventListener: () => {} } })
+      expect(renderToStaticMarkup(<App />)).toContain(expected)
+    }
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+  })
+
+  it('keeps previous milestone routes distinct from Inventory routes', () => {
+    const originalWindow = globalThis.window
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash: '#dashboard' }, addEventListener: () => {}, removeEventListener: () => {} } })
+    expect(renderToStaticMarkup(<App />)).toContain('dashboard-page')
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash: '#signin' }, addEventListener: () => {}, removeEventListener: () => {} } })
+    expect(renderToStaticMarkup(<App />)).toContain('Sign in')
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+  })
+})
