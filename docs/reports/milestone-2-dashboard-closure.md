@@ -9,7 +9,10 @@ adr_evidence: docs/decisions/0002-module-boundaries-and-contracts.md; docs/decis
 knowledge_evidence: docs/knowledge/architecture.md; docs/knowledge/data.md; docs/knowledge/frontend.md
 roadmap_evidence: docs/plans/mockup-led-roadmap.md milestone 2 Dashboard
 code_evidence: backend/src/StockHub.Api; backend/database/migrations/004_dashboard_state.sql; frontend/src/DashboardScreens.tsx; frontend/src/App.tsx; frontend/src/styles.css
+tests_evidence: Backend tests passed 16/16; frontend tests passed 11/11; contract check passed; frontend production build passed; local Compose and browser smoke covered Dashboard first-use, first-sync, live dashboard actions, handoffs, and sign-out
 configuration_evidence: Dockerfile; docker-compose.yml; backend readiness endpoint; GitHub Actions workflows
+github_evidence: milestone https://github.com/JavadEslamibabaheidari/StockHub/milestone/3 is closed with zero open issues; PR #68 merged Dashboard implementation; main delivery run 36616827440 passed image/kind smoke and source image publishing
+previous_milestone_hook: PASS — Access closure report is status PASS and milestone 1 is closed
 
 evidence_last_updated: 2026-09-29
 
@@ -39,7 +42,7 @@ evidence_last_updated: 2026-09-29
 - Review-staging and production promotion remained skipped by repository gates in the main delivery workflow. Shared hosted deployment activation remains outside this Dashboard screen PR.
 - Milestone 1 Access is closed in GitHub with zero open issues.
 
-## Local and GitHub evidence collected on 2026-09-29
+## Evidence and verification
 
 - `dotnet build StockHub.sln --no-restore` passed.
 - `dotnet test StockHub.sln --no-restore` passed: 16 tests.
