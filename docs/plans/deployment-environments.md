@@ -141,6 +141,7 @@ also runs weekly to catch newly disclosed vulnerabilities;
 `.github/dependabot.yml` proposes Docker, GitHub Actions, npm, and NuGet
 updates through the same PR gates.
 
+
 ## Requirement for new projects
 
 Every new deployable project must be containerized before it is considered
