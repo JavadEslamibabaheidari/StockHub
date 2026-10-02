@@ -152,6 +152,33 @@ jobs:
           ignore-unfixed: true
           exit-code: '1'
 
+  local-deployment-dispatch:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    name: Trigger persistent local deployment
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Dispatch private local deployer
+        env:
+          GH_TOKEN: ${{ secrets.STOCKHUB_DEPLOYMENT_DISPATCH_TOKEN }}
+          IMAGE_DIGEST: ${{ needs.publish.outputs.digest }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "STOCKHUB_DEPLOYMENT_DISPATCH_TOKEN is not configured; skipping persistent local deployment dispatch." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          [[ "$GITHUB_SHA" =~ ^[a-f0-9]{40}$ ]] || exit 2
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]] || exit 2
+          gh api repos/JavadEslamibabaheidari/StockHub-Deployment/dispatches \
+            --method POST \
+            --field event_type=stockhub-published \
+            --raw-field "client_payload[sha]=$GITHUB_SHA" \
+            --raw-field "client_payload[digest]=$IMAGE_DIGEST" \
+            --raw-field "client_payload[source_run_id]=$GITHUB_RUN_ID"
+
   staging:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.STAGING_ENABLED == 'true'
     name: Deploy review-staging
