@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { AcceptInvite, Deferred, ForgotPassword, Invite, Onboarding, ResetPassword, SignIn, SignUp, Workspace } from './AccessScreens'
 import { Dashboard } from './DashboardScreens'
 import { Inventory, InventoryEmpty, ProductDetail } from './InventoryScreens'
+import { OrderDetail, Orders, OrdersEmpty } from './OrdersScreens'
 
 const accessRouteHashes = [
   '#signup',
@@ -21,6 +22,12 @@ const accessRouteHashes = [
   '#inventory-detail',
   '#inventory-detail-failing',
   '#orders',
+  '#orders-empty',
+  '#orders-no-results',
+  '#orders-staff',
+  '#order-detail',
+  '#order-return',
+  '#order-cancel',
   '#reservations',
   '#platforms',
   '#pricing',
@@ -106,6 +113,7 @@ export default function App() {
     || hash.startsWith('#accept?')
     || hash.startsWith('#inventory-detail?')
     || hash.startsWith('#inventory-detail-failing?')
+    || hash.startsWith('#order-detail?')
   ) {
     if (hash === '#signup') return <SignUp />
     if (hash === '#signin') return <SignIn />
@@ -117,6 +125,13 @@ export default function App() {
     if (hash === '#inventory-staff') return <Inventory staff />
     if (hash === '#inventory-detail' || hash.startsWith('#inventory-detail?')) return <ProductDetail />
     if (hash === '#inventory-detail-failing' || hash.startsWith('#inventory-detail-failing?')) return <ProductDetail allFailing />
+    if (hash === '#orders') return <Orders />
+    if (hash === '#orders-empty') return <OrdersEmpty />
+    if (hash === '#orders-no-results') return <Orders noResults />
+    if (hash === '#orders-staff') return <Orders staff />
+    if (hash === '#order-detail' || hash.startsWith('#order-detail?')) return <OrderDetail />
+    if (hash === '#order-return') return <OrderDetail mode="return" />
+    if (hash === '#order-cancel') return <OrderDetail mode="cancel" />
     if (hash === '#invite') return <Invite />
     if (hash === '#forgot') return <ForgotPassword />
     if (hash === '#accept' || hash.startsWith('#accept?')) return <AcceptInvite />
