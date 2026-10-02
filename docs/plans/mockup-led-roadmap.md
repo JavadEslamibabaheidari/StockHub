@@ -1,8 +1,8 @@
 # StockHub Mockup-Led Roadmap
 
 Status: roadmap structure approved; architecture baseline accepted in PR #14;
-Milestones 0 Cover, 1 Access, 2 Dashboard, and 3 Inventory are closed in
-GitHub; Milestone 4 Orders is active
+Milestones 0 Cover, 1 Access, 2 Dashboard, 3 Inventory, and 4 Orders are closed
+in GitHub; Milestone 5 Reservations is next
 
 ## Source of truth
 
@@ -67,11 +67,11 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-The active product milestone is `4 Orders`. Milestones `0 Cover`, `1 Access`,
-`2 Dashboard`, and `3 Inventory` are closed in GitHub with zero open issues.
-Orders implementation is tracked in
-[milestone-4-orders.md](milestone-4-orders.md). Live GitHub milestone number 5
-for `4 Orders` has seven open implementation issues, #81 through #87.
+The next product milestone is `5 Reservations`. Milestones `0 Cover`,
+`1 Access`, `2 Dashboard`, `3 Inventory`, and `4 Orders` are closed in GitHub
+with zero open issues. Orders implementation is tracked in
+[milestone-4-orders.md](milestone-4-orders.md), with closure evidence in
+[milestone-4-orders-closure.md](../reports/milestone-4-orders-closure.md).
 Each completed milestone receives one annotated `v0.<number>.0` tag after its
 closure and checks are verified.
 
