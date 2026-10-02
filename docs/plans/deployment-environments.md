@@ -46,13 +46,17 @@ cookie settings through environment or secret management.
 
 CI covers frontend, backend, PostgreSQL integration, container smoke, image
 vulnerability reporting, and ephemeral kind rollout on hosted runners. Main
-publishes the immutable digest to GHCR. A separate private
-`StockHub-Deployment` GitHub Actions task polls successful `main` publish
-runs and uses its dedicated self-hosted runner to deploy to persistent kind
-on this PC. The public repository has no self-hosted runner. Review-staging
-is disabled until a hosted target exists. A future manual production dispatch
-takes a successful staging run ID, retrieves its digest record, and requires
-the protected `production` environment. Shared activation is issue #48.
+publishes the immutable digest to GHCR. After a successful `main` publish, the
+public workflow dispatches the private `StockHub-Deployment` workflow when the
+public repository secret `STOCKHUB_DEPLOYMENT_DISPATCH_TOKEN` is configured.
+That private workflow verifies the dispatched SHA against successful public
+`main` delivery runs, then uses its dedicated self-hosted runner to deploy the
+published digest to persistent kind on this PC. The private workflow also keeps
+a schedule fallback. The public repository has no self-hosted runner.
+Review-staging is disabled until a hosted target exists. A future manual
+production dispatch takes a successful staging run ID, retrieves its digest
+record, and requires the protected `production` environment. Shared activation
+is issue #48.
 
 ## Persistent local Kubernetes target
 
