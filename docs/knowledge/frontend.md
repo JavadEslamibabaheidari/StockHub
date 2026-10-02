@@ -66,3 +66,17 @@ Inventory is integrated with existing Dashboard/product import work. The API
 uses workspace products for real data, supports on-hand adjustment through the
 product persistence path, and keeps CSV import hardening, marketplace repair,
 and pricing-rule automation as explicit future handoffs.
+
+## Milestone 4 Orders
+
+Orders routes are hash-addressable as `#orders`, `#order-detail`,
+`#orders-empty`, `#orders-no-results`, `#order-return`, `#order-cancel`, and
+`#orders-staff`. `frontend/src/OrdersScreens.tsx` renders the Orders list,
+order detail, empty state, no-results state, return workflow, cancel
+confirmation, and Warehouse staff view from deterministic preview data.
+
+Visible controls are wired for browser behavior: filtering, search, CSV export,
+invoice print, return progression, cancellation, staff pick/ship/receive
+actions, and local status updates. Real marketplace order capture, payment and
+refund settlement, carrier label creation, and durable Orders persistence remain
+future backend/integration work.

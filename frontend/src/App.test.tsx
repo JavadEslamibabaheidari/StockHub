@@ -117,3 +117,22 @@ describe('Milestone 3 Inventory routes', () => {
     Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
   })
 })
+
+describe('Milestone 4 Orders routes', () => {
+  it('renders the Orders list, detail, empty, no-results, return, cancel, and staff states', () => {
+    const originalWindow = globalThis.window
+    for (const [hash, expected] of [
+      ['#orders', '37 today'],
+      ['#order-detail', 'Customer and shipping'],
+      ['#orders-empty', 'No orders yet'],
+      ['#orders-no-results', 'No orders match these filters'],
+      ['#order-return', 'Approve return'],
+      ['#order-cancel', 'Cancel order #AMZ-7728?'],
+      ['#orders-staff', 'Print picking list'],
+    ] as const) {
+      Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash }, addEventListener: () => {}, removeEventListener: () => {}, print: () => {} } })
+      expect(renderToStaticMarkup(<App />)).toContain(expected)
+    }
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+  })
+})
