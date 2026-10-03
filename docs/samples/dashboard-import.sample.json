@@ -1,0 +1,150 @@
+{
+  "products": [
+    {
+      "sku": "SAM-S921B-128-BK",
+      "name": "Samsung Galaxy S24 128GB",
+      "onHand": 8,
+      "basePrice": 799,
+      "category": "Phones"
+    },
+    {
+      "sku": "DLG-ECAM22-110",
+      "name": "De'Longhi Magnifica S",
+      "onHand": 42,
+      "basePrice": 349,
+      "category": "Coffee"
+    },
+    {
+      "sku": "DYS-V15-DET",
+      "name": "Dyson V15 Detect",
+      "onHand": 18,
+      "basePrice": 649,
+      "category": "Home"
+    },
+    {
+      "sku": "SNY-WH1000XM5-B",
+      "name": "Sony WH-1000XM5",
+      "onHand": 3,
+      "basePrice": 379,
+      "category": "Audio"
+    },
+    {
+      "sku": "PHL-HD9650-90",
+      "name": "Philips Airfryer XXL",
+      "onHand": 27,
+      "basePrice": 229,
+      "category": "Kitchen"
+    }
+  ],
+  "orders": [
+    {
+      "orderNumber": "AMZ-7742",
+      "platform": "Amazon",
+      "customerName": "M. Greco",
+      "shipTo": "Via Garibaldi 8, 10122 Torino",
+      "carrier": "BRT - label not printed yet",
+      "placedAt": "2026-10-02T09:48:00+02:00",
+      "status": "AwaitingPayment",
+      "items": [
+        {
+          "sku": "SAM-S921B-128-BK",
+          "productName": "Samsung Galaxy S24 128GB",
+          "quantity": 1,
+          "unitPrice": 838.95,
+          "costOfGoods": 540
+        }
+      ]
+    },
+    {
+      "orderNumber": "UN-48213",
+      "platform": "Unieuro",
+      "customerName": "A. Russo",
+      "shipTo": "Via Manzoni 16, 20121 Milano",
+      "carrier": "DHL - label pending",
+      "placedAt": "2026-10-02T09:42:00+02:00",
+      "status": "AwaitingPayment",
+      "items": [
+        {
+          "sku": "SAM-S921B-128-BK",
+          "productName": "Samsung Galaxy S24 128GB",
+          "quantity": 1,
+          "unitPrice": 799,
+          "costOfGoods": 540
+        }
+      ]
+    },
+    {
+      "orderNumber": "AMZ-7728",
+      "platform": "Amazon",
+      "customerName": "S. Romano",
+      "shipTo": "Via Garibaldi 8, 10122 Torino",
+      "carrier": "BRT - label not printed yet",
+      "placedAt": "2026-10-02T09:19:00+02:00",
+      "status": "PaidToPick",
+      "items": [
+        {
+          "sku": "DLG-ECAM22-110",
+          "productName": "De'Longhi Magnifica S",
+          "quantity": 1,
+          "unitPrice": 366.45,
+          "costOfGoods": 302.08
+        }
+      ]
+    },
+    {
+      "orderNumber": "UN-48201",
+      "platform": "Unieuro",
+      "customerName": "A. Ferri",
+      "shipTo": "Corso Italia 4, 50123 Firenze",
+      "carrier": "BRT - awaiting pickup",
+      "placedAt": "2026-10-02T09:04:00+02:00",
+      "status": "PickedToShip",
+      "items": [
+        {
+          "sku": "PHL-HD9650-90",
+          "productName": "Philips Airfryer XXL",
+          "quantity": 2,
+          "unitPrice": 229,
+          "costOfGoods": 196.3
+        }
+      ]
+    },
+    {
+      "orderNumber": "EU-11872",
+      "platform": "Euronics",
+      "customerName": "G. Esposito",
+      "shipTo": "Via Toledo 214, 80134 Napoli",
+      "carrier": "BRT - 04217788 2951 - in transit",
+      "placedAt": "2026-10-02T08:50:00+02:00",
+      "status": "Shipped",
+      "items": [
+        {
+          "sku": "SAM-S921B-128-BK",
+          "productName": "Samsung Galaxy S24 128GB",
+          "quantity": 1,
+          "unitPrice": 779,
+          "costOfGoods": 540
+        }
+      ]
+    },
+    {
+      "orderNumber": "AMZ-7690",
+      "platform": "Amazon",
+      "customerName": "L. Ferrari",
+      "shipTo": "Corso Buenos Aires 33, 20124 Milano",
+      "carrier": "Amazon Logistics - delivered 23 Sep 2026, 15:20",
+      "placedAt": "2026-09-21T18:02:00+02:00",
+      "status": "ReturnRequested",
+      "returnReason": "Battery does not hold charge; all accessories included",
+      "items": [
+        {
+          "sku": "DYS-V15-DET",
+          "productName": "Dyson V15 Detect",
+          "quantity": 1,
+          "unitPrice": 681.45,
+          "costOfGoods": 439
+        }
+      ]
+    }
+  ]
+}

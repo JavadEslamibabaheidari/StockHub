@@ -96,11 +96,11 @@ describe('Milestone 3 Inventory routes', () => {
   it('renders the Inventory list, empty, staff, detail, and failure states', () => {
     const originalWindow = globalThis.window
     for (const [hash, expected] of [
-      ['#inventory', '1,240 products'],
+      ['#inventory', 'Loading backend inventory'],
       ['#inventory-empty', 'No products yet'],
       ['#inventory-staff', 'Warehouse staff'],
-      ['#inventory-detail', 'Activity and audit log'],
-      ['#inventory-detail-failing', 'No platform is receiving updates'],
+      ['#inventory-detail', 'Loading product detail'],
+      ['#inventory-detail-failing', 'Loading product detail'],
     ] as const) {
       Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash }, addEventListener: () => {}, removeEventListener: () => {} } })
       expect(renderToStaticMarkup(<App />)).toContain(expected)
@@ -122,12 +122,12 @@ describe('Milestone 4 Orders routes', () => {
   it('renders the Orders list, detail, empty, no-results, return, cancel, and staff states', () => {
     const originalWindow = globalThis.window
     for (const [hash, expected] of [
-      ['#orders', '37 today'],
-      ['#order-detail', 'Customer and shipping'],
+      ['#orders', 'Loading orders'],
+      ['#order-detail', 'Loading order detail'],
       ['#orders-empty', 'No orders yet'],
       ['#orders-no-results', 'No orders match these filters'],
-      ['#order-return', 'Approve return'],
-      ['#order-cancel', 'Cancel order #AMZ-7728?'],
+      ['#order-return', 'Loading order detail'],
+      ['#order-cancel', 'Loading order detail'],
       ['#orders-staff', 'Print picking list'],
     ] as const) {
       Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash }, addEventListener: () => {}, removeEventListener: () => {}, print: () => {} } })

@@ -58,9 +58,10 @@ Local verification for the Dashboard branch used the Docker Compose app on port 
 Inventory routes are hash-addressable as `#inventory`, `#inventory-empty`,
 `#inventory-staff`, `#inventory-detail`, and `#inventory-detail-failing`.
 `frontend/src/InventoryScreens.tsx` renders the approved Inventory list, empty
-state, Warehouse staff view, product detail, and all-platforms-failing detail.
-The screens use the generated API client when a session/workspace exists and
-fall back to deterministic preview data for unauthenticated visual review.
+state, Warehouse staff view, and product detail. The screens use the generated
+API client and show backend loading or empty states when a session/workspace has
+not provided persisted products; they should not fall back to seeded preview
+products.
 
 Inventory is integrated with existing Dashboard/product import work. The API
 uses workspace products for real data, supports on-hand adjustment through the
@@ -73,10 +74,10 @@ Orders routes are hash-addressable as `#orders`, `#order-detail`,
 `#orders-empty`, `#orders-no-results`, `#order-return`, `#order-cancel`, and
 `#orders-staff`. `frontend/src/OrdersScreens.tsx` renders the Orders list,
 order detail, empty state, no-results state, return workflow, cancel
-confirmation, and Warehouse staff view from deterministic preview data.
+confirmation, and Warehouse staff view from the backend Orders API.
 
-Visible controls are wired for browser behavior: filtering, search, CSV export,
-invoice print, return progression, cancellation, staff pick/ship/receive
-actions, and local status updates. Real marketplace order capture, payment and
-refund settlement, carrier label creation, and durable Orders persistence remain
-future backend/integration work.
+Visible controls are wired to backend behavior where the closed milestone needs
+it: filtering/search/CSV export are client-side over persisted rows, and return,
+cancel, pick, ship, receive, and refund actions call the Orders API. Real
+marketplace order capture, payment settlement, carrier label creation, and live
+platform authorization remain future integration work.

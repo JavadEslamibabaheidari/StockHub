@@ -33,6 +33,21 @@ export type DashboardSearchResultResponse = { id: string; type: string; label: s
 export type DashboardSnapshotResponse = { state: string; title: string; subtitle: string; statusLabel: string; statusTone: string; metrics: DashboardMetricResponse[]; reservations: DashboardReservationResponse[]; salesByPlatform: DashboardPlatformSaleResponse[]; attention: DashboardAttentionResponse[]; getStarted: DashboardGetStartedResponse[]; sync?: DashboardSyncResponse | null; searchIndex: DashboardSearchResultResponse[]; notifications: string[] };
 export type DashboardActionRequest = { action: string; targetId?: string | null; onHand?: number | null; platform?: string | null };
 export type DashboardActionResultResponse = { status: string; message: string; snapshot: DashboardSnapshotResponse };
+export type DashboardImportRequest = { products: ProductRequest[]; orders: OrderImportRequest[] };
+export type DashboardImportResponse = { productsImported: number; ordersImported: number };
+export type OrderImportRequest = { orderNumber: string; platform: string; customerName: string; shipTo: string; carrier: string; placedAt: string; status: string; items: OrderImportItemRequest[]; fee?: number | null; returnReason?: string | null };
+export type OrderImportItemRequest = { sku: string; productName: string; quantity: number; unitPrice: number; costOfGoods?: number | null };
+export type OrderListResponse = { totalToday: number; syncSummary: string; orders: OrderSummaryResponse[] };
+export type OrderSummaryResponse = { id: string; orderNumber: string; product: string; sku: string; platform: string; platformCode: string; quantity: number; status: string; total: number; fee: number; net: number; margin?: number | null; customer: string; placedAt: string; age: string; nextStep: string };
+export type OrderItemResponse = { productId: string; productName: string; sku: string; quantity: number; unitPrice: number; total: number };
+export type OrderCustomerShippingResponse = { customer: string; shipTo: string; carrier: string };
+export type OrderTimelineStepResponse = { key: string; label: string; status: string; detail: string };
+export type OrderStockMovementResponse = { kind: string; title: string; detail: string; occurredAt: string };
+export type OrderFinancialsResponse = { totalPaidByCustomer: number; vat: number; platformFee: number; netPayout: number; costOfGoods: number; marginExVat?: number | null };
+export type OrderReturnResponse = { stage: string; reason: string; requestedAt: string };
+export type OrderDetailResponse = { summary: OrderSummaryResponse; items: OrderItemResponse[]; customerAndShipping: OrderCustomerShippingResponse; timeline: OrderTimelineStepResponse[]; stockMovements: OrderStockMovementResponse[]; financials: OrderFinancialsResponse; return?: OrderReturnResponse | null };
+export type OrderActionRequest = { action: string; reason?: string | null };
+export type OrderActionResponse = { status: string; message: string; order: OrderDetailResponse };
 
 export class AccessApiError extends Error { constructor(public readonly status: number, public readonly problem: Problem) { super(problem.detail); } }
 export class AccessApiClient {
@@ -51,12 +66,16 @@ export class AccessApiClient {
   selectOnboardingAction(workspaceId: string, key: string) { return this.request<void>(`/api/workspaces/${workspaceId}/onboarding/actions`, { method: 'POST', body: JSON.stringify({ key }) }); }
   products(workspaceId: string) { return this.request<ProductResponse[]>(`/api/workspaces/${workspaceId}/products`); }
   importProducts(workspaceId: string, products: ProductRequest[]) { return this.request<ProductResponse[]>(`/api/workspaces/${workspaceId}/products/import`, { method: 'POST', body: JSON.stringify(products) }); }
-  inventory(workspaceId: string, demo = false) { return this.request<InventoryListResponse>(`/api/workspaces/${workspaceId}/inventory/products${demo ? '?demo=true' : ''}`); }
-  inventoryProduct(workspaceId: string, productId: string, options: { allFailing?: boolean; demo?: boolean } = {}) { const params = new URLSearchParams(); if (options.allFailing) params.set('allFailing', 'true'); if (options.demo) params.set('demo', 'true'); const query = params.toString(); return this.request<InventoryProductDetail>(`/api/workspaces/${workspaceId}/inventory/products/${productId}${query ? `?${query}` : ''}`); }
+  inventory(workspaceId: string) { return this.request<InventoryListResponse>(`/api/workspaces/${workspaceId}/inventory/products`); }
+  inventoryProduct(workspaceId: string, productId: string, options: { allFailing?: boolean } = {}) { const params = new URLSearchParams(); if (options.allFailing) params.set('allFailing', 'true'); const query = params.toString(); return this.request<InventoryProductDetail>(`/api/workspaces/${workspaceId}/inventory/products/${productId}${query ? `?${query}` : ''}`); }
   adjustInventoryOnHand(workspaceId: string, productId: string, onHand: number) { return this.request<InventoryActionResponse>(`/api/workspaces/${workspaceId}/inventory/products/${productId}/on-hand`, { method: 'PATCH', body: JSON.stringify({ onHand }) }); }
   retryInventorySync(workspaceId: string, productId: string) { return this.request<InventoryActionResponse>(`/api/workspaces/${workspaceId}/inventory/products/${productId}/retry-sync`, { method: 'POST' }); }
   dashboard(workspaceId: string) { return this.request<DashboardSnapshotResponse>(`/api/workspaces/${workspaceId}/dashboard`); }
   dashboardAction(workspaceId: string, request: DashboardActionRequest) { return this.request<DashboardActionResultResponse>(`/api/workspaces/${workspaceId}/dashboard/actions`, { method: 'POST', body: JSON.stringify(request) }); }
+  importDashboard(workspaceId: string, request: DashboardImportRequest) { return this.request<DashboardImportResponse>(`/api/workspaces/${workspaceId}/dashboard/import`, { method: 'POST', body: JSON.stringify(request) }); }
+  orders(workspaceId: string) { return this.request<OrderListResponse>(`/api/workspaces/${workspaceId}/orders`); }
+  order(workspaceId: string, orderId: string) { return this.request<OrderDetailResponse>(`/api/workspaces/${workspaceId}/orders/${orderId}`); }
+  orderAction(workspaceId: string, orderId: string, request: OrderActionRequest) { return this.request<OrderActionResponse>(`/api/workspaces/${workspaceId}/orders/${orderId}/actions`, { method: 'POST', body: JSON.stringify(request) }); }
   invite(workspaceId: string, request: InvitationRequest) { return this.request<{ status: string }>(`/api/workspaces/${workspaceId}/invitations`, { method: 'POST', body: JSON.stringify(request) }); }
   invitation(token: string) { return this.request<InvitationResponse>(`/api/invitations/${encodeURIComponent(token)}`); }
   acceptInvitation(token: string) { return this.request<{ status: string }>('/api/invitations/accept', { method: 'POST', body: JSON.stringify({ token }) }); }

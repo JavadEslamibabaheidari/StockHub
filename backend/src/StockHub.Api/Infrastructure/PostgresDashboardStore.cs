@@ -45,7 +45,7 @@ public sealed class PostgresDashboardStore(string connectionString) : IDashboard
                 show_more_low_stock = EXCLUDED.show_more_low_stock,
                 detail_panel = EXCLUDED.detail_panel,
                 updated_at = EXCLUDED.updated_at
-            RETURNING workspace_id, mode, euronics_retried, mismatch_resolved, restock_listed, show_more_low_stock, detail_panel, updated_at
+            RETURNING workspace_id, mode, sync_platform, euronics_retried, mismatch_resolved, restock_listed, show_more_low_stock, detail_panel, updated_at
             """,
             connection);
         command.Parameters.AddWithValue("workspace", saved.WorkspaceId);

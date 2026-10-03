@@ -742,7 +742,9 @@ h1 {
 .order-detail-grid { align-items: start; }
 .order-items { grid-row: span 2; }
 .mini-table { display: grid; grid-template-columns: minmax(180px,1fr) 55px 95px 95px; align-items: center; gap: 0; font-size: 12px; }
+.mini-table .mini-row { display: contents; }
 .mini-table > * { padding: 10px 8px; border-top: 1px solid #e1d7c7; }
+.mini-table .mini-row > * { padding: 10px 8px; border-top: 1px solid #e1d7c7; }
 .mini-table > b { color: #766b5e; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
 .mini-table small { display: block; color: #7a7166; font-size: 10px; }
 .order-totals { width: min(330px,100%); margin: 12px 0 0 auto; font-size: 12px; }

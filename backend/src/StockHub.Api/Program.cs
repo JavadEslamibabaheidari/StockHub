@@ -22,6 +22,7 @@ var connectionString = builder.Configuration.GetConnectionString("Postgres")
 builder.Services.AddSingleton<IAccessStore>(_ => new PostgresAccessStore(connectionString));
 builder.Services.AddSingleton<IProductStore>(_ => new PostgresProductStore(connectionString));
 builder.Services.AddSingleton<IDashboardStore>(_ => new PostgresDashboardStore(connectionString));
+builder.Services.AddSingleton<IOrderStore>(_ => new PostgresOrderStore(connectionString));
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<IRecoveryEmailSender, SmtpRecoveryEmailSender>();
 
@@ -670,10 +671,10 @@ app.MapGet(
     "/api/workspaces/{workspaceId:guid}/inventory/products",
     async (
         Guid workspaceId,
-        bool? demo,
         ClaimsPrincipal principal,
         IAccessStore accessStore,
         IProductStore productStore,
+        IOrderStore orderStore,
         CancellationToken cancellationToken) =>
     {
         var membership = await FindWorkspaceMembership(principal, accessStore, workspaceId, cancellationToken);
@@ -683,7 +684,8 @@ app.MapGet(
         }
 
         var products = await productStore.ListAsync(workspaceId, cancellationToken);
-        return Results.Ok(BuildInventoryList(products, membership.Value.Role, demo == true));
+        var reserved = await orderStore.ReservedByProductAsync(workspaceId, cancellationToken);
+        return Results.Ok(BuildInventoryList(products, reserved, membership.Value.Role));
     })
     .RequireAuthorization()
     .WithTags("Inventory");
@@ -694,10 +696,10 @@ app.MapGet(
         Guid workspaceId,
         Guid productId,
         bool? allFailing,
-        bool? demo,
         ClaimsPrincipal principal,
         IAccessStore accessStore,
         IProductStore productStore,
+        IOrderStore orderStore,
         CancellationToken cancellationToken) =>
     {
         var membership = await FindWorkspaceMembership(principal, accessStore, workspaceId, cancellationToken);
@@ -707,7 +709,8 @@ app.MapGet(
         }
 
         var products = await productStore.ListAsync(workspaceId, cancellationToken);
-        var summary = BuildInventoryRows(products, demo == true).FirstOrDefault(product => product.Id == productId);
+        var reserved = await orderStore.ReservedByProductAsync(workspaceId, cancellationToken);
+        var summary = BuildInventoryRows(products, reserved).FirstOrDefault(product => product.Id == productId);
         if (summary is null)
         {
             return Results.NotFound(new Problem(
@@ -730,6 +733,7 @@ app.MapPatch(
         ClaimsPrincipal principal,
         IAccessStore accessStore,
         IProductStore productStore,
+        IOrderStore orderStore,
         CancellationToken cancellationToken) =>
     {
         var membership = await FindWorkspaceMembership(principal, accessStore, workspaceId, cancellationToken);
@@ -755,7 +759,8 @@ app.MapPatch(
                 "product_not_found"));
         }
 
-        return Results.Ok(new InventoryActionResponse("adjusted", BuildInventoryRow(updated, index: 0)));
+        var reserved = await orderStore.ReservedByProductAsync(workspaceId, cancellationToken);
+        return Results.Ok(new InventoryActionResponse("adjusted", BuildInventoryRow(updated, reserved.GetValueOrDefault(updated.Id))));
     })
     .RequireAuthorization()
     .WithTags("Inventory");
@@ -788,7 +793,7 @@ app.MapPost(
 
         return Results.Accepted(
             $"/api/workspaces/{workspaceId}/inventory/products/{productId}",
-            new InventoryActionResponse("retry_queued", BuildInventoryRow(product, index: 0)));
+            new InventoryActionResponse("retry_queued", BuildInventoryRow(product)));
     })
     .RequireAuthorization()
     .WithTags("Inventory");
@@ -802,6 +807,7 @@ app.MapGet(
         IAccessStore accessStore,
         IProductStore productStore,
         IDashboardStore dashboardStore,
+        IOrderStore orderStore,
         CancellationToken cancellationToken) =>
     {
         if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
@@ -816,7 +822,8 @@ app.MapGet(
 
         var products = await productStore.ListAsync(workspaceId, cancellationToken);
         var state = await dashboardStore.GetAsync(workspaceId, cancellationToken);
-        return Results.Ok(BuildDashboardSnapshot(state, products));
+        var orders = await orderStore.ListAsync(workspaceId, cancellationToken);
+        return Results.Ok(BuildDashboardSnapshot(state, products, orders));
     })
     .RequireAuthorization()
     .WithTags("Dashboard");
@@ -830,6 +837,7 @@ app.MapPost(
         IAccessStore accessStore,
         IProductStore productStore,
         IDashboardStore dashboardStore,
+        IOrderStore orderStore,
         CancellationToken cancellationToken) =>
     {
         if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
@@ -847,12 +855,12 @@ app.MapPost(
         switch (request.Action.Trim().ToLowerInvariant())
         {
             case "start-first-sync":
-                state = state with { Mode = "first-sync", SyncPlatform = NormalizeDashboardPlatform(request.Platform), DetailPanel = $"{NormalizeDashboardPlatform(request.Platform)} setup opened. Real marketplace authorization is owned by Milestone 6 Platforms." };
-                message = "Platform picker opened and first sync preview started.";
+                state = state with { Mode = "live", SyncPlatform = NormalizeDashboardPlatform(request.Platform), DetailPanel = $"{NormalizeDashboardPlatform(request.Platform)} setup opened. Real marketplace authorization is owned by Milestone 6 Platforms." };
+                message = "Platform setup opened.";
                 break;
             case "finish-first-sync":
-                state = state with { Mode = "live", DetailPanel = "First sync preview completed for Dashboard testing." };
-                message = "First sync preview completed.";
+                state = state with { Mode = "live", DetailPanel = "Dashboard is using persisted backend product and order data." };
+                message = "Dashboard backend data loaded.";
                 break;
             case "retry-sync":
                 state = state with { EuronicsRetried = true, DetailPanel = "Retry sent for the Euronics sync alert. Live connector repair belongs to Milestone 6 Platforms." };
@@ -912,10 +920,127 @@ app.MapPost(
 
         state = await dashboardStore.SaveAsync(state, cancellationToken);
         var products = await productStore.ListAsync(workspaceId, cancellationToken);
-        return Results.Ok(new DashboardActionResultResponse(message, message, BuildDashboardSnapshot(state, products)));
+        var orders = await orderStore.ListAsync(workspaceId, cancellationToken);
+        return Results.Ok(new DashboardActionResultResponse(message, message, BuildDashboardSnapshot(state, products, orders)));
     })
     .RequireAuthorization()
     .WithTags("Dashboard");
+
+app.MapPost(
+    "/api/workspaces/{workspaceId:guid}/dashboard/import",
+    async (
+        Guid workspaceId,
+        DashboardImportRequest request,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IOrderStore orderStore,
+        CancellationToken cancellationToken) =>
+    {
+        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+            || !await IsWorkspaceMember(accessStore, userId, workspaceId, cancellationToken))
+        {
+            return Results.Forbid();
+        }
+
+        var error = ValidateDashboardImport(request);
+        if (error is not null)
+        {
+            return Results.UnprocessableEntity(error);
+        }
+
+        try
+        {
+            return Results.Ok(await orderStore.ImportAsync(workspaceId, request, cancellationToken));
+        }
+        catch (InvalidOperationException exception) when (exception.Message == "order_status_invalid")
+        {
+            return Results.UnprocessableEntity(new Problem(
+                "Validation failed",
+                "Each order status must be AwaitingPayment, PaidToPick, PickedToShip, Shipped, Delivered, ReturnRequested, or Cancelled.",
+                "order_status_invalid"));
+        }
+    })
+    .RequireAuthorization()
+    .WithTags("Dashboard");
+
+app.MapGet(
+    "/api/workspaces/{workspaceId:guid}/orders",
+    async (
+        Guid workspaceId,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IOrderStore orderStore,
+        CancellationToken cancellationToken) =>
+    {
+        var membership = await FindWorkspaceMembership(principal, accessStore, workspaceId, cancellationToken);
+        if (membership is null)
+        {
+            return Results.Forbid();
+        }
+
+        return Results.Ok(await orderStore.ListAsync(workspaceId, cancellationToken));
+    })
+    .RequireAuthorization()
+    .WithTags("Orders");
+
+app.MapGet(
+    "/api/workspaces/{workspaceId:guid}/orders/{orderId:guid}",
+    async (
+        Guid workspaceId,
+        Guid orderId,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IOrderStore orderStore,
+        CancellationToken cancellationToken) =>
+    {
+        var membership = await FindWorkspaceMembership(principal, accessStore, workspaceId, cancellationToken);
+        if (membership is null)
+        {
+            return Results.Forbid();
+        }
+
+        var order = await orderStore.GetAsync(workspaceId, orderId, cancellationToken);
+        return order is null
+            ? Results.NotFound(new Problem("Order not found", "This order is no longer available in the workspace.", "order_not_found"))
+            : Results.Ok(order);
+    })
+    .RequireAuthorization()
+    .WithTags("Orders");
+
+app.MapPost(
+    "/api/workspaces/{workspaceId:guid}/orders/{orderId:guid}/actions",
+    async (
+        Guid workspaceId,
+        Guid orderId,
+        OrderActionRequest request,
+        ClaimsPrincipal principal,
+        IAccessStore accessStore,
+        IOrderStore orderStore,
+        CancellationToken cancellationToken) =>
+    {
+        var membership = await FindWorkspaceMembership(principal, accessStore, workspaceId, cancellationToken);
+        if (membership is null)
+        {
+            return Results.Forbid();
+        }
+
+        try
+        {
+            var order = await orderStore.ApplyActionAsync(workspaceId, orderId, request, cancellationToken);
+            return order is null
+                ? Results.NotFound(new Problem("Order not found", "This order is no longer available in the workspace.", "order_not_found"))
+                : Results.Ok(new OrderActionResponse("updated", "Order updated.", order));
+        }
+        catch (InvalidOperationException exception) when (exception.Message == "order_action_unknown")
+        {
+            return Results.UnprocessableEntity(new Problem(
+                "Unknown order action",
+                "This order action is not recognized.",
+                "order_action_unknown"));
+        }
+    })
+    .RequireAuthorization()
+    .WithTags("Orders");
 
 app.MapPost(
     "/api/workspaces/{workspaceId:guid}/invitations",
@@ -1113,6 +1238,51 @@ static Problem? ValidateProducts(IReadOnlyList<ProductRequest> products)
     return null;
 }
 
+static Problem? ValidateDashboardImport(DashboardImportRequest request)
+{
+    var productError = ValidateProducts(request.Products);
+    if (productError is not null)
+    {
+        return productError;
+    }
+
+    if (request.Orders.Count > 500)
+    {
+        return new Problem("Validation failed", "Import at most 500 orders at a time.", "orders_count_invalid");
+    }
+
+    var orderNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    var skus = request.Products.Select(product => product.Sku.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+    foreach (var order in request.Orders)
+    {
+        if (string.IsNullOrWhiteSpace(order.OrderNumber)
+            || string.IsNullOrWhiteSpace(order.Platform)
+            || string.IsNullOrWhiteSpace(order.CustomerName)
+            || string.IsNullOrWhiteSpace(order.ShipTo)
+            || string.IsNullOrWhiteSpace(order.Carrier)
+            || order.Items.Count is 0 or > 50
+            || !orderNumbers.Add(order.OrderNumber.Trim()))
+        {
+            return new Problem("Validation failed", "Each order needs a unique number, platform, customer, shipping, carrier, and at least one item.", "order_invalid");
+        }
+
+        foreach (var item in order.Items)
+        {
+            if (string.IsNullOrWhiteSpace(item.Sku)
+                || string.IsNullOrWhiteSpace(item.ProductName)
+                || item.Quantity <= 0
+                || item.UnitPrice < 0
+                || item.CostOfGoods < 0
+                || !skus.Contains(item.Sku.Trim()))
+            {
+                return new Problem("Validation failed", "Each order item must reference an imported product SKU and include positive quantity and non-negative prices.", "order_item_invalid");
+            }
+        }
+    }
+
+    return null;
+}
+
 
 
 
@@ -1157,31 +1327,28 @@ static async Task<(Workspace Workspace, WorkspaceRole Role)?> FindWorkspaceMembe
 
 static InventoryListResponse BuildInventoryList(
     IReadOnlyList<Product> products,
-    WorkspaceRole role,
-    bool demo)
+    IReadOnlyDictionary<Guid, int> reservedByProduct,
+    WorkspaceRole role)
 {
-    var rows = BuildInventoryRows(products, demo);
-    var total = rows.Count == 0 ? 0 : Math.Max(rows.Count, demo ? 1240 : rows.Count);
+    var rows = BuildInventoryRows(products, reservedByProduct);
+    var total = rows.Count;
 
     return new InventoryListResponse(
         total,
-        rows.Count == 0 ? "No platforms connected" : "3 of 4 synced · Euronics failed",
+        rows.Count == 0 ? "No products imported" : "Backend inventory · platform sync pending",
         rows,
         InventoryCapabilitiesFor(role));
 }
 
 static IReadOnlyList<InventoryProductSummary> BuildInventoryRows(
     IReadOnlyList<Product> products,
-    bool demo)
+    IReadOnlyDictionary<Guid, int> reservedByProduct)
 {
-    var source = products.Count == 0 && demo ? DemoInventoryProducts() : products;
-
-    return source.Select(BuildInventoryRow).ToArray();
+    return products.Select(product => BuildInventoryRow(product, reservedByProduct.GetValueOrDefault(product.Id))).ToArray();
 }
 
-static InventoryProductSummary BuildInventoryRow(Product product, int index)
+static InventoryProductSummary BuildInventoryRow(Product product, int reserved = 0)
 {
-    var reserved = ReservedFor(index, product.OnHand);
     var available = Math.Max(0, product.OnHand - reserved);
     var category = string.IsNullOrWhiteSpace(product.Category) ? "General" : product.Category;
 
@@ -1203,30 +1370,11 @@ static InventoryProductDetail BuildInventoryDetail(
     WorkspaceRole role,
     bool allFailing)
 {
-    var visibleProduct = allFailing
-        ? product with
-        {
-            Platforms = product.Platforms.Select(platform => platform with
-            {
-                Status = "Failed",
-                Detail = platform.Platform switch
-                {
-                    "Amazon" => "Sync failed · Rate limit reached · retrying in 2 min",
-                    "Unieuro" => "Sync failed · Service unavailable (503)",
-                    "Euronics" => "Sync failed · API token expired",
-                    _ => "Sync failed · Connection timed out"
-                }
-            }).ToArray()
-        }
-        : product;
-
     return new InventoryProductDetail(
-        visibleProduct,
+        product,
         SafetyBufferEnabled: false,
         LowStockAlertAt: 5,
-        allFailing
-            ? "No platform is receiving updates for this product"
-            : "Euronics sync failed 12 min ago",
+        "Backend inventory loaded from persisted products",
         InventoryPricing(product.BasePrice, allFailing),
         InventoryAudit(product),
         InventoryCapabilitiesFor(role));
@@ -1242,75 +1390,39 @@ static InventoryCapabilities InventoryCapabilitiesFor(WorkspaceRole role) =>
 
 static IReadOnlyList<InventoryPlatformStatus> InventoryPlatforms(int available, bool outOfStock) =>
 [
-    new("Amazon", "Am", "Synced", $"Live · {available} available", available, true),
-    new("Unieuro", "Un", "Synced", $"Live · {available} available", available, true),
-    new("Euronics", "Eu", "Failed", "Sync failed · API token expired", available + 2, true),
-    new("eBay", "eB", outOfStock ? "Not Listed" : "Synced", outOfStock ? "Not listed" : $"Live · {available} available", available, !outOfStock)
+    new("Amazon", "Am", "Not connected", $"Backend available {available}", available, false),
+    new("Unieuro", "Un", "Not connected", $"Backend available {available}", available, false),
+    new("Euronics", "Eu", "Not connected", $"Backend available {available}", available, false),
+    new("eBay", "eB", outOfStock ? "Not listed" : "Not connected", $"Backend available {available}", available, false)
 ];
 
 static IReadOnlyList<InventoryPricingRow> InventoryPricing(decimal basePrice, bool failing) =>
 [
-    new("Amazon", "Marketplace fees", "+5.0%", Math.Round(basePrice * 1.05m, 2), Math.Round(basePrice * .084m, 2), Math.Round(basePrice * .101m, 2), failing ? "Sync failed" : "Synced"),
-    new("Unieuro", "Base price", "—", basePrice, Math.Round(basePrice * .1m, 2), Math.Round(basePrice * .044m, 2), failing ? "Sync failed" : "Synced"),
-    new("Euronics", "Promo", "-20.00", Math.Max(0, basePrice - 20m), Math.Round(basePrice * .088m, 2), Math.Round(basePrice * .036m, 2), "Sync failed"),
-    new("eBay", "Base price", "—", basePrice, Math.Round(basePrice * .08m, 2), Math.Round(basePrice * .064m, 2), failing ? "Sync failed" : "Not listed")
+    new("Amazon", "Marketplace fees", "+5.0%", Math.Round(basePrice * 1.05m, 2), Math.Round(basePrice * .084m, 2), Math.Round(basePrice * .101m, 2), failing ? "Not connected" : "Backend estimate"),
+    new("Unieuro", "Base price", "—", basePrice, Math.Round(basePrice * .1m, 2), Math.Round(basePrice * .044m, 2), failing ? "Not connected" : "Backend estimate"),
+    new("Euronics", "Promo", "-20.00", Math.Max(0, basePrice - 20m), Math.Round(basePrice * .088m, 2), Math.Round(basePrice * .036m, 2), failing ? "Not connected" : "Backend estimate"),
+    new("eBay", "Base price", "—", basePrice, Math.Round(basePrice * .08m, 2), Math.Round(basePrice * .064m, 2), failing ? "Not connected" : "Backend estimate")
 ];
 
 static IReadOnlyList<InventoryAuditEntry> InventoryAudit(InventoryProductSummary product) =>
 [
-    new("Reserved", "Reserved 1 on Amazon", $"Order AMZ-7742 · Available {product.Available + 1} → {product.Available}", "2 min ago"),
-    new("Reserved", "Reserved 1 on Unieuro", "Order UNI-48213 · Available 5 → 4", "8 min ago"),
-    new("Released", "Reservation expired on Unieuro", "Available 4 → 5", "14 min ago"),
-    new("Order", "Order completed on Euronics", "On hand 6 → 5", "1 h ago"),
-    new("Adjusted", "On hand adjusted by Luca Bianchi", "On hand 2 → 6 · stock count", "25 Sep 2026, 16:05"),
-    new("Pricing", "Euronics price changed by rule", "€799.00 → €779.00 · Galaxy S24 promo", "15 Sep 2026, 00:00")
+    product.Reserved > 0
+        ? new("Reserved", $"Reserved {product.Reserved} unit{(product.Reserved == 1 ? string.Empty : "s")}", $"Available {product.OnHand} → {product.Available}", "Current orders")
+        : new("Available", "No active reservations", $"Available {product.Available}", "Current orders"),
+    new("Adjusted", "On hand managed in StockHub", $"On hand {product.OnHand} · available {product.Available}", "Current inventory"),
+    new("Pricing", "Base price stored in StockHub", $"€{product.BasePrice:0.00}", "Current product")
 ];
-
-static int ReservedFor(int index, int onHand)
-{
-    if (onHand <= 0)
-    {
-        return 0;
-    }
-
-    return index switch
-    {
-        0 => 1,
-        1 => Math.Min(2, onHand),
-        2 or 5 or 6 => 1,
-        _ => 0
-    };
-}
 
 static string InventoryStockStatus(int available) =>
     available == 0 ? "Out of stock" : available <= 5 ? "Low stock" : "In stock";
 
-static IReadOnlyList<Product> DemoInventoryProducts() =>
-[
-    new(Guid.Parse("11111111-1111-4111-8111-111111111111"), Guid.Empty, "DLG-ECAM22-110", "De'Longhi Magnifica S", 42, 349m, "Coffee"),
-    new(Guid.Parse("22222222-2222-4222-8222-222222222222"), Guid.Empty, "SAM-S921B-128-BK", "Samsung Galaxy S24 128GB", 5, 799m, "Phones"),
-    new(Guid.Parse("33333333-3333-4333-8333-333333333333"), Guid.Empty, "DYS-V15-DET", "Dyson V15 Detect", 18, 649m, "Home"),
-    new(Guid.Parse("44444444-4444-4444-8444-444444444444"), Guid.Empty, "SNY-WH1000XM5-B", "Sony WH-1000XM5", 0, 379m, "Audio"),
-    new(Guid.Parse("55555555-5555-4555-8555-555555555555"), Guid.Empty, "PHL-HD9650-90", "Philips Airfryer XXL", 27, 229m, "Kitchen"),
-    new(Guid.Parse("66666666-6666-4666-8666-666666666666"), Guid.Empty, "NIN-HEG-001-W", "Nintendo Switch OLED", 3, 349m, "Gaming"),
-    new(Guid.Parse("77777777-7777-4777-8777-777777777777"), Guid.Empty, "APL-MTJY3ZM-A", "Apple AirPods Pro 2", 64, 279m, "Audio"),
-    new(Guid.Parse("88888888-8888-4888-8888-888888888888"), Guid.Empty, "GPR-CHDHX-121", "GoPro HERO12 Black", 4, 399m, "Cameras"),
-    new(Guid.Parse("99999999-9999-4999-8999-999999999999"), Guid.Empty, "IRB-C755840", "iRobot Roomba Combo j7", 5, 599m, "Home")
-];
-
 static DashboardSnapshotResponse BuildDashboardSnapshot(
     DashboardWorkspaceState state,
-    IReadOnlyList<Product> products)
+    IReadOnlyList<Product> products,
+    OrderListResponse orders)
 {
-    var mode = state.Mode == "first-sync"
-        ? "first-sync"
-        : products.Count == 0
-            ? "first-use"
-            : "live";
+    var mode = products.Count == 0 ? "first-use" : "live";
 
-    var primary = products.FirstOrDefault();
-    var primaryName = primary?.Name ?? "Samsung Galaxy S24 128GB";
-    var primaryId = primary?.Id.ToString() ?? string.Empty;
     var lowStockProducts = products.Where(product => product.OnHand <= 5).ToArray();
     var lowStockCount = lowStockProducts.Length;
 
@@ -1319,7 +1431,7 @@ static DashboardSnapshotResponse BuildDashboardSnapshot(
         return new DashboardSnapshotResponse(
             mode,
             "Dashboard",
-            "Saturday, 26 September · Rossi Elettronica",
+            DateTimeOffset.UtcNow.ToString("dddd, dd MMMM") + " · Rossi Elettronica",
             "No platforms connected",
             "neutral",
             [
@@ -1342,61 +1454,25 @@ static DashboardSnapshotResponse BuildDashboardSnapshot(
             ["Nothing needs your attention."]);
     }
 
-    if (mode == "first-sync")
-    {
-        return new DashboardSnapshotResponse(
-            mode,
-            "Dashboard",
-            "Saturday, 26 September · Rossi Elettronica",
-            "Syncing 1,176 / 1,240…",
-            "syncing",
-            [
-                new("revenue", "Revenue today", "—", "After the first sync", "neutral"),
-                new("orders", "Orders today", "—", "After the first sync", "neutral"),
-                new("reservations", "Active reservations", "—", "After the first sync", "neutral"),
-                new("low", "Low-stock products", "—", "After the first sync", "neutral"),
-                new("sync", "Sync status", "—", "After the first sync", "neutral")
-            ],
-            [],
-            [],
-            [new("sync-clean", "info", "ok", "Nothing needs your attention.", "Stock changes made now are queued until the first sync finishes.", [])],
-            [],
-            new DashboardSyncResponse(
-                state.SyncPlatform,
-                1176,
-                1240,
-                "about 10s left",
-                [
-                    new("matched", "Products matched", "1,240 of 1,240 SKUs found", "done"),
-                    new("stock", "Stock sent", "Available counts on Amazon", "done"),
-                    new("prices", "Sending prices", "Base price + Amazon rule", "active")
-                ]),
-            BuildSearchIndex(products, [$"{state.SyncPlatform} first sync"]),
-            [$"First sync with {state.SyncPlatform} is running."]);
-    }
-
-    var reservations = BuildReservations(primaryName);
-    var attention = BuildAttention(state, primary, primaryId, primaryName, lowStockCount);
+    var reservations = BuildReservations(orders);
+    var attention = BuildAttention(products);
+    var revenueToday = orders.Orders.Sum(order => order.Total);
+    var averageOrder = orders.Orders.Count == 0 ? 0m : revenueToday / orders.Orders.Count;
     return new DashboardSnapshotResponse(
         mode,
         "Dashboard",
-        "Saturday, 26 September · live across 4 platforms",
-        state.EuronicsRetried ? "4 of 4 synced" : "3 of 4 synced · Euronics failed",
-        state.EuronicsRetried ? "ok" : "danger",
+        DateTimeOffset.UtcNow.ToString("dddd, dd MMMM") + " · backend data",
+        "Backend data loaded",
+        "ok",
         [
-            new("revenue", "Revenue today", "€4.8k", "+12.4% vs last Saturday", "ok"),
-            new("orders", "Orders today", "37", "Avg. order €130.27", "neutral"),
-            new("reservations", "Active reservations", "6", "None expiring in the next minute", "warning"),
+            new("revenue", "Revenue today", $"€{revenueToday:0.00}", "Calculated from imported orders", revenueToday > 0 ? "ok" : "neutral"),
+            new("orders", "Orders today", orders.TotalToday.ToString(), $"Avg. order €{averageOrder:0.00}", "neutral"),
+            new("reservations", "Active reservations", reservations.Count.ToString(), reservations.Count == 0 ? "No active holds" : "Held for unpaid orders", reservations.Count == 0 ? "neutral" : "warning"),
             new("low", "Low-stock products", lowStockCount.ToString(), "5 or fewer available", "warning"),
-            new("sync", "Sync status", state.EuronicsRetried ? "4 of 4" : "3 of 4", state.EuronicsRetried ? "All healthy" : "Euronics failing", state.EuronicsRetried ? "ok" : "danger")
+            new("sync", "Data source", "Backend", "Platform sync pending", "neutral")
         ],
         reservations,
-        [
-            new("Amazon", 51.8m, "dark"),
-            new("Unieuro", 23.4m, "sage"),
-            new("Euronics", 14.9m, "neutral"),
-            new("eBay", 9.9m, "light")
-        ],
+        BuildSalesByPlatform(orders),
         attention,
         [],
         null,
@@ -1404,82 +1480,78 @@ static DashboardSnapshotResponse BuildDashboardSnapshot(
         attention.Select(item => item.Title).ToArray());
 }
 
-static IReadOnlyList<DashboardReservationResponse> BuildReservations(string primaryName) =>
-[
-    new("r1", primaryName, "Unieuro", "#UN-48213", "1 unit", "01:35 left", 18),
-    new("r2", "Nintendo Switch OLED", "Amazon", "#AMZ-7731", "1 unit", "03:52 left", 40),
-    new("r3", "De'Longhi Magnifica S", "Amazon", "#AMZ-7735", "1 unit", "05:17 left", 55),
-    new("r4", "Dyson V15 Detect", "Unieuro", "#UN-48220", "1 unit", "07:29 left", 72),
-    new("r5", primaryName, "Amazon", "#AMZ-7742", "1 unit", "07:49 left", 77),
-    new("r6", "Apple AirPods Pro 2", "eBay", "#EB-2291", "1 unit", "09:24 left", 92)
-];
+static IReadOnlyList<DashboardReservationResponse> BuildReservations(OrderListResponse orders) =>
+    orders.Orders
+        .Where(order => order.Status is "Awaiting payment" or "Paid - to pick")
+        .Select(order =>
+        {
+            var elapsed = DateTimeOffset.UtcNow - order.PlacedAt.ToUniversalTime();
+            var remaining = TimeSpan.FromMinutes(10) - elapsed;
+            var percent = Math.Clamp((int)(elapsed.TotalMinutes / 10d * 100), 0, 100);
+            var label = remaining <= TimeSpan.Zero
+                ? "Expired"
+                : $"{Math.Max(0, remaining.Minutes):00}:{Math.Max(0, remaining.Seconds):00} left";
+            return new DashboardReservationResponse(
+                order.Id.ToString(),
+                order.Product,
+                order.Platform,
+                order.OrderNumber,
+                $"{order.Quantity} unit{(order.Quantity == 1 ? string.Empty : "s")}",
+                label,
+                percent);
+        })
+        .ToArray();
 
-static IReadOnlyList<DashboardAttentionResponse> BuildAttention(
-    DashboardWorkspaceState state,
-    Product? primary,
-    string primaryId,
-    string primaryName,
-    int lowStockCount)
+static IReadOnlyList<DashboardPlatformSaleResponse> BuildSalesByPlatform(OrderListResponse orders)
 {
-    var items = new List<DashboardAttentionResponse>();
-    if (!state.EuronicsRetried)
+    var total = orders.Orders.Sum(order => order.Total);
+    if (total <= 0)
     {
-        items.Add(new(
-            "euronics-sync",
-            "sync",
-            "danger",
-            "Euronics sync failed 12 min ago",
-            "API token expired · Euronics may show outdated stock for 3 products",
-            [new("retry-sync", "Retry", "danger")]));
+        return [];
     }
 
-    if (primary is not null && primary.OnHand <= 5)
+    var tones = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
-        var available = Math.Max(0, primary.OnHand - 2);
+        ["Amazon"] = "dark",
+        ["Unieuro"] = "sage",
+        ["Euronics"] = "neutral",
+        ["eBay"] = "light"
+    };
+
+    return orders.Orders
+        .GroupBy(order => order.Platform)
+        .OrderByDescending(group => group.Sum(order => order.Total))
+        .Select(group => new DashboardPlatformSaleResponse(
+            group.Key,
+            Math.Round(group.Sum(order => order.Total) / total * 100m, 1),
+            tones.GetValueOrDefault(group.Key, "neutral")))
+        .ToArray();
+}
+
+static IReadOnlyList<DashboardAttentionResponse> BuildAttention(IReadOnlyList<Product> products)
+{
+    var items = new List<DashboardAttentionResponse>();
+
+    foreach (var product in products.Where(product => product.OnHand <= 5).Take(5))
+    {
         items.Add(new(
-            $"product:{primary.Id}",
+            $"product:{product.Id}",
             "low-stock",
             "warning",
-            $"{primaryName}: {available} available ({primary.OnHand} on hand)",
+            $"{product.Name}: {product.OnHand} on hand",
             "Low-stock product visible on the dashboard.",
             [new("adjust-on-hand", "Adjust on hand", "link")]));
     }
 
-    items.Add(new(
-        "low-switch",
-        "low-stock",
-        "warning",
-        "Nintendo Switch OLED: 2 available (3 on hand)",
-        "Low-stock product visible on the dashboard.",
-        [new("review-mismatch", "Adjust on hand", "link")]));
-
-    if (!state.MismatchResolved)
+    if (items.Count == 0)
     {
         items.Add(new(
-            "stock-mismatch",
-            "mismatch",
-            "warning",
-            "Stock mismatch on eBay",
-            "Apple AirPods Pro 2: eBay shows 7, StockHub has 63 available",
-            [new("resolve-mismatch", "Use StockHub count", "primary"), new("review-mismatch", "Review", "link")]));
-    }
-
-    items.Add(new(
-        "out-sony",
-        "out-of-stock",
-        "danger",
-        "Sony WH-1000XM5: out of stock on all platforms",
-        state.RestockListed ? "Added to the reorder handoff." : "Restock is tracked as an Inventory milestone handoff.",
-        [new("restock", state.RestockListed ? "On reorder list" : "Restock", "link")]));
-
-    if (state.ShowMoreLowStock || lowStockCount > 4)
-    {
-        items.Add(new("low-gopro", "low-stock", "warning", "GoPro HERO12 Black: 4 available", "Expanded low-stock dashboard item.", [new("review-mismatch", "Adjust on hand", "link")]));
-        items.Add(new("low-roomba", "low-stock", "warning", "iRobot Roomba Combo j7: 5 available", "Expanded low-stock dashboard item.", [new("review-mismatch", "Adjust on hand", "link")]));
-    }
-    else
-    {
-        items.Add(new("more-low", "expand", "neutral", "+2 more low-stock products", "GoPro HERO12 Black, iRobot Roomba Combo j7", [new("show-more-low-stock", "Show", "link")]));
+            "stock-healthy",
+            "info",
+            "ok",
+            "No product stock alerts",
+            "Dashboard alerts are calculated from persisted product counts.",
+            []));
     }
 
     return items;

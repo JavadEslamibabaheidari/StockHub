@@ -59,9 +59,9 @@ describe('AccessApiClient origin', () => {
       }),
     )
     vi.stubGlobal('fetch', fetchMock)
-    await new AccessApiClient().inventory('workspace-1', true)
+    await new AccessApiClient().inventory('workspace-1')
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/workspaces/workspace-1/inventory/products?demo=true',
+      '/api/workspaces/workspace-1/inventory/products',
       expect.objectContaining({ credentials: 'include' }),
     )
   })
