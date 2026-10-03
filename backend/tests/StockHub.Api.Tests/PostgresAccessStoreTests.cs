@@ -142,4 +142,64 @@ public sealed class PostgresAccessStoreTests
         Assert.Null(product.Category);
     }
 
+    [Fact]
+    public async Task Dashboard_import_persists_orders_and_order_actions_update_stock()
+    {
+        var connectionString = Environment.GetEnvironmentVariable("STOCKHUB_POSTGRES_TEST_CONNECTION");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            return;
+        }
+
+        await PostgresDatabaseInitializer.ApplyAsync(connectionString, CancellationToken.None);
+        var accessStore = new PostgresAccessStore(connectionString);
+        var productStore = new PostgresProductStore(connectionString);
+        var orderStore = new PostgresOrderStore(connectionString);
+        var user = await accessStore.CreateUserAsync($"Order User {Guid.NewGuid():N}", $"ORDER-{Guid.NewGuid():N}@EXAMPLE.COM", "hash", CancellationToken.None);
+        var workspace = await accessStore.CreateWorkspaceAsync(user.Id, new CreateWorkspaceRequest("Order Goods", "IT", "EUR", null), $"retry-{Guid.NewGuid():N}", CancellationToken.None);
+
+        var response = await orderStore.ImportAsync(
+            workspace.Workspace.Id,
+            new DashboardImportRequest(
+                [new ProductRequest("ORD-SKU-1", "Order Product", 5, 100m, "Test")],
+                [
+                    new OrderImportRequest(
+                        $"ORD-{Guid.NewGuid():N}",
+                        "Amazon",
+                        "A. Customer",
+                        "Via Test 1",
+                        "BRT",
+                        DateTimeOffset.UtcNow,
+                        "PaidToPick",
+                        [new OrderImportItemRequest("ORD-SKU-1", "Order Product", 1, 120m, 70m)],
+                        null,
+                        null)
+                ]),
+            CancellationToken.None);
+
+        var products = await productStore.ListAsync(workspace.Workspace.Id, CancellationToken.None);
+        var product = Assert.Single(products);
+        var orders = await orderStore.ListAsync(workspace.Workspace.Id, CancellationToken.None);
+        var order = Assert.Single(orders.Orders);
+        var reserved = await orderStore.ReservedByProductAsync(workspace.Workspace.Id, CancellationToken.None);
+
+        Assert.Equal(1, response.ProductsImported);
+        Assert.Equal(1, response.OrdersImported);
+        Assert.Equal("Paid - to pick", order.Status);
+        Assert.Equal(1, reserved[product.Id]);
+
+        var picked = await orderStore.ApplyActionAsync(
+            workspace.Workspace.Id,
+            order.Id,
+            new OrderActionRequest("mark-picked", null),
+            CancellationToken.None);
+        var updatedProducts = await productStore.ListAsync(workspace.Workspace.Id, CancellationToken.None);
+        var updatedReserved = await orderStore.ReservedByProductAsync(workspace.Workspace.Id, CancellationToken.None);
+
+        Assert.NotNull(picked);
+        Assert.Equal("Picked - to ship", picked.Summary.Status);
+        Assert.Equal(4, Assert.Single(updatedProducts).OnHand);
+        Assert.DoesNotContain(product.Id, updatedReserved.Keys);
+    }
+
 }
