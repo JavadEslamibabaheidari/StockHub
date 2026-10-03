@@ -80,7 +80,7 @@ public sealed class PostgresOrderStore(string connectionString) : IOrderStore
                 command.Parameters.AddWithValue("customer", order.CustomerName.Trim());
                 command.Parameters.AddWithValue("shipTo", order.ShipTo.Trim());
                 command.Parameters.AddWithValue("carrier", order.Carrier.Trim());
-                command.Parameters.AddWithValue("placedAt", order.PlacedAt);
+                command.Parameters.AddWithValue("placedAt", order.PlacedAt.ToUniversalTime());
                 command.Parameters.AddWithValue("status", status);
                 command.Parameters.AddWithValue("returnStage", status == "ReturnRequested" ? "Requested" : DBNull.Value);
                 command.Parameters.AddWithValue("returnReason", string.IsNullOrWhiteSpace(order.ReturnReason) ? DBNull.Value : order.ReturnReason.Trim());
@@ -120,7 +120,7 @@ public sealed class PostgresOrderStore(string connectionString) : IOrderStore
                 await itemCommand.ExecuteNonQueryAsync(cancellationToken);
             }
 
-            await RecordEventAsync(connection, transaction, id, "Imported", $"Imported {order.OrderNumber.Trim()}", $"Status {DisplayStatus(status)} from {NormalizePlatform(order.Platform)}", order.PlacedAt, cancellationToken);
+            await RecordEventAsync(connection, transaction, id, "Imported", $"Imported {order.OrderNumber.Trim()}", $"Status {DisplayStatus(status)} from {NormalizePlatform(order.Platform)}", order.PlacedAt.ToUniversalTime(), cancellationToken);
         }
 
         await transaction.CommitAsync(cancellationToken);

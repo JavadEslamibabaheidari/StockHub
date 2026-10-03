@@ -169,7 +169,7 @@ public sealed class PostgresAccessStoreTests
                         "A. Customer",
                         "Via Test 1",
                         "BRT",
-                        DateTimeOffset.UtcNow,
+                        new DateTimeOffset(2026, 10, 2, 9, 48, 0, TimeSpan.FromHours(2)),
                         "PaidToPick",
                         [new OrderImportItemRequest("ORD-SKU-1", "Order Product", 1, 120m, 70m)],
                         null,
