@@ -65,7 +65,10 @@ describe('Milestone 1 Access', () => {
     const originalWindow = globalThis.window
     for (const [hash, expected] of [['#workspace', 'Create your workspace'], ['#onboarding', 'Welcome, there'], ['#dashboard', 'Loading dashboard'], ['#invite', 'Invite your team']] as const) {
       Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash }, addEventListener: () => {}, removeEventListener: () => {} } })
-      expect(renderToStaticMarkup(<App />)).toContain(expected)
+      const markup = renderToStaticMarkup(<App />)
+      expect(markup).toContain(expected)
+      expect(markup).not.toContain('Marco Rossi')
+      expect(markup).not.toContain('Luca Bianchi')
     }
     Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
   })
@@ -131,7 +134,10 @@ describe('Milestone 4 Orders routes', () => {
       ['#orders-staff', 'Print picking list'],
     ] as const) {
       Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash }, addEventListener: () => {}, removeEventListener: () => {}, print: () => {} } })
-      expect(renderToStaticMarkup(<App />)).toContain(expected)
+      const markup = renderToStaticMarkup(<App />)
+      expect(markup).toContain(expected)
+      expect(markup).not.toContain('Marco Rossi')
+      expect(markup).not.toContain('Luca Bianchi')
     }
     Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
   })
