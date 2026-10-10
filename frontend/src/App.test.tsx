@@ -189,3 +189,56 @@ describe('Milestone 5 Reservations route', () => {
     Object.defineProperty(globalThis, 'document', { configurable: true, value: originalDocument })
   })
 })
+
+describe('Milestone 6 Platforms route', () => {
+  it('renders the Platforms screen with connector cards and visible page controls', () => {
+    const originalWindow = globalThis.window
+    const originalDocument = globalThis.document
+    const documentElement = { dataset: {} as Record<string, string> }
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: { documentElement } })
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash: '#platforms' }, addEventListener: () => {}, removeEventListener: () => {} } })
+    const markup = renderToStaticMarkup(<App />)
+
+    expect(markup).toContain('Platforms')
+    expect(markup).toContain('4 connected')
+    expect(markup).toContain('Oversell protection')
+    expect(markup).toContain('Amazon')
+    expect(markup).toContain('Unieuro')
+    expect(markup).toContain('Euronics')
+    expect(markup).toContain('eBay')
+    expect(markup).toContain('API token expired')
+    expect(markup).toContain('Pause sync')
+    expect(markup).toContain('Disconnect')
+    expect(markup).toContain('Settings')
+    expect(markup).toContain('Reconnect')
+    expect(markup).toContain('+ Add platform')
+    expect(markup).toContain('Add platform')
+    expect(markup).toContain('Search products, SKUs, orders...')
+    expect(markup).toContain('3 of 4 synced · Euronics failed')
+    expect(markup).toContain('Toggle appearance')
+    expect(markup).toContain('Notifications')
+    expect(markup).toContain('Workspace dashboard')
+    expect(markup).toContain('Collapse')
+    expect(markup).not.toContain('Marco Rossi')
+    expect(markup).not.toContain('Rossi Elettronica')
+
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: originalDocument })
+  })
+
+  it('keeps previous and future milestone navigation reachable from the Platforms shell', () => {
+    const originalWindow = globalThis.window
+    const originalDocument = globalThis.document
+    const documentElement = { dataset: {} as Record<string, string> }
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: { documentElement } })
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash: '#platforms' }, addEventListener: () => {}, removeEventListener: () => {} } })
+    const markup = renderToStaticMarkup(<App />)
+
+    for (const route of ['#dashboard', '#inventory', '#orders', '#reservations', '#platforms', '#pricing', '#reports', '#team', '#settings']) {
+      expect(markup).toContain(`href="${route}"`)
+    }
+
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: originalDocument })
+  })
+})
