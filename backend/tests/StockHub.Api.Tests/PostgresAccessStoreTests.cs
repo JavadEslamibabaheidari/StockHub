@@ -1,6 +1,7 @@
 namespace StockHub.Api.Tests;
 
 using StockHub.Api.Contracts;
+using StockHub.Api.Domain;
 using StockHub.Api.Infrastructure;
 
 public sealed class PostgresAccessStoreTests
@@ -200,6 +201,46 @@ public sealed class PostgresAccessStoreTests
         Assert.Equal("Picked - to ship", picked.Summary.Status);
         Assert.Equal(4, Assert.Single(updatedProducts).OnHand);
         Assert.DoesNotContain(product.Id, updatedReserved.Keys);
+    }
+
+    [Fact]
+    public async Task Dashboard_state_save_preserves_sync_platform_and_flags()
+    {
+        var connectionString = Environment.GetEnvironmentVariable("STOCKHUB_POSTGRES_TEST_CONNECTION");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            return;
+        }
+
+        await PostgresDatabaseInitializer.ApplyAsync(connectionString, CancellationToken.None);
+        var accessStore = new PostgresAccessStore(connectionString);
+        var store = new PostgresDashboardStore(connectionString);
+        var user = await accessStore.CreateUserAsync($"Dashboard User {Guid.NewGuid():N}", $"DASHBOARD-{Guid.NewGuid():N}@EXAMPLE.COM", "hash", CancellationToken.None);
+        var workspace = await accessStore.CreateWorkspaceAsync(user.Id, new CreateWorkspaceRequest("Dashboard Goods", "IT", "EUR", null), $"retry-{Guid.NewGuid():N}", CancellationToken.None);
+        var workspaceId = workspace.Workspace.Id;
+
+        var saved = await store.SaveAsync(
+            DashboardWorkspaceState.Create(workspaceId) with
+            {
+                Mode = "first-sync",
+                SyncPlatform = "Amazon",
+                EuronicsRetried = true,
+                MismatchResolved = true,
+                RestockListed = true,
+                ShowMoreLowStock = true,
+                DetailPanel = "Dashboard action saved."
+            },
+            CancellationToken.None);
+        var loaded = await new PostgresDashboardStore(connectionString).GetAsync(workspaceId, CancellationToken.None);
+
+        Assert.Equal("Amazon", saved.SyncPlatform);
+        Assert.True(saved.EuronicsRetried);
+        Assert.Equal(saved.SyncPlatform, loaded.SyncPlatform);
+        Assert.True(loaded.EuronicsRetried);
+        Assert.True(loaded.MismatchResolved);
+        Assert.True(loaded.RestockListed);
+        Assert.True(loaded.ShowMoreLowStock);
+        Assert.Equal("Dashboard action saved.", loaded.DetailPanel);
     }
 
 }

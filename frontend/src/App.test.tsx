@@ -142,3 +142,50 @@ describe('Milestone 4 Orders routes', () => {
     Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
   })
 })
+
+describe('Milestone 5 Reservations route', () => {
+  it('renders the Reservations screen with active and expired reservation workflows', () => {
+    const originalWindow = globalThis.window
+    const originalDocument = globalThis.document
+    const documentElement = { dataset: {} as Record<string, string> }
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: { documentElement } })
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash: '#reservations' }, addEventListener: () => {}, removeEventListener: () => {} } })
+    const markup = renderToStaticMarkup(<App />)
+
+    expect(markup).toContain('Reservations')
+    expect(markup).toContain('Active reservations')
+    expect(markup).toContain('Release now')
+    expect(markup).toContain('Expired today')
+    expect(markup).toContain('Restore hold')
+    expect(markup).toContain('Export CSV')
+    expect(markup).toContain('Refresh timers')
+    expect(markup).toContain('Search products, SKUs, orders...')
+    expect(markup).toContain('3 of 4 synced · Euronics failed')
+    expect(markup).toContain('Toggle appearance')
+    expect(markup).toContain('Notifications')
+    expect(markup).toContain('Workspace dashboard')
+    expect(markup).toContain('Pro plan')
+    expect(markup).toContain('Collapse')
+    expect(markup).not.toContain('Marco Rossi')
+    expect(markup).not.toContain('Rossi Elettronica')
+
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: originalDocument })
+  })
+
+  it('keeps future milestone navigation reachable from the Reservations shell', () => {
+    const originalWindow = globalThis.window
+    const originalDocument = globalThis.document
+    const documentElement = { dataset: {} as Record<string, string> }
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: { documentElement } })
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash: '#reservations' }, addEventListener: () => {}, removeEventListener: () => {} } })
+    const markup = renderToStaticMarkup(<App />)
+
+    for (const route of ['#dashboard', '#inventory', '#orders', '#reservations', '#platforms', '#pricing', '#reports', '#team', '#settings']) {
+      expect(markup).toContain(`href="${route}"`)
+    }
+
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: originalDocument })
+  })
+})

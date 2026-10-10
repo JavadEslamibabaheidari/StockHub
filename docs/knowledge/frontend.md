@@ -81,3 +81,20 @@ it: filtering/search/CSV export are client-side over persisted rows, and return,
 cancel, pick, ship, receive, and refund actions call the Orders API. Real
 marketplace order capture, payment settlement, carrier label creation, and live
 platform authorization remain future integration work.
+
+## Milestone 5 Reservations
+
+Reservations are hash-addressable as `#reservations`.
+`frontend/src/ReservationsScreens.tsx` renders the single `5.1 Reservations`
+owner screen from deterministic preview data, matching the mockup-led active
+holds table, expiring timer bars, summary metrics, and expired-today lost-sale
+signals from the 2026-10-10 screenshot.
+
+Visible controls are wired for browser behavior: global search filters active
+holds, CSV export downloads visible reservations, timer refresh advances the
+preview countdowns, release returns held units to Available in local state,
+restore hold moves an expired lost-sale signal back into active reservations,
+and shell controls open status/account/workspace panels, toggle appearance, or
+collapse the sidebar. Real marketplace reservation release, connector repair,
+payment conversion, and durable Reservations persistence remain future backend
+or integration work.
