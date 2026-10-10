@@ -31,7 +31,7 @@ jobs:
       STOCKHUB_POSTGRES_TEST_CONNECTION: Host=localhost;Port=5432;Database=stockhub;Username=stockhub;Password=stockhub-ci
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
         with:
