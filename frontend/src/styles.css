@@ -823,3 +823,62 @@ h1 {
 @media (max-width: 1100px) { .reservation-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 980px) { .reservations-collapsed .inventory-shell { grid-template-columns: 76px minmax(0,1fr); } }
 @media (max-width: 640px) { .reservation-metrics { grid-template-columns: 1fr; } .reservation-table { min-width: 860px; } .expired-table { min-width: 760px; } .reservation-account > span:nth-child(2), .reservation-account > span:last-child { display: none; } }
+
+/* Milestone 6 Platforms */
+.platforms-page .inventory-heading { align-items: flex-start; }
+.platforms-page .inventory-actions button { min-width: 140px; border-color: transparent; background: #c67139; color: #fff; }
+.oversell-banner { display: grid; grid-template-columns: 34px minmax(0,1fr) auto; align-items: center; min-height: 64px; margin-bottom: 20px; padding: 12px 18px; border: 1px solid #ded2c0; border-radius: 22px; background: #fbf7ef; box-shadow: 0 1px 2px #21180715; gap: 12px; }
+.oversell-banner > span { display: grid; width: 24px; height: 24px; border-radius: 50%; background: #eef5e3; color: #526b3a; font-weight: 900; place-items: center; }
+.oversell-banner strong { display: block; font-size: 12px; }
+.oversell-banner small { display: block; color: #6f665a; font-size: 11px; line-height: 1.35; }
+.oversell-banner button { display: flex; align-items: center; width: 42px; height: 22px; padding: 3px; border: 0; border-radius: 999px; background: #c67139; cursor: pointer; }
+.oversell-banner button span { width: 16px; height: 16px; margin-left: auto; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #21180725; }
+.oversell-banner button[aria-checked='false'] { background: #bfb4a4; }
+.oversell-banner button[aria-checked='false'] span { margin-left: 0; }
+.platform-grid { display: grid; grid-template-columns: repeat(3,minmax(235px,1fr)); gap: 16px; }
+.platform-card, .platform-add-tile { min-height: 178px; border: 1px solid #ded2c0; border-radius: 22px; background: #fbf7ef; box-shadow: 0 1px 2px #21180715; }
+.platform-card { display: grid; align-content: start; padding: 16px; gap: 14px; }
+.platform-card.error { border-color: #c44733; box-shadow: inset 0 0 0 1px #c44733; }
+.platform-card header { display: grid; grid-template-columns: 32px minmax(0,1fr) auto; align-items: center; gap: 10px; }
+.platform-avatar { display: grid; width: 32px; height: 32px; border-radius: 50%; background: #514a40; color: #fff; font-size: 10px; font-weight: 900; place-items: center; }
+.platform-card h2 { margin: 0 0 3px; font-size: 13px; }
+.platform-card small { color: #6f665a; font-size: 10px; }
+.platform-status { display: inline-flex; align-items: center; min-height: 20px; padding: 4px 8px; border-radius: 999px; font-size: 10px; gap: 5px; }
+.platform-status::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
+.platform-status.connected { background: #eef5e3; color: #526b3a; }
+.platform-status.paused, .platform-status.disconnected { background: #eee7db; color: #6a6258; }
+.platform-status.error { background: #f5dacf; color: #a43f28; }
+.platform-error { padding: 13px; border-radius: 14px; background: #f4d5cd; color: #8c3628; }
+.platform-error strong { display: block; margin-bottom: 8px; font-size: 12px; }
+.platform-error p { margin: 0 0 10px; font-size: 11px; line-height: 1.35; }
+.platform-error button { min-height: 34px; padding: 8px 14px; border: 0; border-radius: 999px; background: #c67139; color: #fff; font: inherit; font-size: 12px; font-weight: 900; cursor: pointer; }
+.platform-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+.platform-stats span { min-height: 54px; padding: 10px; border-radius: 12px; background: #eee7db; }
+.platform-stats small { display: block; margin-bottom: 5px; color: #6f665a; font-size: 9px; }
+.platform-stats b { font-size: 13px; }
+.platform-card footer { display: flex; flex-wrap: wrap; margin-top: auto; gap: 8px; }
+.platform-card footer button { min-height: 28px; padding: 0; border: 0; background: transparent; color: #9d4c21; font: inherit; font-size: 11px; font-weight: 900; text-decoration: underline; cursor: pointer; }
+.platform-card footer button:first-child { padding: 6px 11px; border: 1px solid #d2c7b5; border-radius: 999px; background: #fbf7ef; color: #24211d; text-decoration: none; }
+.platform-add-tile { display: grid; align-content: center; justify-items: center; min-height: 200px; border: 0; background: #e7d8bf; color: #24211d; font: inherit; cursor: pointer; gap: 8px; }
+.platform-add-tile span { display: grid; width: 44px; height: 44px; border-radius: 50%; background: #fbf7ef; color: #b15929; font-size: 25px; place-items: center; }
+.platform-add-tile strong { font-family: Georgia,'Times New Roman',serif; font-size: 20px; letter-spacing: -.04em; }
+.platform-add-tile small { color: #6f665a; font-size: 11px; }
+.platform-empty-filter { grid-column: 1/-1; }
+.platform-modal-backdrop { position: fixed; inset: 0; z-index: 80; display: grid; padding: 22px; background: rgb(39 32 24 / 55%); place-items: center; }
+.platform-modal { position: relative; width: min(370px,100%); padding: 24px 16px 18px; border-radius: 24px; background: #f5ead8; box-shadow: 0 18px 52px #21180750; }
+.platform-modal h2 { margin: 0 34px 12px 0; font-family: Georgia,'Times New Roman',serif; font-size: 23px; letter-spacing: -.04em; }
+.platform-modal p { margin: 0 0 13px; color: #6f665a; font-size: 12px; line-height: 1.45; }
+.platform-modal-close { position: absolute; right: 16px; top: 14px; width: 30px; height: 30px; border: 0; border-radius: 50%; background: transparent; color: #24211d; font: inherit; font-size: 20px; cursor: pointer; }
+.marketplace-list { display: grid; gap: 8px; }
+.marketplace-row { display: grid; grid-template-columns: 34px minmax(0,1fr) auto; align-items: center; min-height: 50px; padding: 8px 8px; border-radius: 14px; background: #fbf7ef; gap: 10px; }
+.marketplace-row span { display: grid; width: 28px; height: 28px; border-radius: 50%; background: #514a40; color: #fff; font-size: 10px; font-weight: 900; place-items: center; }
+.marketplace-row strong { font-size: 12px; }
+.marketplace-row button, .platform-modal-done { min-height: 32px; padding: 8px 14px; border: 0; border-radius: 999px; background: #c67139; color: #fff; font: inherit; font-size: 12px; font-weight: 900; cursor: pointer; }
+.marketplace-row button:disabled { background: #d8cfbe; color: #6f665a; cursor: default; }
+.platform-modal-done { display: block; margin: 16px 0 0 auto; border: 1px solid #d2c7b5; background: #fbf7ef; color: #24211d; }
+[data-theme='dark'] .oversell-banner, [data-theme='dark'] .platform-card, [data-theme='dark'] .platform-modal, [data-theme='dark'] .marketplace-row { background: #221f1b; color: #f8f1e8; border-color: #514638; }
+[data-theme='dark'] .platform-stats span, [data-theme='dark'] .platform-add-tile, [data-theme='dark'] .platform-card footer button:first-child, [data-theme='dark'] .platform-modal-done { background: #332d25; color: #f8f1e8; border-color: #514638; }
+[data-theme='dark'] .oversell-banner small, [data-theme='dark'] .platform-card small, [data-theme='dark'] .platform-modal p, [data-theme='dark'] .platform-stats small, [data-theme='dark'] .platform-add-tile small { color: #cbbba8; }
+@media (max-width: 1120px) { .platform-grid { grid-template-columns: repeat(2,minmax(235px,1fr)); } }
+@media (max-width: 760px) { .platform-grid { grid-template-columns: 1fr; } .oversell-banner { grid-template-columns: 28px minmax(0,1fr); } .oversell-banner button { grid-column: 2; width: 46px; } }
+@media (max-width: 640px) { .platform-modal-backdrop { align-items: start; padding: 18px; } .platform-stats { grid-template-columns: 1fr; } }

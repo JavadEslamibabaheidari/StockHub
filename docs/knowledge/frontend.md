@@ -98,3 +98,22 @@ and shell controls open status/account/workspace panels, toggle appearance, or
 collapse the sidebar. Real marketplace reservation release, connector repair,
 payment conversion, and durable Reservations persistence remain future backend
 or integration work.
+
+## Milestone 6 Platforms
+
+Platforms are hash-addressable as `#platforms`.
+`frontend/src/PlatformsScreens.tsx` renders the `6.1 Platforms` screen and
+`6.2 Add platform picker` modal from deterministic preview connector state.
+The screen covers Amazon, Unieuro, Euronics, eBay, oversell protection, an
+Euronics expired-token state, and add-platform entry points for Zalando,
+ePRICE, and MediaWorld.
+
+Visible controls are wired for browser behavior: global search filters
+platform cards, oversell protection toggles local messaging, pause/resume sync
+changes connector state, disconnect marks a connector disconnected, reconnect
+clears the Euronics error, settings/status/account/workspace/notification
+controls open panels, theme toggles appearance, sidebar collapse changes the
+shell, and the add-platform modal supports Connect, Done, close X, Escape, and
+backdrop close. Real marketplace OAuth, credential persistence, sync workers,
+stock/price publication, and product listing selection remain future durable
+Platforms integration work.
