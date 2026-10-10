@@ -2,13 +2,9 @@
 
 Status: accepted direction; architecture ADRs merged and Cover closure verified in PR #18
 
-Cover is closed with passing evidence in
-`docs/reports/milestone-0-cover-closure.md` and merged PR #18. It is a
-frontend-only foundation milestone. Access implementation is merged but its
-milestone was reopened after live review. Dashboard implementation is merged
-but its milestone remains open. See [project status](../project-status.md) for
-current milestone and deployment evidence; verify live GitHub state before
-reporting a status change.
+Milestones 0–6 are closed in GitHub. See [project status](../project-status.md)
+for delivery evidence; inspect live GitHub before claiming deployment freshness.
+Pricing rules planning is in [milestone 7](../plans/milestone-7-pricing.md).
 
 StockHub starts as an extraction-ready modular monolith. Modules own their
 domain, persistence boundaries, contracts, configuration, and tests. The first
@@ -35,8 +31,7 @@ Key rules:
 Access backend work now lives in `backend/src/StockHub.Api` with the HTTP host
 and Access store boundary isolated from the frontend. Cookie authentication,
 identity/password hashing, workspace membership checks, and the `/api/auth` and
-`/api/workspaces` routes. Access remediation and provider verification remain
-tracked under Milestone 1.
+`/api/workspaces` routes. Remaining Access remediation is tracked outside closed product milestones.
 
 
 ## Milestone 2 Dashboard architecture note
