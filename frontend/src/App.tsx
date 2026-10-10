@@ -3,6 +3,7 @@ import { AcceptInvite, Deferred, ForgotPassword, Invite, Onboarding, ResetPasswo
 import { Dashboard } from './DashboardScreens'
 import { Inventory, InventoryEmpty, ProductDetail } from './InventoryScreens'
 import { OrderDetail, Orders, OrdersEmpty } from './OrdersScreens'
+import { Reservations } from './ReservationsScreens'
 
 const accessRouteHashes = [
   '#signup',
@@ -132,6 +133,7 @@ export default function App() {
     if (hash === '#order-detail' || hash.startsWith('#order-detail?')) return <OrderDetail />
     if (hash === '#order-return') return <OrderDetail mode="return" />
     if (hash === '#order-cancel') return <OrderDetail mode="cancel" />
+    if (hash === '#reservations') return <Reservations />
     if (hash === '#invite') return <Invite />
     if (hash === '#forgot') return <ForgotPassword />
     if (hash === '#accept' || hash.startsWith('#accept?')) return <AcceptInvite />
