@@ -1,8 +1,6 @@
 # StockHub Mockup-Led Roadmap
 
-Status: roadmap structure approved; architecture baseline accepted in PR #14;
-Milestones 0 Cover, 1 Access, 2 Dashboard, 3 Inventory, 4 Orders, and
-5 Reservations are closed in GitHub; Milestone 6 Platforms is active
+Status: milestones 0–6 are closed in GitHub; milestone 7 Pricing rules is active.
 
 ## Source of truth
 
@@ -67,14 +65,11 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-The active product milestone is `6 Platforms`. Milestones `0 Cover`,
-`1 Access`, `2 Dashboard`, `3 Inventory`, `4 Orders`, and `5 Reservations` are
-closed in GitHub with zero open issues. Platforms implementation is tracked in
-[milestone-6-platforms.md](milestone-6-platforms.md). Reservations closure
-evidence is recorded in
-[milestone-5-reservations-closure.md](../reports/milestone-5-reservations-closure.md).
-Each completed milestone receives one annotated `v0.<number>.0` tag after its
-closure and checks are verified.
+The active product milestone is `7 Pricing rules`. Milestones 0–6 are closed
+in GitHub with zero open issues. Pricing execution is tracked in
+[milestone-7-pricing.md](milestone-7-pricing.md), issues #116–#119.
+Platforms closure evidence is in
+[milestone-6-platforms-closure.md](../reports/milestone-6-platforms-closure.md).
 
 GitHub issues should exist for the current milestone with detailed acceptance
 criteria and direct mockup references. Future milestone records may exist before
@@ -135,6 +130,5 @@ uses in-process mediation behind shared abstractions, with an outbox boundary
 for future Kafka or RabbitMQ transport. Redis is an optional infrastructure
 adapter and is not a source of truth for inventory or reservations.
 
-The architecture baseline and ADRs are drafted locally. GitHub synchronization
-and the required PR are pending because the current workspace does not contain
-a usable Git checkout and GitHub API access is unavailable.
+The architecture baseline and ADRs were accepted in PR #14. GitHub and Git access
+were verified for the Pricing start gate on 2026-10-11.

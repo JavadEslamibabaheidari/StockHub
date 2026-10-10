@@ -1,6 +1,6 @@
 # Project status and evidence
 
-Last reconciled: 2026-10-10. Live [GitHub milestones](https://github.com/JavadEslamibabaheidari/StockHub/milestones), [issues](https://github.com/JavadEslamibabaheidari/StockHub/issues), and [Actions](https://github.com/JavadEslamibabaheidari/StockHub/actions) take precedence over this snapshot.
+Last reconciled: 2026-10-11. Live [GitHub milestones](https://github.com/JavadEslamibabaheidari/StockHub/milestones), [issues](https://github.com/JavadEslamibabaheidari/StockHub/issues), and [Actions](https://github.com/JavadEslamibabaheidari/StockHub/actions) take precedence over this snapshot.
 
 | Milestone | Code | Published image | Local dev | Local staging / production | Closure |
 |---|---|---|---|---|---|
@@ -27,3 +27,14 @@ tags to rewrite history; record later verified releases separately.
 ## Reconciliation routine
 
 Refresh `main` and `dev` when it exists, run `scripts/check-tracking-status.sh`, inspect the current delivery workflow's individual jobs, and compare the target deployment record with its source SHA or published digest. Check each local Compose environment independently. Update this snapshot and the affected milestone report in the same PR whenever any status changes. If access is unavailable, state the exact unverified dimension rather than copying an older claim.
+
+## Milestone 7 start
+
+Pricing rules is open in [milestone 8](https://github.com/JavadEslamibabaheidari/StockHub/milestone/8),
+with issues #116–#119 and [the execution plan](plans/milestone-7-pricing.md).
+Refreshed `main` is `9b79701ada8b959529deb05aaad57f049c8934c0`; `dev` is
+`21549b36342cb031dc94bc79b28ee502be5dbf9c`. No open PRs remained on inspection.
+[Delivery run 38091518130](https://github.com/JavadEslamibabaheidari/StockHub/actions/runs/38091518130)
+passed image publication, local Kubernetes smoke and persistent local deployment
+dispatch. Shared staging and production jobs were skipped; those targets are
+unverified. Dispatch success alone does not prove a persistent target rollout.

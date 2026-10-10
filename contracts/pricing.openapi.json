@@ -1,0 +1,385 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "StockHub Pricing",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/workspaces/{workspaceId}/pricing/rules": {
+      "get": {
+        "operationId": "listPricingRules",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingRuleList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPricingRule",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingRule"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/pricing/rules/{ruleId}": {
+      "put": {
+        "operationId": "updatePricingRule",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ruleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingRule"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleInput"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePricingRule",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ruleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/pricing/preview": {
+      "post": {
+        "operationId": "previewPricing",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingPreview"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewInput"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RuleInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "platform",
+          "scope",
+          "scopeValue",
+          "adjustment",
+          "unit",
+          "enabled",
+          "priority",
+          "startDate",
+          "endDate"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "Amazon",
+              "Unieuro",
+              "Euronics",
+              "eBay"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "All",
+              "Category",
+              "Sku"
+            ]
+          },
+          "scopeValue": {
+            "type": "string",
+            "nullable": true
+          },
+          "adjustment": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "Percent",
+              "Euro"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          }
+        }
+      },
+      "PricingRule": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/RuleInput"
+          },
+          {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        ]
+      },
+      "PricingRuleList": {
+        "type": "object",
+        "required": [
+          "rules",
+          "canEdit"
+        ],
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PricingRule"
+            }
+          },
+          "canEdit": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PreviewInput": {
+        "type": "object",
+        "required": [
+          "rule"
+        ],
+        "properties": {
+          "rule": {
+            "$ref": "#/components/schemas/RuleInput"
+          },
+          "ruleId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        }
+      },
+      "PricingPreview": {
+        "type": "object",
+        "required": [
+          "basePrice",
+          "finalPrice",
+          "adjustment",
+          "netExVat",
+          "margin",
+          "productId",
+          "productName",
+          "affectedProducts",
+          "feeRate",
+          "vatRate",
+          "explanation",
+          "appliedRuleIds"
+        ],
+        "properties": {
+          "basePrice": {
+            "type": "number",
+            "nullable": true
+          },
+          "finalPrice": {
+            "type": "number",
+            "nullable": true
+          },
+          "adjustment": {
+            "type": "number",
+            "nullable": true
+          },
+          "netExVat": {
+            "type": "number",
+            "nullable": true
+          },
+          "margin": {
+            "type": "number",
+            "nullable": true
+          },
+          "productId": {
+            "type": "string",
+            "nullable": true
+          },
+          "productName": {
+            "type": "string",
+            "nullable": true
+          },
+          "affectedProducts": {
+            "type": "integer"
+          },
+          "feeRate": {
+            "type": "number"
+          },
+          "vatRate": {
+            "type": "number"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "appliedRuleIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      }
+    }
+  }
+}
