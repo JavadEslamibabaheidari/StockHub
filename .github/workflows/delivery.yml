@@ -91,7 +91,7 @@ jobs:
       - name: Compose build, health, and route smoke
         run: bash scripts/check-compose-smoke.sh
       - name: Install kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@v5
       - name: Install kind
         env:
           KIND_VERSION: v0.33.0
@@ -190,7 +190,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
-      - uses: azure/setup-kubectl@v4
+      - uses: azure/setup-kubectl@v5
       - name: Configure Kubernetes and deploy
         env:
           KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
@@ -259,7 +259,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
-      - uses: azure/setup-kubectl@v4
+      - uses: azure/setup-kubectl@v5
       - name: Verify successful staging run
         env:
           GH_TOKEN: ${{ github.token }}
