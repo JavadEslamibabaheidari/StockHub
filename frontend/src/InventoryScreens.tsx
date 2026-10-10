@@ -6,6 +6,7 @@ import {
   type InventoryListResponse,
   type InventoryProductDetail,
   type InventoryProductSummary,
+  type WorkspaceSummary,
 } from './api/generated'
 
 const api = new AccessApiClient()
@@ -22,9 +23,20 @@ const nav = [
 ] as const
 
 type Panel = { title: string; body: string; tone?: 'ok' | 'warn' } | null
+type ShellIdentity = { workspaceName: string; workspaceInitials: string; workspaceCount: number; fullName: string; userInitials: string; role: string }
 
 const ownerCapabilities: InventoryCapabilities = { canAdjustOnHand: true, canChangePrice: true, canManageListings: true }
 const staffCapabilities: InventoryCapabilities = { canAdjustOnHand: true, canChangePrice: false, canManageListings: false }
+function initials(value: string, fallback = 'SH') {
+  const parts = value.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return fallback
+  return parts.slice(0, 2).map(part => part[0]?.toUpperCase()).join('') || fallback
+}
+
+function formatRole(role?: WorkspaceSummary['role'] | string | null) {
+  return role === 'WarehouseStaff' ? 'Warehouse staff' : role || 'Owner'
+}
+
 function csvEscape(value: string | number | null | undefined) {
   const text = String(value ?? '')
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
@@ -64,16 +76,42 @@ function emptyList(staff = false): InventoryListResponse {
   }
 }
 
-function Shell({ children, role = 'Owner', sync = 'Backend inventory · platform sync pending', panel, setPanel }: { children: ReactNode; role?: string; sync?: string; panel: Panel; setPanel: (panel: Panel) => void }) {
+function Shell({ children, role, sync = 'Backend inventory · platform sync pending', panel, setPanel }: { children: ReactNode; role?: string; sync?: string; panel: Panel; setPanel: (panel: Panel) => void }) {
+  const [identity, setIdentity] = useState<ShellIdentity>({
+    workspaceName: 'Your workspace',
+    workspaceInitials: 'SH',
+    workspaceCount: 1,
+    fullName: 'Your account',
+    userInitials: 'SH',
+    role: role || 'Owner',
+  })
+  useEffect(() => {
+    let alive = true
+    api.session()
+      .then(session => {
+        if (!alive) return
+        const workspace = session.workspaces.find(item => item.id === session.activeWorkspaceId) || session.workspaces[0]
+        setIdentity({
+          workspaceName: workspace?.businessName || 'Your workspace',
+          workspaceInitials: initials(workspace?.businessName || ''),
+          workspaceCount: Math.max(session.workspaces.length, 1),
+          fullName: session.fullName || 'Your account',
+          userInitials: initials(session.fullName || ''),
+          role: role || formatRole(workspace?.role),
+        })
+      })
+      .catch(error => { if (!(error instanceof AccessApiError && error.status === 401)) console.warn(error) })
+    return () => { alive = false }
+  }, [role])
   return (
     <main className="inventory-page">
       <div className="inventory-shell">
         <aside className="inventory-sidebar">
           <a className="inventory-workspace" href="#dashboard" aria-label="Workspace dashboard">
-            <b>RE</b><span><strong>Rossi Elettronica</strong><small>{role} · 3 workspaces</small></span><span>⌄</span>
+            <b>{identity.workspaceInitials}</b><span><strong>{identity.workspaceName}</strong><small>{identity.role} · {identity.workspaceCount} workspace{identity.workspaceCount === 1 ? '' : 's'}</small></span><span>⌄</span>
           </a>
           <nav aria-label="Main navigation">{nav.map(([label, href]) => <a key={label} className={label === 'Inventory' ? 'active' : ''} href={href}>{label}</a>)}</nav>
-          <div className="inventory-plan"><strong>{role === 'Owner' ? 'Pro plan' : 'Free trial'}</strong><a href="#settings">Upgrade</a><span /></div>
+          <div className="inventory-plan"><strong>{identity.role === 'Owner' ? 'Pro plan' : 'Free trial'}</strong><a href="#settings">Upgrade</a><span /></div>
         </aside>
         <section className="inventory-main">
           <header className="inventory-top">
@@ -82,7 +120,7 @@ function Shell({ children, role = 'Owner', sync = 'Backend inventory · platform
               <button className={sync.includes('failed') || sync.includes('failing') ? 'sync-alert' : 'sync-ok'} type="button" onClick={() => setPanel({ title: 'Sync status', body: sync })}>{sync}</button>
               <button type="button" aria-label="Toggle appearance" onClick={() => document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'}>☾</button>
               <button type="button" aria-label="Notifications" onClick={() => setPanel({ title: 'Notifications', body: 'Inventory notifications are collected in the Reports milestone.' })}>♧</button>
-              <b>{role === 'Warehouse staff' ? 'LB' : 'MR'}</b><span>{role === 'Warehouse staff' ? 'Luca Bianchi' : 'Marco Rossi'}<small>{role}</small></span>
+              <b>{identity.userInitials}</b><span>{identity.fullName}<small>{identity.role}</small></span>
             </div>
           </header>
           {children}
@@ -172,7 +210,7 @@ export function Inventory({ staff = false }: { staff?: boolean }) {
   const [panel, setPanel] = useState<Panel>(null)
   const { workspaceId, data, setData, source } = useWorkspaceInventory(staff)
   const exportRows = [['sku', 'name', 'category', 'on hand', 'reserved', 'available', 'base price', 'stock status'], ...data.products.map(row => [row.sku, row.name, row.category, row.onHand, row.reserved, row.available, row.basePrice, row.stockStatus])]
-  return <Shell role={staff ? 'Warehouse staff' : 'Owner'} sync={data.syncSummary} panel={panel} setPanel={setPanel}><div className="inventory-heading"><div><h1>Inventory</h1><p>{source === 'loading' ? 'Loading backend inventory…' : `${data.totalProducts.toLocaleString()} products`}</p></div>{!staff && <div className="inventory-actions"><a href={csvDownload(exportRows)} download="stockhub-inventory.csv">Export CSV</a><a href="#dashboard">Import CSV/JSON</a><a href="#onboarding">Add product</a></div>}</div>{staff && <p className="staff-note">You are signed in as <b>Warehouse staff</b>. You can update <b>On hand</b> counts; Reserved and Available update automatically. Prices are managed by Owners and Managers.</p>}<div className="filters"><button>All <b>{data.totalProducts.toLocaleString()}</b></button><button>In stock</button><button>Low stock <b>{data.products.filter(item => item.stockStatus === 'Low stock').length}</b></button><button>Out of stock <b>{data.products.filter(item => item.stockStatus === 'Out of stock').length}</b></button><select aria-label="Platform filter"><option>Platform: All</option></select><select aria-label="Category filter"><option>Category: All</option></select></div><StockLegend />{data.products.length > 0 ? <InventoryTable data={data} setData={setData} workspaceId={workspaceId} staff={staff} setPanel={setPanel} /> : <section className="empty-inventory"><div><span className="empty-icon">box</span><h2>No backend products yet</h2><p>Upload a Dashboard JSON sample or product CSV to populate Inventory.</p><a className="primary-link-button" href="#dashboard">Go to Dashboard import</a></div></section>}</Shell>
+  return <Shell role={staff ? 'Warehouse staff' : undefined} sync={data.syncSummary} panel={panel} setPanel={setPanel}><div className="inventory-heading"><div><h1>Inventory</h1><p>{source === 'loading' ? 'Loading backend inventory…' : `${data.totalProducts.toLocaleString()} products`}</p></div>{!staff && <div className="inventory-actions"><a href={csvDownload(exportRows)} download="stockhub-inventory.csv">Export CSV</a><a href="#dashboard">Import CSV/JSON</a><a href="#onboarding">Add product</a></div>}</div>{staff && <p className="staff-note">You are signed in as <b>Warehouse staff</b>. You can update <b>On hand</b> counts; Reserved and Available update automatically. Prices are managed by Owners and Managers.</p>}<div className="filters"><button>All <b>{data.totalProducts.toLocaleString()}</b></button><button>In stock</button><button>Low stock <b>{data.products.filter(item => item.stockStatus === 'Low stock').length}</b></button><button>Out of stock <b>{data.products.filter(item => item.stockStatus === 'Out of stock').length}</b></button><select aria-label="Platform filter"><option>Platform: All</option></select><select aria-label="Category filter"><option>Category: All</option></select></div><StockLegend />{data.products.length > 0 ? <InventoryTable data={data} setData={setData} workspaceId={workspaceId} staff={staff} setPanel={setPanel} /> : <section className="empty-inventory"><div><span className="empty-icon">box</span><h2>No backend products yet</h2><p>Upload a Dashboard JSON sample or product CSV to populate Inventory.</p><a className="primary-link-button" href="#dashboard">Go to Dashboard import</a></div></section>}</Shell>
 }
 
 export function InventoryEmpty() {
