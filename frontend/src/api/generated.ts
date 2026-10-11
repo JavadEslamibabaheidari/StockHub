@@ -18,6 +18,10 @@ export type InventoryPlatformStatus = { platform: string; code: string; status: 
 export type InventoryProductSummary = ProductResponse & { category: string; reserved: number; available: number; stockStatus: string; platforms: InventoryPlatformStatus[] };
 export type InventoryListResponse = { totalProducts: number; syncSummary: string; products: InventoryProductSummary[]; capabilities: InventoryCapabilities };
 export type InventoryPricingRow = { platform: string; rule: string; adjustment: string; finalPrice: number; fees: number; margin: number | null; status: string };
+export type PricingRuleInput = { name: string; platform: 'Amazon' | 'Unieuro' | 'Euronics' | 'eBay'; scope: 'All' | 'Category' | 'Sku'; scopeValue: string | null; adjustment: number; unit: 'Percent' | 'Euro'; enabled: boolean; priority: number; startDate: string | null; endDate: string | null };
+export type PricingRule = PricingRuleInput & { id: string };
+export type PricingRuleList = { rules: PricingRule[]; canEdit: boolean };
+export type PricingPreview = { basePrice: number | null; finalPrice: number | null; adjustment: number | null; netExVat: number | null; margin: number | null; productId: string | null; productName: string | null; affectedProducts: number; feeRate: number; vatRate: number; explanation: string; appliedRuleIds: string[] };
 export type InventoryAuditEntry = { kind: string; title: string; detail: string; when: string };
 export type InventoryProductDetail = { product: InventoryProductSummary; safetyBufferEnabled: boolean; lowStockAlertAt: number; syncAlert: string; pricing: InventoryPricingRow[]; auditLog: InventoryAuditEntry[]; capabilities: InventoryCapabilities };
 export type InventoryActionResponse = { status: string; product: InventoryProductSummary };
@@ -65,6 +69,11 @@ export class AccessApiClient {
   onboarding(workspaceId: string) { return this.request<OnboardingTask[]>(`/api/workspaces/${workspaceId}/onboarding`); }
   selectOnboardingAction(workspaceId: string, key: string) { return this.request<void>(`/api/workspaces/${workspaceId}/onboarding/actions`, { method: 'POST', body: JSON.stringify({ key }) }); }
   products(workspaceId: string) { return this.request<ProductResponse[]>(`/api/workspaces/${workspaceId}/products`); }
+  pricingRules(workspaceId: string) { return this.request<PricingRuleList>(`/api/workspaces/${workspaceId}/pricing/rules`); }
+  createPricingRule(workspaceId: string, rule: PricingRuleInput) { return this.request<PricingRule>(`/api/workspaces/${workspaceId}/pricing/rules`, { method: 'POST', body: JSON.stringify(rule) }); }
+  updatePricingRule(workspaceId: string, ruleId: string, rule: PricingRuleInput) { return this.request<PricingRule>(`/api/workspaces/${workspaceId}/pricing/rules/${ruleId}`, { method: 'PUT', body: JSON.stringify(rule) }); }
+  deletePricingRule(workspaceId: string, ruleId: string) { return this.request<void>(`/api/workspaces/${workspaceId}/pricing/rules/${ruleId}`, { method: 'DELETE' }); }
+  previewPricing(workspaceId: string, rule: PricingRuleInput, ruleId?: string | null, productId?: string | null) { return this.request<PricingPreview>(`/api/workspaces/${workspaceId}/pricing/preview`, { method: 'POST', body: JSON.stringify({ rule, ruleId, productId }) }); }
   importProducts(workspaceId: string, products: ProductRequest[]) { return this.request<ProductResponse[]>(`/api/workspaces/${workspaceId}/products/import`, { method: 'POST', body: JSON.stringify(products) }); }
   inventory(workspaceId: string) { return this.request<InventoryListResponse>(`/api/workspaces/${workspaceId}/inventory/products`); }
   inventoryProduct(workspaceId: string, productId: string, options: { allFailing?: boolean } = {}) { const params = new URLSearchParams(); if (options.allFailing) params.set('allFailing', 'true'); const query = params.toString(); return this.request<InventoryProductDetail>(`/api/workspaces/${workspaceId}/inventory/products/${productId}${query ? `?${query}` : ''}`); }

@@ -242,3 +242,20 @@ describe('Milestone 6 Platforms route', () => {
     Object.defineProperty(globalThis, 'document', { configurable: true, value: originalDocument })
   })
 })
+
+describe('Milestone 7 Pricing rules route', () => {
+  it('opens the real pricing rules shell and editor route', () => {
+    const originalWindow = globalThis.window
+    const originalDocument = globalThis.document
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: { documentElement: { dataset: {} } } })
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash: '#pricing' }, addEventListener: () => {}, removeEventListener: () => {} } })
+    const markup = renderToStaticMarkup(<App />)
+    expect(markup).toContain('Pricing rules')
+    expect(markup).toContain('Create a pricing rule')
+    expect(markup).toContain('Preview prices')
+    expect(markup).toContain('Lower priority number runs first')
+    expect(markup).toContain('href="#platforms"')
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: originalDocument })
+  })
+})
