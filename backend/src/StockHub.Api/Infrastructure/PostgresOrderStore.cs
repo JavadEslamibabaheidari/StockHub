@@ -1,6 +1,7 @@
 using Npgsql;
 using StockHub.Api.Abstractions;
 using StockHub.Api.Contracts;
+using StockHub.Api.Domain;
 
 namespace StockHub.Api.Infrastructure;
 
@@ -15,6 +16,7 @@ public sealed class PostgresOrderStore(string connectionString) : IOrderStore
     {
         await using var connection = await OpenConnectionAsync(cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await PostgresPricingStore.LockWorkspaceAsync(connection, transaction, workspaceId, cancellationToken);
         var productIds = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var product in request.Products)
@@ -43,6 +45,11 @@ public sealed class PostgresOrderStore(string connectionString) : IOrderStore
             command.Parameters.AddWithValue("category", string.IsNullOrWhiteSpace(product.Category) ? DBNull.Value : product.Category.Trim());
             productIds[product.Sku.Trim()] = (Guid)(await command.ExecuteScalarAsync(cancellationToken) ?? id);
         }
+
+        var productsAfterImport = await PostgresPricingStore.ProductsAsync(connection, workspaceId, transaction, cancellationToken);
+        var pricingRules = await PostgresPricingStore.ReadAsync(connection, workspaceId, transaction, cancellationToken);
+        Pricing.ValidateWorkspaceRules(productsAfterImport, pricingRules);
+        Pricing.ValidatePrices(productsAfterImport, pricingRules, DateOnly.FromDateTime(DateTime.UtcNow));
 
         foreach (var order in request.Orders)
         {

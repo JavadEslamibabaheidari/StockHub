@@ -14,6 +14,7 @@ using StockHub.Api.Contracts;
 using StockHub.Api.Domain;
 using StockHub.Api.Infrastructure;
 using StockHub.Api.Validation;
+using StockHub.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("Postgres")
@@ -23,6 +24,7 @@ builder.Services.AddSingleton<IAccessStore>(_ => new PostgresAccessStore(connect
 builder.Services.AddSingleton<IProductStore>(_ => new PostgresProductStore(connectionString));
 builder.Services.AddSingleton<IDashboardStore>(_ => new PostgresDashboardStore(connectionString));
 builder.Services.AddSingleton<IOrderStore>(_ => new PostgresOrderStore(connectionString));
+builder.Services.AddSingleton<PostgresPricingStore>(_ => new PostgresPricingStore(connectionString));
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<IRecoveryEmailSender, SmtpRecoveryEmailSender>();
 
@@ -141,6 +143,8 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapPricing();
 
 app.MapPost(
     "/api/auth/sign-up",
@@ -659,7 +663,15 @@ app.MapPost(
             return Results.UnprocessableEntity(error);
         }
 
-        var products = await productStore.UpsertAsync(workspaceId, request, cancellationToken);
+        IReadOnlyList<Product> products;
+        try
+        {
+            products = await productStore.UpsertAsync(workspaceId, request, cancellationToken);
+        }
+        catch (PricingValidationException exception)
+        {
+            return Results.BadRequest(new Problem("Pricing conflict", exception.Message, "pricing_invalid"));
+        }
         await accessStore.RecordOnboardingActionAsync(userId, workspaceId, "import-products", cancellationToken);
 
         return Results.Ok(products.Select(ToResponse));
@@ -698,7 +710,7 @@ app.MapGet(
         bool? allFailing,
         ClaimsPrincipal principal,
         IAccessStore accessStore,
-        IProductStore productStore,
+        PostgresPricingStore pricingStore,
         IOrderStore orderStore,
         CancellationToken cancellationToken) =>
     {
@@ -708,7 +720,8 @@ app.MapGet(
             return Results.Forbid();
         }
 
-        var products = await productStore.ListAsync(workspaceId, cancellationToken);
+        var pricingSnapshot = await pricingStore.SnapshotAsync(workspaceId, cancellationToken);
+        var products = pricingSnapshot.Products;
         var reserved = await orderStore.ReservedByProductAsync(workspaceId, cancellationToken);
         var summary = BuildInventoryRows(products, reserved).FirstOrDefault(product => product.Id == productId);
         if (summary is null)
@@ -719,7 +732,7 @@ app.MapGet(
                 "product_not_found"));
         }
 
-        return Results.Ok(BuildInventoryDetail(summary, membership.Value.Role, allFailing == true));
+        return Results.Ok(BuildInventoryDetail(summary, membership.Value.Role, allFailing == true, pricingSnapshot.Rules));
     })
     .RequireAuthorization()
     .WithTags("Inventory");
@@ -951,6 +964,10 @@ app.MapPost(
         try
         {
             return Results.Ok(await orderStore.ImportAsync(workspaceId, request, cancellationToken));
+        }
+        catch (PricingValidationException exception)
+        {
+            return Results.BadRequest(new Problem("Pricing conflict", exception.Message, "pricing_invalid"));
         }
         catch (InvalidOperationException exception) when (exception.Message == "order_status_invalid")
         {
@@ -1368,14 +1385,15 @@ static InventoryProductSummary BuildInventoryRow(Product product, int reserved =
 static InventoryProductDetail BuildInventoryDetail(
     InventoryProductSummary product,
     WorkspaceRole role,
-    bool allFailing)
+    bool allFailing,
+    IReadOnlyList<StoredPricingRule> rules)
 {
     return new InventoryProductDetail(
         product,
         SafetyBufferEnabled: false,
         LowStockAlertAt: 5,
         "Backend inventory loaded from persisted products",
-        InventoryPricing(product.BasePrice, allFailing),
+        InventoryPricing(product, allFailing, rules),
         InventoryAudit(product),
         InventoryCapabilitiesFor(role));
 }
@@ -1396,13 +1414,25 @@ static IReadOnlyList<InventoryPlatformStatus> InventoryPlatforms(int available, 
     new("eBay", "eB", outOfStock ? "Not listed" : "Not connected", $"Backend available {available}", available, false)
 ];
 
-static IReadOnlyList<InventoryPricingRow> InventoryPricing(decimal basePrice, bool failing) =>
-[
-    new("Amazon", "Marketplace fees", "+5.0%", Math.Round(basePrice * 1.05m, 2), Math.Round(basePrice * .084m, 2), Math.Round(basePrice * .101m, 2), failing ? "Not connected" : "Backend estimate"),
-    new("Unieuro", "Base price", "—", basePrice, Math.Round(basePrice * .1m, 2), Math.Round(basePrice * .044m, 2), failing ? "Not connected" : "Backend estimate"),
-    new("Euronics", "Promo", "-20.00", Math.Max(0, basePrice - 20m), Math.Round(basePrice * .088m, 2), Math.Round(basePrice * .036m, 2), failing ? "Not connected" : "Backend estimate"),
-    new("eBay", "Base price", "—", basePrice, Math.Round(basePrice * .08m, 2), Math.Round(basePrice * .064m, 2), failing ? "Not connected" : "Backend estimate")
-];
+static IReadOnlyList<InventoryPricingRow> InventoryPricing(
+    InventoryProductSummary product,
+    bool failing,
+    IReadOnlyList<StoredPricingRule> rules)
+{
+    var today = DateOnly.FromDateTime(DateTime.UtcNow);
+    return Pricing.Platforms.Select(platform =>
+    {
+        var result = Pricing.Evaluate(new Product(product.Id, Guid.Empty, product.Sku, product.Name,
+            product.OnHand, product.BasePrice, product.Category), platform, rules, today);
+        var applied = rules.Where(rule => result.Applied.Contains(rule.Rule.Id)).Select(rule => rule.Rule).ToArray();
+        var adjustment = result.Price - product.BasePrice;
+        var adjustmentLabel = adjustment == 0 ? "—" : adjustment.ToString("+0.00;-0.00;0.00");
+        var ruleLabel = applied.Length == 0 ? "Base price" : string.Join(", ", applied.Select(rule => rule.Name));
+        var status = failing ? "Not connected" : applied.Length == 0 ? "No matching rule" : "Backend estimate";
+        return new InventoryPricingRow(platform, ruleLabel, adjustmentLabel, result.Price,
+            Pricing.Round(result.Price * Pricing.FeeRate(platform)), null, status);
+    }).ToArray();
+}
 
 static IReadOnlyList<InventoryAuditEntry> InventoryAudit(InventoryProductSummary product) =>
 [
