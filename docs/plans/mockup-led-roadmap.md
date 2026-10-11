@@ -1,6 +1,6 @@
 # StockHub Mockup-Led Roadmap
 
-Status: milestones 0–8 are closed in GitHub. Team (`9 Team`) is the active mockup-led milestone; its plan and issues #135–#138 are recorded.
+Status: milestones 0–8 are closed in GitHub. Team (`9 Team`) is the active mockup-led milestone; plan issue #135 and API issue #136 are closed, with UI and integration issues #137–#138 open.
 
 ## Source of truth
 
@@ -65,8 +65,8 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-Milestones 0–8 are closed in GitHub with zero open issues. The next mockup-led
-section is `9 Team`, tracked in GitHub milestone #10 with open issues #136–#138.
+Milestones 0–8 are closed in GitHub with zero open issues. The active mockup-led
+section is `9 Team`, tracked in GitHub milestone #10 with open issues #137–#138.
 Team execution is specified in [milestone-9-team.md](milestone-9-team.md). Pricing execution is tracked in
 [milestone-7-pricing.md](milestone-7-pricing.md), issues #116–#119; closure
 evidence is in
