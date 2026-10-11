@@ -1,11 +1,14 @@
 # Milestone 8 Reports
 
 Status: implementation in progress on isolated local branch `codex/milestone-8-reports`, based on main
-`7fb93507ea9b4969d774c2301fc37f12718094d8`. GitHub's authenticated in-app
-session confirmed milestone `8 Reports` (GitHub milestone number 9) was open
-with zero issues; issues #126–#131 were created there. Maintenance issue #132
+`539c412345a6a78211557c8624ad0ea7c4df26ea`. GitHub's authenticated in-app
+session confirmed milestone `8 Reports` (GitHub milestone number 9) is open;
+planning issue #126 is closed after contract freeze, while implementation and
+integration issues #127–#131 remain open. Maintenance issue #132
 tracks real outbound delivery. Milestones 0–7 were confirmed closed in the same
-GitHub session. The CLI token is invalid, and repository `.git` is read-only.
+GitHub session. Refreshed main is `539c412345a6a78211557c8624ad0ea7c4df26ea`
+and dev remains `21549b36342cb031dc94bc79b28ee502be5dbf9c`. The CLI token is
+invalid; the in-app GitHub browser is authenticated.
 
 ## Goal and source material
 
