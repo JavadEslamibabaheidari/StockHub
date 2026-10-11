@@ -1,10 +1,11 @@
 # Milestone 9 Team
 
-Status: contract and issue plan merged by PR #139 to `main` at `df24987` from
-`codex/milestone-9-team` source `a1f252a`. API issue #136 merged by PR #140 to
-`main` at `cacea1a` from `codex/milestone-9-team-api` source `7430485`. GitHub
-milestone `9 Team` (#10) is open with issues #137 and #138. Issues #135 and #136
-are closed.
+Status: contract/plan PR #139 merged to `main` at `df24987` from source
+`a1f252a`; API PR #140 merged at `cacea1a` from source `7430485`; Team UI PR
+#142 merged at `ffa8e567` from branch `codex/milestone-9-team-ui`, source
+`c2388d93`. Issues #135–#138 are closed. GitHub milestone `9 Team` (#10) is
+closed with zero open issues and the PASS closure report is recorded in
+`docs/reports/milestone-9-team-closure.md`.
 
 ## Goal and mockup source
 
@@ -106,20 +107,18 @@ direct mockup links and acceptance criteria:
    - Close only after implementation issues are resolved by merged PRs and the
      milestone closure checker passes.
 
-The open Team issues in GitHub milestone #10 `9 Team` are:
-
-- [#137 Implement responsive Team screen and invitation interactions](https://github.com/JavadEslamibabaheidari/StockHub/issues/137)
-- [#138 Integrate, regress, and close Milestone 9 Team](https://github.com/JavadEslamibabaheidari/StockHub/issues/138)
-
-The contract and API gates are closed by merged PRs #139 and #140. The
-milestone remains open.
+All Team issues #135–#138 in GitHub milestone #10 `9 Team` are closed. The
+contract, API, UI, and integration gates are recorded by PRs #139, #140, #142,
+and this closure delivery. The milestone has zero open issues and its closure
+report passes the repository hook.
 
 ## Dependencies and execution
 
-Issue #135 is closed by merged PR #139, and API/persistence work (#136) is
-closed by merged PR #140. The Team screen (#137) can now complete its live
-action flows against the merged API. Integration, test ownership, review, and
-closure evidence stay with the coordinator.
+Contract planning (#135), API/persistence (#136), and the Team screen (#137)
+are closed by merged PRs #139, #140, and #142. PR #142 is source
+`c2388d93dc8d67df0fd9cb4e5984bd277a80031f`, merged to `main` at
+`ffa8e5672c0af6a106781378f758463cccfe9968`. Issue #138 completed integration,
+regression checks, delivery evidence, and the milestone closure gate.
 
 ## Verification and closure gate
 
