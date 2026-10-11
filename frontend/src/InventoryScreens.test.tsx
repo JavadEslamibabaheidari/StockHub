@@ -3,6 +3,7 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Inventory } from './InventoryScreens'
+import { AccessApiError } from './api/generated'
 
 const { sessionMock, inventoryMock, inventoryProductMock } = vi.hoisted(() => ({
   sessionMock: vi.fn(), inventoryMock: vi.fn(), inventoryProductMock: vi.fn(),
@@ -14,7 +15,7 @@ vi.mock('./api/generated', () => ({
     inventory = (workspaceId: string) => inventoryMock(workspaceId)
     inventoryProduct = (workspaceId: string, productId: string) => inventoryProductMock(workspaceId, productId)
   },
-  AccessApiError: class extends Error { status = 500; problem = { detail: 'API error' } },
+  AccessApiError: class extends Error { status: number; problem: { detail: string }; constructor(status: number, problem: { detail: string }) { super(problem.detail); this.status = status; this.problem = problem } },
 }))
 
 const product = {
@@ -130,5 +131,18 @@ describe('Inventory quick view', () => {
     await act(async () => open.click())
     await flush()
     expect(host.querySelector('[role="dialog"]')?.textContent).not.toContain('€1299.50')
+  })
+})
+
+describe('Inventory authentication state', () => {
+  it('does not present an unauthorized response as an empty inventory', async () => {
+    sessionMock.mockReset().mockRejectedValue(new AccessApiError(401, { title: 'Unauthorized', detail: 'Sign in required' }))
+    await act(async () => root.unmount())
+    root = createRoot(host)
+    await act(async () => root.render(createElement(Inventory)))
+    await flush()
+    expect(host.textContent).toContain('Sign in required')
+    expect(host.textContent).toContain('cannot report whether inventory is empty')
+    expect(host.textContent).not.toContain('No backend products yet')
   })
 })

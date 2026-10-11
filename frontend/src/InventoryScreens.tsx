@@ -135,13 +135,14 @@ function Shell({ children, role, sync = 'Backend inventory · platform sync pend
 function useWorkspaceInventory(staff = false) {
   const [workspaceId, setWorkspaceId] = useState<string | null>(null)
   const [data, setData] = useState(() => emptyList(staff))
-  const [source, setSource] = useState<'loading' | 'api'>('loading')
+  const [source, setSource] = useState<'loading' | 'api' | 'unauthorized' | 'error'>('loading')
   useEffect(() => {
     let alive = true
     api.session()
       .then(session => {
         const workspace = session.workspaces.find(item => item.id === session.activeWorkspaceId) || session.workspaces[0]
-        if (!workspace || !alive) return
+        if (!alive) return
+        if (!workspace) { setSource('unauthorized'); return }
         setWorkspaceId(workspace.id)
         return api.inventory(workspace.id).then(next => {
           if (!alive) return
@@ -149,7 +150,11 @@ function useWorkspaceInventory(staff = false) {
           setSource('api')
         })
       })
-      .catch(error => { if (!(error instanceof AccessApiError && error.status === 401)) console.warn(error) })
+      .catch(error => {
+        if (!alive) return
+        if (error instanceof AccessApiError && error.status === 401) setSource('unauthorized')
+        else { console.warn(error); setSource('error') }
+      })
     return () => { alive = false }
   }, [staff])
   return { workspaceId, data, setData, source }
@@ -286,7 +291,7 @@ export function Inventory({ staff = false }: { staff?: boolean }) {
   const [panel, setPanel] = useState<Panel>(null)
   const { workspaceId, data, setData, source } = useWorkspaceInventory(staff)
   const exportRows = [['sku', 'name', 'category', 'on hand', 'reserved', 'available', 'base price', 'stock status'], ...data.products.map(row => [row.sku, row.name, row.category, row.onHand, row.reserved, row.available, row.basePrice, row.stockStatus])]
-  return <Shell role={staff ? 'Warehouse staff' : undefined} sync={data.syncSummary} panel={panel} setPanel={setPanel}><div className="inventory-heading"><div><h1>Inventory</h1><p>{source === 'loading' ? 'Loading backend inventory…' : `${data.totalProducts.toLocaleString()} products`}</p></div>{!staff && <div className="inventory-actions"><a href={csvDownload(exportRows)} download="stockhub-inventory.csv">Export CSV</a><a href="#dashboard">Import CSV/JSON</a><a href="#onboarding">Add product</a></div>}</div>{staff && <p className="staff-note">You are signed in as <b>Warehouse staff</b>. You can update <b>On hand</b> counts; Reserved and Available update automatically. Prices are managed by Owners and Managers.</p>}<div className="filters"><button>All <b>{data.totalProducts.toLocaleString()}</b></button><button>In stock</button><button>Low stock <b>{data.products.filter(item => item.stockStatus === 'Low stock').length}</b></button><button>Out of stock <b>{data.products.filter(item => item.stockStatus === 'Out of stock').length}</b></button><select aria-label="Platform filter"><option>Platform: All</option></select><select aria-label="Category filter"><option>Category: All</option></select></div><StockLegend />{data.products.length > 0 ? <InventoryTable data={data} setData={setData} workspaceId={workspaceId} staff={staff} setPanel={setPanel} /> : <section className="empty-inventory"><div><span className="empty-icon">box</span><h2>No backend products yet</h2><p>Upload a Dashboard JSON sample or product CSV to populate Inventory.</p><a className="primary-link-button" href="#dashboard">Go to Dashboard import</a></div></section>}</Shell>
+  return <Shell role={staff ? 'Warehouse staff' : undefined} sync={source === 'unauthorized' ? 'Sign in required' : source === 'error' ? 'Inventory unavailable' : data.syncSummary} panel={panel} setPanel={setPanel}><div className="inventory-heading"><div><h1>Inventory</h1><p>{source === 'loading' ? 'Loading backend inventory…' : source === 'api' ? `${data.totalProducts.toLocaleString()} products` : source === 'unauthorized' ? 'Sign in to load your workspace inventory' : 'Could not load backend inventory'}</p></div>{source === 'api' && !staff && <div className="inventory-actions"><a href={csvDownload(exportRows)} download="stockhub-inventory.csv">Export CSV</a><a href="#dashboard">Import CSV/JSON</a><a href="#onboarding">Add product</a></div>}</div>{staff && <p className="staff-note">You are signed in as <b>Warehouse staff</b>. You can update <b>On hand</b> counts; Reserved and Available update automatically. Prices are managed by Owners and Managers.</p>}{source === 'api' && <><div className="filters"><button>All <b>{data.totalProducts.toLocaleString()}</b></button><button>In stock</button><button>Low stock <b>{data.products.filter(item => item.stockStatus === 'Low stock').length}</b></button><button>Out of stock <b>{data.products.filter(item => item.stockStatus === 'Out of stock').length}</b></button><select aria-label="Platform filter"><option>Platform: All</option></select><select aria-label="Category filter"><option>Category: All</option></select></div><StockLegend />{data.products.length > 0 ? <InventoryTable data={data} setData={setData} workspaceId={workspaceId} staff={staff} setPanel={setPanel} /> : <section className="empty-inventory"><div><span className="empty-icon">box</span><h2>No backend products yet</h2><p>This workspace has no products. Import a product CSV or add a product to get started.</p><a className="primary-link-button" href="#dashboard">Go to Dashboard import</a></div></section>}</>}{source === 'unauthorized' && <section className="empty-inventory inventory-load-state"><div><span className="empty-icon">lock</span><h2>Sign in required</h2><p>StockHub could not verify a signed-in workspace, so it cannot report whether inventory is empty.</p><a className="primary-link-button" href="#settings">Open sign-in settings</a></div></section>}{source === 'error' && <section className="empty-inventory inventory-load-state"><div><span className="empty-icon">!</span><h2>Inventory could not be loaded</h2><p>The backend did not return inventory. Check the connection and retry.</p><button className="primary-link-button" type="button" onClick={() => window.location.reload()}>Retry</button></div></section>}</Shell>
 }
 
 export function InventoryEmpty() {
