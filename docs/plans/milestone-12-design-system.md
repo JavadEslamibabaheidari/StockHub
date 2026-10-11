@@ -195,7 +195,8 @@ reference screen, then integration and closure.
   orders, pricing, reports, team, and settings redirected to Sign in; therefore
   their authenticated screens were not visually reviewed. Reservations and
   Platforms rendered sample workspace figures while signed out; this is an
-  audit finding, not verified account data, and no data/action was changed.
+  audit finding, not verified account data; no business data or action was
+  changed.
   Desktop visual checks showed no page-level horizontal overflow in the
   captured route states. A 390×844 pass then captured `#signup` and `#signin`
   in the active dark appearance, `#inventory` in its sign-in-required state,
@@ -207,15 +208,17 @@ reference screen, then integration and closure.
   signup. M12's reference page had earlier been checked in both Light and Dark
   at desktop and 390px. A further 390×844 Light-theme pass captured `#signup`,
   `#signin`, `#inventory`, `#platforms`, and `#reservations`; each fit with
-  vertical stacking/scroll only and no visible horizontal overflow. The saved
-  browser appearance was returned to Dark after the theme review. The narrow
+  vertical stacking/scroll only and no visible horizontal overflow. The
+  initial saved browser appearance in this review was System; using the header
+  appearance toggle changed it to Dark during desktop checks. Settings is
+  blocked by the signed-out redirect, so the original preference could not be
+  restored from this browser. The coordinator is checking for an accessible
+  Settings session. No business data was changed. The narrow
   pass did not render authenticated Orders,
   Pricing, Reports, Team, Settings, or Dashboard screens because the available
-  browser had no signed-in session. The browser-local preference visible in
-  the current pass is Dark; restoring the original System preference through
-  Settings is blocked by its sign-in redirect and is being handled by the
-  coordinator. No signed-in workspace data or business actions were seeded or
-  changed. Route-family theme coverage for inaccessible authenticated screens,
+  browser had no signed-in session. The browser-local preference visible after
+  the review is Dark. No signed-in workspace data or business actions were
+  seeded or changed. Route-family theme coverage for inaccessible authenticated screens,
   CI/delivery, tracking hook, and milestone closure remain outstanding.
 - Remaining CSS hex values after the Design system reference styles are
   opacity-based shadows, generic contrasting control/icon whites, brand glyphs,
