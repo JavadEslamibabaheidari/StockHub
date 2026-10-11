@@ -37,7 +37,7 @@ public sealed record InventoryPricingRow(
     string Adjustment,
     decimal FinalPrice,
     decimal Fees,
-    decimal Margin,
+    decimal? Margin,
     string Status);
 
 public sealed record InventoryAuditEntry(

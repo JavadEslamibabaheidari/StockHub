@@ -15,5 +15,6 @@
     <Content Include="../../database/migrations/003_onboarding_products.sql" Link="Database/Migrations/003_onboarding_products.sql" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../database/migrations/004_dashboard_state.sql" Link="Database/Migrations/004_dashboard_state.sql" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../database/migrations/005_orders.sql" Link="Database/Migrations/005_orders.sql" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../database/migrations/006_pricing.sql" Link="Database/Migrations/006_pricing.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

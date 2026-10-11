@@ -37,6 +37,7 @@ public sealed class PostgresProductStore(string connectionString) : IProductStor
     {
         await using var connection = await OpenConnectionAsync(cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await PostgresPricingStore.LockWorkspaceAsync(connection, transaction, workspaceId, cancellationToken);
         var result = new List<Product>();
 
         foreach (var product in products)
@@ -71,6 +72,10 @@ public sealed class PostgresProductStore(string connectionString) : IProductStor
             }
         }
 
+        var importedProducts = await PostgresPricingStore.ProductsAsync(connection, workspaceId, transaction, cancellationToken);
+        var rules = await PostgresPricingStore.ReadAsync(connection, workspaceId, transaction, cancellationToken);
+        Pricing.ValidateWorkspaceRules(importedProducts, rules);
+        Pricing.ValidatePrices(importedProducts, rules, DateOnly.FromDateTime(DateTime.UtcNow));
         await transaction.CommitAsync(cancellationToken);
         return result;
     }
