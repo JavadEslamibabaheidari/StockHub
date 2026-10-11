@@ -1,6 +1,6 @@
 # StockHub Mockup-Led Roadmap
 
-Status: milestones 0–6 are closed in GitHub; milestone 7 Pricing rules is active.
+Status: milestones 0–7 are closed in GitHub; milestone 8 Reports is the next active product milestone.
 
 ## Source of truth
 
@@ -65,11 +65,12 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-The active product milestone is `7 Pricing rules`. Milestones 0–6 are closed
-in GitHub with zero open issues. Pricing execution is tracked in
-[milestone-7-pricing.md](milestone-7-pricing.md), issues #116–#119.
-Platforms closure evidence is in
-[milestone-6-platforms-closure.md](../reports/milestone-6-platforms-closure.md).
+The active product milestone is `8 Reports` (GitHub milestone 9). Milestones
+0–7 are closed in GitHub with zero open issues. Pricing execution is tracked in
+[milestone-7-pricing.md](milestone-7-pricing.md), issues #116–#119; closure
+evidence is in
+[milestone-7-pricing-closure.md](../reports/milestone-7-pricing-closure.md).
+The narrow-viewport browser automation follow-up is in Maintenance issue #123.
 
 GitHub issues should exist for the current milestone with detailed acceptance
 criteria and direct mockup references. Future milestone records may exist before

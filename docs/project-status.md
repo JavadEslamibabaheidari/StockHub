@@ -11,6 +11,7 @@ Last reconciled: 2026-10-11. Live [GitHub milestones](https://github.com/JavadEs
 | [4 Orders](https://github.com/JavadEslamibabaheidari/StockHub/milestone/5) | [PR #88](https://github.com/JavadEslamibabaheidari/StockHub/pull/88) merged to `main` at `59e412a` | [Main run 37012789308](https://github.com/JavadEslamibabaheidari/StockHub/actions/runs/37012789308) published `ghcr.io/javadeslamibabaheidari/stockhub@sha256:716bca43ac590947edaa348786d050f7889554b0cf955b9f18a8f18eb9b30a1e` | Browser smoke passed locally on `http://127.0.0.1:5173`; PR and main CI passed | Main run 37012789308 passed local Kubernetes migration and rollout smoke for merge commit `59e412a`; shared review-staging and production promotion jobs were skipped | Closed in GitHub with zero open issues; report `PASS` |
 | [5 Reservations](https://github.com/JavadEslamibabaheidari/StockHub/milestone/6) | [PR #108](https://github.com/JavadEslamibabaheidari/StockHub/pull/108) merged to `main` at `1b2c90c` | [Main run 38064434715](https://github.com/JavadEslamibabaheidari/StockHub/actions/runs/38064434715) published `ghcr.io/javadeslamibabaheidari/stockhub@sha256:8d2bdf8cec096ce58431654adbb72e6e99e7998953f4f419ac0ab0e51c5e23df` | Local browser smoke passed on `http://127.0.0.1:5173/#reservations`; PR and main CI passed | Main run 38064434715 passed local Kubernetes migration and rollout smoke for merge commit `1b2c90c`; persistent local deployment dispatch job passed; shared review-staging and production promotion jobs were skipped | Closed in GitHub with zero open issues; report `PASS` |
 | [6 Platforms](https://github.com/JavadEslamibabaheidari/StockHub/milestone/7) | [PR #114](https://github.com/JavadEslamibabaheidari/StockHub/pull/114) merged to `main` at `0e6f6e9` | [Main run 38090844733](https://github.com/JavadEslamibabaheidari/StockHub/actions/runs/38090844733) published `ghcr.io/javadeslamibabaheidari/stockhub@sha256:ed1e38a9b225cf9c23a5f3bd676dd61b82ae07177c4d12b77a34a6a597e063b8` | Local browser smoke passed on `http://127.0.0.1:5173/#platforms`; PR and main CI passed | Main run 38090844733 passed local Kubernetes migration and rollout smoke for merge commit `0e6f6e9`; persistent local deployment dispatch job passed; shared review-staging and production promotion jobs were skipped | Closed in GitHub with zero open issues; report `PASS` |
+| [7 Pricing rules](https://github.com/JavadEslamibabaheidari/StockHub/milestone/8) | PRs [#120](https://github.com/JavadEslamibabaheidari/StockHub/pull/120), [#121](https://github.com/JavadEslamibabaheidari/StockHub/pull/121), and [#122](https://github.com/JavadEslamibabaheidari/StockHub/pull/122) merged to `main` at `2c43ca9` | [Main run 38118474661](https://github.com/JavadEslamibabaheidari/StockHub/actions/runs/38118474661) published `ghcr.io/javadeslamibabaheidari/stockhub@sha256:d0669a559e8a8dfe6176787146f3cbb067af8a97e9dfdf986af5d3d178010e0e` | Actual browser create/preview/update/reload/search, theme, collapse, sign-out, and two-workspace isolation/switch checks passed against an isolated PostgreSQL API; the 908×760 viewport showed the stacked responsive layout. Dev Compose remains at `21549b3` | Persistent `kind-stockhub-local` deployment verified SHA `2c43ca9927a0784838d6c512fafe129ed7439d3b` and the published digest; migration Job completed, pod ready, `/ready` returned `ready`. Hosted staging and production jobs were skipped | Closed in GitHub with zero open issues; report `PASS`; narrow-viewport browser verification tracked in Maintenance issue #123 |
 
 [Issue #48](https://github.com/JavadEslamibabaheidari/StockHub/issues/48) owns future shared hosted staging and production activation and has no product milestone. The first dev, staging, and production targets are separate localhost-only Compose projects on this PC. The 14 open pull requests observed on 2026-09-29 are Dependabot dependency updates. Count them as dependency maintenance, not unfinished product features.
 
@@ -28,13 +29,15 @@ tags to rewrite history; record later verified releases separately.
 
 Refresh `main` and `dev` when it exists, run `scripts/check-tracking-status.sh`, inspect the current delivery workflow's individual jobs, and compare the target deployment record with its source SHA or published digest. Check each local Compose environment independently. Update this snapshot and the affected milestone report in the same PR whenever any status changes. If access is unavailable, state the exact unverified dimension rather than copying an older claim.
 
-## Milestone 7 start
+## Milestone 7 completion
 
-Pricing rules is open in [milestone 8](https://github.com/JavadEslamibabaheidari/StockHub/milestone/8),
-with issues #116–#119 and [the execution plan](plans/milestone-7-pricing.md).
-Refreshed `main` is `9b79701ada8b959529deb05aaad57f049c8934c0`; `dev` is
-`21549b36342cb031dc94bc79b28ee502be5dbf9c`. No open PRs remained on inspection.
-[Delivery run 38091518130](https://github.com/JavadEslamibabaheidari/StockHub/actions/runs/38091518130)
-passed image publication, local Kubernetes smoke and persistent local deployment
-dispatch. Shared staging and production jobs were skipped; those targets are
-unverified. Dispatch success alone does not prove a persistent target rollout.
+Pricing rules is closed in [GitHub milestone 8](https://github.com/JavadEslamibabaheidari/StockHub/milestone/8)
+with zero open issues. Its execution plan is
+[plans/milestone-7-pricing.md](plans/milestone-7-pricing.md), and its PASS
+closure evidence is [reports/milestone-7-pricing-closure.md](reports/milestone-7-pricing-closure.md).
+Refreshed `main` is `2c43ca9927a0784838d6c512fafe129ed7439d3b`; `dev` remains
+`21549b36342cb031dc94bc79b28ee502be5dbf9c`. Main delivery run 38118474661
+published the immutable image and deployed it to the persistent local
+Kubernetes target, where migration, rollout, and `/ready` passed. Shared
+review-staging and production jobs were skipped and remain unverified. The
+mobile browser viewport limitation is tracked in Maintenance issue #123.

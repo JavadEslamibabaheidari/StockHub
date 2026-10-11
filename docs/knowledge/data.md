@@ -37,6 +37,17 @@ PostgreSQL adapter can be introduced without sharing domain entities across
 the API/frontend boundary.
 
 
+## Pricing rules
+
+Migration `006_pricing_rules.sql` stores marketplace rules by workspace with
+their scope, signed adjustment, unit, enabled state, priority, and optional
+inclusive date range. The API checks workspace membership before reads and
+requires Owner/Admin/Manager for mutations. Product imports and base-price
+updates lock the workspace and validate resulting prices against persisted
+rules in the same transaction; an invalid price rolls back the change. Rule
+evaluation and preview use existing workspace products and keep unavailable
+cost-based margin null.
+
 ## Dashboard read model state
 
 Milestone 2 adds workspace-scoped `dashboard_states` in `004_dashboard_state.sql`. The table stores Dashboard UI/action state such as first-sync mode, Euronics retry, mismatch resolution, restock handoff, expanded low-stock items, and the current detail panel. Product counts still live in `products`; Dashboard on-hand adjustments update product persistence through the product store. Real connector, reservation, order, and inventory ledgers remain owned by their future modules.
