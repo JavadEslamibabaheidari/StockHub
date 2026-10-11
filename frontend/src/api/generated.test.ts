@@ -65,4 +65,20 @@ describe('AccessApiClient origin', () => {
       expect.objectContaining({ credentials: 'include' }),
     )
   })
+
+  it('uses workspace-scoped Team API paths for the roster and lifecycle actions', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const api = new AccessApiClient()
+    await api.team('workspace-1')
+    await api.resendInvitation('workspace-1', 'invite-1')
+    await api.cancelInvitation('workspace-1', 'invite-1')
+    await api.removeTeamMember('workspace-1', 'member-1')
+    expect(fetchMock.mock.calls.map(([path]) => path)).toEqual([
+      '/api/workspaces/workspace-1/team',
+      '/api/workspaces/workspace-1/invitations/invite-1/resend',
+      '/api/workspaces/workspace-1/invitations/invite-1',
+      '/api/workspaces/workspace-1/team/members/member-1',
+    ])
+  })
 })

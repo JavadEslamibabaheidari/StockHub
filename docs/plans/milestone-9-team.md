@@ -1,8 +1,9 @@
 # Milestone 9 Team
 
-Status: execution plan drafted from the approved mockup; GitHub milestone `9
-Team` (milestone #10) is open with issues #135–#138. Do not begin implementation
-until the plan and issue acceptance criteria are recorded in GitHub.
+Status: contract and issue plan merged by PR #139 to `main` at `df24987` from
+`codex/milestone-9-team` source `a1f252a`. GitHub milestone `9 Team` (#10) is
+open with implementation and integration issues #136–#138. Contract issue #135
+is closed.
 
 ## Goal and mockup source
 
@@ -104,20 +105,20 @@ direct mockup links and acceptance criteria:
    - Close only after implementation issues are resolved by merged PRs and the
      milestone closure checker passes.
 
-The live implementation issues, all open in GitHub milestone #10 `9 Team`,
-are:
+The live Team issues in GitHub milestone #10 `9 Team` are:
 
-- [#135 Freeze Team roles, membership, and invitation contract](https://github.com/JavadEslamibabaheidari/StockHub/issues/135)
 - [#136 Implement workspace-scoped Team member and invitation management](https://github.com/JavadEslamibabaheidari/StockHub/issues/136)
 - [#137 Implement responsive Team screen and invitation interactions](https://github.com/JavadEslamibabaheidari/StockHub/issues/137)
 - [#138 Integrate, regress, and close Milestone 9 Team](https://github.com/JavadEslamibabaheidari/StockHub/issues/138)
 
+The contract gate is closed by merged PR #139. The milestone remains open.
+
 ## Dependencies and execution
 
-Issue 1 is the start gate. Once its contract is recorded, API/persistence work
-and Team screen structure may proceed in parallel only with a shared stable
-contract and disjoint file ownership. Integration, test ownership, review, and
-closure evidence stay with the coordinator.
+Issue #135 is closed by merged PR #139, so implementation can proceed against
+the recorded contract. API/persistence work (#136) must land before the Team
+screen can complete its live action flows (#137). Integration, test ownership,
+review, and closure evidence stay with the coordinator.
 
 ## Verification and closure gate
 

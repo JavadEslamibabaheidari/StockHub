@@ -5,5 +5,5 @@ public sealed record ProductResponse(
     string Sku,
     string Name,
     int OnHand,
-    decimal BasePrice,
+    decimal? BasePrice,
     string? Category);

@@ -16,6 +16,7 @@ public sealed class InMemoryAccessStore : IAccessStore
     private readonly ConcurrentDictionary<string, (Guid UserId, DateTimeOffset ExpiresAt)> _passwordResets = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, Guid> _googleIdentities = new(StringComparer.Ordinal);
     private readonly object _userCreationLock = new();
+    private readonly object _teamLock = new();
 
     public Task<User?> FindUserAsync(string normalizedEmail, CancellationToken cancellationToken)
     {
@@ -236,6 +237,7 @@ public sealed class InMemoryAccessStore : IAccessStore
     }
 
     public Task CreateInvitationAsync(
+        Guid invitationId,
         string tokenHash,
         Guid workspaceId,
         string email,
@@ -243,7 +245,25 @@ public sealed class InMemoryAccessStore : IAccessStore
         DateTimeOffset expiresAt,
         CancellationToken cancellationToken)
     {
-        _invitations[tokenHash] = new Invitation(workspaceId, email.Trim(), role, expiresAt);
+        lock (_teamLock)
+        {
+            if (_invitations.Values.Any(invitation => invitation.WorkspaceId == workspaceId
+                && invitation.ConsumedAt is null
+                && invitation.ExpiresAt > DateTimeOffset.UtcNow
+                && string.Equals(invitation.Email, email.Trim(), StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException("invitation_already_pending");
+            }
+
+            if (_memberships.Keys.Any(key => key.WorkspaceId == workspaceId
+                && _users.Values.Any(user => user.Id == key.UserId
+                    && string.Equals(user.NormalizedEmail, email.Trim(), StringComparison.OrdinalIgnoreCase))))
+            {
+                throw new InvalidOperationException("user_already_member");
+            }
+
+            _invitations[tokenHash] = new Invitation(invitationId, workspaceId, email.Trim(), role, expiresAt, DateTimeOffset.UtcNow);
+        }
 
         return Task.CompletedTask;
     }
@@ -257,20 +277,98 @@ public sealed class InMemoryAccessStore : IAccessStore
         return Task.FromResult(exists ? invitation : null);
     }
 
+    public Task<IReadOnlyList<TeamMemberResponse>> ListTeamMembersAsync(Guid workspaceId, CancellationToken cancellationToken)
+    {
+        var members = _memberships.Values
+            .Where(membership => membership.WorkspaceId == workspaceId)
+            .Select(membership =>
+            {
+                var user = _users.Values.First(candidate => candidate.Id == membership.UserId);
+                return new TeamMemberResponse(user.Id, user.FullName, user.NormalizedEmail, membership.Role, "Unavailable");
+            })
+            .OrderBy(member => member.Role == WorkspaceRole.Owner ? 0 : 1)
+            .ThenBy(member => member.FullName, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        return Task.FromResult<IReadOnlyList<TeamMemberResponse>>(members);
+    }
+
+    public Task<IReadOnlyList<PendingInvitationResponse>> ListPendingInvitationsAsync(Guid workspaceId, CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var invitations = _invitations.Values
+            .Where(invitation => invitation.WorkspaceId == workspaceId
+                && invitation.ConsumedAt is null
+                && invitation.ExpiresAt > now)
+            .Select(invitation => new PendingInvitationResponse(
+                invitation.Id, invitation.Email, invitation.Role, invitation.CreatedAt, invitation.ExpiresAt))
+            .OrderBy(invitation => invitation.CreatedAt)
+            .ToArray();
+        return Task.FromResult<IReadOnlyList<PendingInvitationResponse>>(invitations);
+    }
+
+    public Task<bool> RotateInvitationAsync(Guid workspaceId, Guid invitationId, string tokenHash, DateTimeOffset expiresAt, CancellationToken cancellationToken)
+    {
+        lock (_teamLock)
+        {
+            var existing = _invitations.FirstOrDefault(pair => pair.Value.Id == invitationId
+                && pair.Value.WorkspaceId == workspaceId
+                && pair.Value.ConsumedAt is null
+                && pair.Value.ExpiresAt > DateTimeOffset.UtcNow);
+            if (existing.Equals(default(KeyValuePair<string, Invitation>))) return Task.FromResult(false);
+
+            _invitations.TryRemove(existing.Key, out _);
+            _invitations[tokenHash] = existing.Value with { ExpiresAt = expiresAt, CreatedAt = DateTimeOffset.UtcNow };
+            return Task.FromResult(true);
+        }
+    }
+
+    public Task<bool> CancelInvitationAsync(Guid workspaceId, Guid invitationId, CancellationToken cancellationToken)
+    {
+        lock (_teamLock)
+        {
+            var existing = _invitations.FirstOrDefault(pair => pair.Value.Id == invitationId
+                && pair.Value.WorkspaceId == workspaceId
+                && pair.Value.ConsumedAt is null
+                && pair.Value.ExpiresAt > DateTimeOffset.UtcNow);
+            if (existing.Equals(default(KeyValuePair<string, Invitation>))) return Task.FromResult(false);
+
+            _invitations[existing.Key] = existing.Value with { ConsumedAt = DateTimeOffset.UtcNow };
+            return Task.FromResult(true);
+        }
+    }
+
+    public Task<bool> RemoveMemberAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken)
+    {
+        lock (_teamLock)
+        {
+            if (!_memberships.TryGetValue((userId, workspaceId), out var membership)) return Task.FromResult(false);
+            if (membership.Role == WorkspaceRole.Owner
+                && _memberships.Values.Count(candidate => candidate.WorkspaceId == workspaceId && candidate.Role == WorkspaceRole.Owner) <= 1)
+            {
+                return Task.FromResult(false);
+            }
+
+            return Task.FromResult(_memberships.TryRemove((userId, workspaceId), out _));
+        }
+    }
+
     public Task<Guid?> AcceptInvitationAsync(string tokenHash, Guid userId, string normalizedEmail, CancellationToken cancellationToken)
     {
-        if (!_invitations.TryGetValue(tokenHash, out var invitation)
-            || invitation.ExpiresAt <= DateTimeOffset.UtcNow
-            || invitation.ConsumedAt is not null
-            || !string.Equals(invitation.Email, normalizedEmail, StringComparison.OrdinalIgnoreCase))
+        lock (_teamLock)
         {
-            return Task.FromResult<Guid?>(null);
+            if (!_invitations.TryGetValue(tokenHash, out var invitation)
+                || invitation.ExpiresAt <= DateTimeOffset.UtcNow
+                || invitation.ConsumedAt is not null
+                || !string.Equals(invitation.Email, normalizedEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult<Guid?>(null);
+            }
+
+            _memberships.TryAdd((userId, invitation.WorkspaceId), new Membership(userId, invitation.WorkspaceId, invitation.Role));
+            _invitations[tokenHash] = invitation with { ConsumedAt = DateTimeOffset.UtcNow };
+
+            return Task.FromResult<Guid?>(invitation.WorkspaceId);
         }
-
-        _memberships.TryAdd((userId, invitation.WorkspaceId), new Membership(userId, invitation.WorkspaceId, invitation.Role));
-        _invitations[tokenHash] = invitation with { ConsumedAt = DateTimeOffset.UtcNow };
-
-        return Task.FromResult<Guid?>(invitation.WorkspaceId);
     }
 
     public Task RecordOnboardingActionAsync(
