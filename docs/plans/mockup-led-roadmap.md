@@ -1,6 +1,6 @@
 # StockHub Mockup-Led Roadmap
 
-Status: milestones 0–11 are closed in GitHub with PASS reports. M12 Design system is active on `main` after M11 closure; the unparented milestone remains last.
+Status: milestones 0–12 are closed in GitHub with PASS reports. The unparented milestone (GitHub title `unparentted milestone`, #14) is next and must remain the final milestone before the whole-app audit.
 
 ## Source of truth
 
@@ -65,7 +65,7 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-Milestones 0–11 are closed in GitHub with zero open issues. M10 Settings feature
+Milestones 0–12 are closed in GitHub with zero open issues. M10 Settings feature
 PR #147 merged at `3c4b655`; contrast correction PR #148 merged at `e280c0a`;
 closure PR #150 merged at `32a3d12`. M11 Dark mode PR #155 merged at
 `dceb8cf9adba52bca7c5964c427c49effee26e34`; PASS closure PR #158 merged to
@@ -78,23 +78,28 @@ M11 Dark mode PR #155 merged to `main` at
 to the persistent local target. Live `dev` remains at
 `21549b36342cb031dc94bc79b28ee502be5dbf9c`.
 
-M12 Design system, GitHub milestone #13, remains open while its three issues
-#159–#161 are closed and final evidence is synchronized. Implementation PR
-#162 merged from `codex/milestone-12-design-system`, source
+M12 Design system, GitHub milestone #13, is closed with zero open issues. Its
+implementation PR #162 merged from `codex/milestone-12-design-system`, source
 `315664b0a582e481bb31b39106543a2f3780dcd4`, to `main` at
-`8f9a656657e725c1ce4e9ade1777f89e321b557c`. Main run #38182610493 published
-`ghcr.io/javadeslamibabaheidari/stockhub@sha256:ab1a11b751a32d09e74ea285287af6589ff6ba9a51cce8dd97520f65ca446776`; persistent
-local deployment run #38182882314 completed the migration, 1/1 rollout, and
-`/ready` check for that SHA/digest. Review-staging and production promotion
-were skipped. Live `dev` remains at
-`21549b36342cb031dc94bc79b28ee502be5dbf9c`. The implementation plan is
-[milestone-12-design-system.md](milestone-12-design-system.md), and its
-closure evidence is in
+`8f9a656657e725c1ce4e9ade1777f89e321b557c`; deployment evidence PR #163 and
+final PASS closure evidence are recorded in
 [milestone-12-design-system-closure.md](../reports/milestone-12-design-system-closure.md).
-The full Sign-up-to-end authenticated real-data audit remains queued until
-after the unparented milestone. The authenticated repository Projects page
-reports no linked projects; this board configuration gap is recorded in the
-M12 plan.
+Main run #38182610493 published
+`ghcr.io/javadeslamibabaheidari/stockhub@sha256:ab1a11b751a32d09e74ea285287af6589ff6ba9a51cce8dd97520f65ca446776`; persistent
+local deployment run #38182882314 completed migration, 1/1 rollout, and the
+`/ready` check for that SHA/digest. Hosted review-staging and production
+promotion were skipped. Live `dev` remains at
+`21549b36342cb031dc94bc79b28ee502be5dbf9c`.
+
+The final open milestone is GitHub milestone #14, titled `unparentted
+milestone`, with seven issues #27, #35, #47, #48, #65, #123, and #132. It is
+the last milestone by user direction. Its issue scopes include deferred Access
+and onboarding work, responsive verification, alert delivery, and delivery
+targets. Work starts only after M12 closure. After M14 closes, run the full
+Sign-up-to-end audit against real persisted data, excluding Cover, as requested.
+M12 authenticated route visuals, sample-looking signed-out Reservations and
+Platforms content, and the browser-local appearance preference cleanup are
+recorded in the closure report and remain explicit follow-ups.
 
 Completed milestone `11 Dark mode`, GitHub milestone #12, delivered dark
 Dashboard, Inventory with quick view, and Product detail variants using M10's
