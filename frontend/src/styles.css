@@ -42,6 +42,8 @@
   --color-error-dot: #a94c35;
   --color-neutral: #625b50;
   --color-neutral-bg: #e4ddcf;
+  --color-role-admin: #5c4674;
+  --color-role-admin-bg: #e6deef;
   --color-muted: #625b50;
   --color-page-shadow: rgb(63 52 34 / 8%);
   --bg: var(--color-page);
@@ -90,6 +92,8 @@
   --color-error-dot: #ffb5a2;
   --color-neutral: #d9cdbd;
   --color-neutral-bg: #332d25;
+  --color-role-admin: #e2d4f4;
+  --color-role-admin-bg: #3b3047;
   --color-muted: #cbbba8;
   --color-page-shadow: rgb(0 0 0 / 28%);
   --bg: var(--color-page);
@@ -425,8 +429,8 @@ h1 {
 }
 
 .neutral {
-  color: #5f5b53;
-  background: var(--panel);
+  color: var(--color-neutral);
+  background: var(--color-neutral-bg);
 }
 
 @media (max-width: 1024px) {
@@ -1000,7 +1004,7 @@ h1 {
 .team-person small, .team-pending-email small { color: var(--color-text-secondary); font-size: 9px; font-weight: 500; }
 .team-role-pill { display: inline-flex; width: fit-content; padding: 5px 9px; border-radius: 999px; background: var(--color-panel); color: var(--color-text-secondary); font-size: 10px; font-weight: 800; white-space: nowrap; }
 .role-owner { background: var(--color-accent-bg); color: var(--color-accent-fill); }
-.role-admin { background: #e6deef; color: #5c4674; }
+.role-admin { background: var(--color-role-admin-bg); color: var(--color-role-admin); }
 .role-manager { background: var(--color-healthy-bg); color: var(--color-available); }
 .role-warehousestaff { background: var(--color-panel); color: var(--color-text-secondary); }
 .role-viewer { background: var(--color-panel); color: var(--color-text-secondary); }

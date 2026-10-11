@@ -23,7 +23,7 @@ function contrast(foreground: string, background: string): number {
 
 describe('semantic design tokens', () => {
   it('defines matching semantic surfaces and status roles in both themes', () => {
-    for (const name of ['--color-page', '--color-surface', '--color-panel', '--color-border', '--color-text', '--color-text-secondary', '--color-accent', '--color-accent-bg', '--color-sage', '--color-focus', '--color-available', '--color-healthy', '--color-warning', '--color-error']) {
+    for (const name of ['--color-page', '--color-surface', '--color-panel', '--color-border', '--color-text', '--color-text-secondary', '--color-accent', '--color-accent-bg', '--color-sage', '--color-focus', '--color-neutral', '--color-neutral-bg', '--color-role-admin', '--color-role-admin-bg', '--color-available', '--color-healthy', '--color-warning', '--color-error']) {
       expect(token(light, name), `${name} light token`).not.toBe('')
       expect(token(dark, name), `${name} dark token`).not.toBe('')
     }
@@ -43,6 +43,8 @@ describe('semantic design tokens', () => {
       expect(contrast(token(theme, '--color-healthy'), token(theme, '--color-healthy-bg'))).toBeGreaterThanOrEqual(4.5)
       expect(contrast(token(theme, '--color-warning'), token(theme, '--color-warning-bg'))).toBeGreaterThanOrEqual(4.5)
       expect(contrast(token(theme, '--color-error'), token(theme, '--color-error-bg'))).toBeGreaterThanOrEqual(4.5)
+      expect(contrast(token(theme, '--color-neutral'), token(theme, '--color-neutral-bg'))).toBeGreaterThanOrEqual(4.5)
+      expect(contrast(token(theme, '--color-role-admin'), token(theme, '--color-role-admin-bg'))).toBeGreaterThanOrEqual(4.5)
       expect(contrast(token(theme, '--color-on-accent'), token(theme, '--color-accent-fill'))).toBeGreaterThanOrEqual(4.5)
       expect(contrast(token(theme, '--color-accent-fill'), token(theme, '--color-accent-bg'))).toBeGreaterThanOrEqual(4.5)
       expect(contrast(token(theme, '--color-focus'), page)).toBeGreaterThanOrEqual(3)
