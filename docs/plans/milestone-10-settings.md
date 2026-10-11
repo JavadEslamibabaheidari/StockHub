@@ -1,10 +1,9 @@
 # Milestone 10 Settings
 
-Status: delivery merged and deployed; GitHub closure is pending. Milestone #11
-`10 Settings` and its issues #144 (Billing), #145 (Appearance), and #146
-(integration and closure) remain open. The implementation merged to `main` in
-PR #147 and the dark-card contrast fix merged in PR #148; this plan records the
-verified delivery evidence.
+Status: closed. GitHub milestone #11 `10 Settings` and its issues #144
+(Billing), #145 (Appearance), and #146 (integration and closure) are closed.
+The implementation merged to `main` in PR #147, the dark-card contrast fix in
+PR #148, and final closure evidence in PR #149.
 
 ## Goal
 
@@ -128,7 +127,7 @@ Detailed acceptance criteria and task ownership are tracked in GitHub issues
 ## Dependencies and risks
 
 - PRs #147 and #148 merged; the corrected image is deployed and verified.
-  Issues #144–#146 and milestone #11 remain open pending GitHub closure.
+  Issues #144–#146 and milestone #11 are closed.
 - PR #147 merged feature source `68af3ffc43a17780b8cdf0651fd53a312e95c648`
   to `main` at `3c4b655c4017f78b686bd6cdbf2594e1104e7c0f`. PR #148 merged
   contrast-fix source `2a961a415e0f3e3b763a1499ce0f06fb12530418` to `main` at
