@@ -622,16 +622,13 @@ app.MapGet(
             return Results.Unauthorized();
         }
 
-        var isMember = (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
-            .Any(workspace => workspace.Workspace.Id == workspaceId);
-
-        if (!isMember)
-        {
-            return Results.Forbid();
-        }
+        var membership = (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
+            .FirstOrDefault(workspace => workspace.Workspace.Id == workspaceId);
+        if (membership.Workspace is null) return Results.Forbid();
 
         var products = await productStore.ListAsync(workspaceId, cancellationToken);
-        return Results.Ok(products.Select(ToResponse));
+        var canSeePricing = membership.Role is WorkspaceRole.Owner or WorkspaceRole.Admin or WorkspaceRole.Manager;
+        return Results.Ok(products.Select(product => ToResponse(product, canSeePricing)));
     })
     .RequireAuthorization()
     .WithTags("Products");
@@ -659,6 +656,11 @@ app.MapPost(
             return Results.Forbid();
         }
 
+        if (membership.Role is not (WorkspaceRole.Owner or WorkspaceRole.Admin or WorkspaceRole.Manager))
+        {
+            return Results.Forbid();
+        }
+
         var error = ValidateProducts(request);
         if (error is not null)
         {
@@ -676,7 +678,8 @@ app.MapPost(
         }
         await accessStore.RecordOnboardingActionAsync(userId, workspaceId, "import-products", cancellationToken);
 
-        return Results.Ok(products.Select(ToResponse));
+        var canSeePricing = membership.Role is WorkspaceRole.Owner or WorkspaceRole.Admin or WorkspaceRole.Manager;
+        return Results.Ok(products.Select(product => ToResponse(product, canSeePricing)));
     })
     .RequireAuthorization()
     .WithTags("Products");
@@ -757,7 +760,12 @@ app.MapPatch(
             return Results.Forbid();
         }
 
-        if (!InventoryCapabilitiesFor(membership.Value.Role).CanAdjustOnHand || request.OnHand < 0)
+        if (!InventoryCapabilitiesFor(membership.Value.Role).CanAdjustOnHand)
+        {
+            return Results.Forbid();
+        }
+
+        if (request.OnHand < 0)
         {
             return Results.UnprocessableEntity(new Problem(
                 "Invalid on-hand count",
@@ -775,7 +783,12 @@ app.MapPatch(
         }
 
         var reserved = await orderStore.ReservedByProductAsync(workspaceId, cancellationToken);
-        return Results.Ok(new InventoryActionResponse("adjusted", BuildInventoryRow(updated, reserved.GetValueOrDefault(updated.Id))));
+        var updatedRow = BuildInventoryRow(updated, reserved.GetValueOrDefault(updated.Id));
+        if (membership.Value.Role is not (WorkspaceRole.Owner or WorkspaceRole.Admin or WorkspaceRole.Manager))
+        {
+            updatedRow = updatedRow with { BasePrice = null };
+        }
+        return Results.Ok(new InventoryActionResponse("adjusted", updatedRow));
     })
     .RequireAuthorization()
     .WithTags("Inventory");
@@ -792,6 +805,11 @@ app.MapPost(
     {
         var membership = await FindWorkspaceMembership(principal, accessStore, workspaceId, cancellationToken);
         if (membership is null)
+        {
+            return Results.Forbid();
+        }
+
+        if (membership.Value.Role is not (WorkspaceRole.Owner or WorkspaceRole.Admin or WorkspaceRole.Manager))
         {
             return Results.Forbid();
         }
@@ -860,14 +878,23 @@ app.MapPost(
             return Results.Unauthorized();
         }
 
-        if (!await IsWorkspaceMember(accessStore, userId, workspaceId, cancellationToken))
+        var membership = (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
+            .FirstOrDefault(item => item.Workspace.Id == workspaceId);
+        if (membership.Workspace is null)
+        {
+            return Results.Forbid();
+        }
+
+        var actionKey = request.Action.Trim().ToLowerInvariant();
+        if (membership.Role == WorkspaceRole.Viewer
+            || (membership.Role == WorkspaceRole.WarehouseStaff && actionKey != "adjust-on-hand"))
         {
             return Results.Forbid();
         }
 
         var state = await dashboardStore.GetAsync(workspaceId, cancellationToken);
         string message;
-        switch (request.Action.Trim().ToLowerInvariant())
+        switch (actionKey)
         {
             case "start-first-sync":
                 state = state with { Mode = "live", SyncPlatform = NormalizeDashboardPlatform(request.Platform), DetailPanel = $"{NormalizeDashboardPlatform(request.Platform)} setup opened. Real marketplace authorization is owned by Milestone 6 Platforms." };
@@ -951,11 +978,15 @@ app.MapPost(
         IOrderStore orderStore,
         CancellationToken cancellationToken) =>
     {
-        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
-            || !await IsWorkspaceMember(accessStore, userId, workspaceId, cancellationToken))
+        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
         {
             return Results.Forbid();
         }
+
+        var membership = (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
+            .FirstOrDefault(item => item.Workspace.Id == workspaceId);
+        if (membership.Workspace is null
+            || membership.Role is not (WorkspaceRole.Owner or WorkspaceRole.Admin or WorkspaceRole.Manager)) return Results.Forbid();
 
         var error = ValidateDashboardImport(request);
         if (error is not null)
@@ -1078,19 +1109,12 @@ app.MapPost(
             return Results.Unauthorized();
         }
 
-        if (!AccessValidation.IsValidEmail(request.Email) || request.Role is WorkspaceRole.Owner)
+        if (!AccessValidation.IsValidEmail(request.Email) || request.Role is WorkspaceRole.Owner || !Enum.IsDefined(request.Role))
         {
             return Results.UnprocessableEntity(new Problem(
                 "Validation failed",
                 "Enter a valid teammate email and choose a non-owner role.",
                 "invitation_invalid"));
-        }
-
-        if (!emailSender.IsConfigured)
-        {
-            return Results.Problem(
-                "Invitation email is not configured for this environment.",
-                statusCode: StatusCodes.Status503ServiceUnavailable);
         }
 
         var membership = (await store.ListWorkspacesAsync(userId, cancellationToken))
@@ -1102,21 +1126,43 @@ app.MapPost(
             return Results.Forbid();
         }
 
+        if (!emailSender.IsConfigured)
+        {
+            return Results.Problem(
+                "Invitation email is not configured for this environment.",
+                statusCode: StatusCodes.Status503ServiceUnavailable,
+                extensions: new Dictionary<string, object?> { ["code"] = "invitation_email_unavailable" });
+        }
+
         var rawToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
         var tokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)));
+        var invitationId = Guid.NewGuid();
 
-        await store.CreateInvitationAsync(
-            tokenHash,
-            workspaceId,
-            request.Email.Trim(),
-            request.Role,
-            DateTimeOffset.UtcNow.AddHours(72),
-            cancellationToken);
-
-        var baseUri = new Uri(configuration["Application:PublicBaseUrl"]!, UriKind.Absolute);
-        var invitationLink = new Uri(baseUri, $"/#accept?token={Uri.EscapeDataString(rawToken)}");
         try
         {
+            await store.CreateInvitationAsync(
+                invitationId,
+                tokenHash,
+                workspaceId,
+                request.Email.Trim(),
+                request.Role,
+                DateTimeOffset.UtcNow.AddHours(72),
+                cancellationToken);
+        }
+        catch (InvalidOperationException exception) when (exception.Message is "invitation_already_pending" or "user_already_member")
+        {
+            return Results.Conflict(new Problem(
+                exception.Message == "user_already_member" ? "Already a workspace member" : "Invitation already pending",
+                exception.Message == "user_already_member"
+                    ? "This email already belongs to a member of the workspace."
+                    : "A pending invitation already exists for this email.",
+                exception.Message));
+        }
+
+        try
+        {
+            var baseUri = new Uri(configuration["Application:PublicBaseUrl"]!, UriKind.Absolute);
+            var invitationLink = new Uri(baseUri, $"/#accept?token={Uri.EscapeDataString(rawToken)}");
             await emailSender.SendInvitationAsync(
                 request.Email.Trim(),
                 invitationLink,
@@ -1124,12 +1170,15 @@ app.MapPost(
                 request.Role,
                 cancellationToken);
         }
-        catch (Exception exception) when (exception is System.Net.Mail.SmtpException or InvalidOperationException)
+        catch (Exception exception)
         {
             logger.LogError(exception, "Invitation email delivery failed");
+            await store.CancelInvitationAsync(workspaceId, invitationId, CancellationToken.None);
+            if (exception is OperationCanceledException) throw;
             return Results.Problem(
                 "Invitation email is temporarily unavailable. Please try again later.",
-                statusCode: StatusCodes.Status503ServiceUnavailable);
+                statusCode: StatusCodes.Status503ServiceUnavailable,
+                extensions: new Dictionary<string, object?> { ["code"] = "invitation_delivery_failed" });
         }
 
         return Results.Accepted(
@@ -1138,6 +1187,110 @@ app.MapPost(
     })
     .RequireAuthorization()
     .WithTags("Invitations");
+
+app.MapGet(
+    "/api/workspaces/{workspaceId:guid}/team",
+    async (Guid workspaceId, ClaimsPrincipal principal, IAccessStore store, CancellationToken cancellationToken) =>
+    {
+        var membership = await FindWorkspaceMembership(principal, store, workspaceId, cancellationToken);
+        if (membership is null) return Results.Forbid();
+
+        var members = await store.ListTeamMembersAsync(workspaceId, cancellationToken);
+        var invitations = await store.ListPendingInvitationsAsync(workspaceId, cancellationToken);
+        var canManage = membership.Value.Role is WorkspaceRole.Owner or WorkspaceRole.Admin;
+        return Results.Ok(new TeamResponse(members, invitations, canManage));
+    })
+    .RequireAuthorization()
+    .WithTags("Team");
+
+app.MapPost(
+    "/api/workspaces/{workspaceId:guid}/invitations/{invitationId:guid}/resend",
+    async (
+        Guid workspaceId,
+        Guid invitationId,
+        ClaimsPrincipal principal,
+        IAccessStore store,
+        IRecoveryEmailSender emailSender,
+        IConfiguration configuration,
+        ILogger<Program> logger,
+        CancellationToken cancellationToken) =>
+    {
+        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return Results.Unauthorized();
+        var membership = (await store.ListWorkspacesAsync(userId, cancellationToken))
+            .FirstOrDefault(item => item.Workspace.Id == workspaceId);
+        if (membership.Workspace is null || membership.Role is not (WorkspaceRole.Owner or WorkspaceRole.Admin)) return Results.Forbid();
+        if (!emailSender.IsConfigured)
+        {
+            return Results.Problem("Invitation email is not configured for this environment.", statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+
+        var pending = (await store.ListPendingInvitationsAsync(workspaceId, cancellationToken))
+            .FirstOrDefault(invitation => invitation.Id == invitationId);
+        if (pending is null) return Results.NotFound(new Problem("Invitation not found", "This pending invitation is no longer available.", "invitation_not_found"));
+
+        var rawToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        var tokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)));
+        var expiresAt = DateTimeOffset.UtcNow.AddHours(72);
+        if (!await store.RotateInvitationAsync(workspaceId, invitationId, tokenHash, expiresAt, cancellationToken))
+        {
+            return Results.NotFound(new Problem("Invitation not found", "This pending invitation is no longer available.", "invitation_not_found"));
+        }
+
+        try
+        {
+            var baseUri = new Uri(configuration["Application:PublicBaseUrl"]!, UriKind.Absolute);
+            var invitationLink = new Uri(baseUri, $"/#accept?token={Uri.EscapeDataString(rawToken)}");
+            await emailSender.SendInvitationAsync(pending.Email, invitationLink, membership.Workspace.BusinessName, pending.Role, cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Invitation resend delivery failed");
+            await store.CancelInvitationAsync(workspaceId, invitationId, CancellationToken.None);
+            if (exception is OperationCanceledException) throw;
+            return Results.Problem("Invitation email is temporarily unavailable. Please try again later.", statusCode: StatusCodes.Status503ServiceUnavailable,
+                extensions: new Dictionary<string, object?> { ["code"] = "invitation_delivery_failed" });
+        }
+
+        return Results.Accepted($"/api/invitations/{rawToken}", new { status = "sent", expiresInHours = 72 });
+    })
+    .RequireAuthorization()
+    .WithTags("Invitations");
+
+app.MapDelete(
+    "/api/workspaces/{workspaceId:guid}/invitations/{invitationId:guid}",
+    async (Guid workspaceId, Guid invitationId, ClaimsPrincipal principal, IAccessStore store, CancellationToken cancellationToken) =>
+    {
+        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return Results.Unauthorized();
+        var membership = (await store.ListWorkspacesAsync(userId, cancellationToken))
+            .FirstOrDefault(item => item.Workspace.Id == workspaceId);
+        if (membership.Workspace is null || membership.Role is not (WorkspaceRole.Owner or WorkspaceRole.Admin)) return Results.Forbid();
+        if (!await store.CancelInvitationAsync(workspaceId, invitationId, cancellationToken))
+        {
+            return Results.NotFound(new Problem("Invitation not found", "This pending invitation is no longer available.", "invitation_not_found"));
+        }
+
+        return Results.NoContent();
+    })
+    .RequireAuthorization()
+    .WithTags("Invitations");
+
+app.MapDelete(
+    "/api/workspaces/{workspaceId:guid}/team/members/{memberId:guid}",
+    async (Guid workspaceId, Guid memberId, ClaimsPrincipal principal, IAccessStore store, CancellationToken cancellationToken) =>
+    {
+        if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return Results.Unauthorized();
+        var membership = (await store.ListWorkspacesAsync(userId, cancellationToken))
+            .FirstOrDefault(item => item.Workspace.Id == workspaceId);
+        if (membership.Workspace is null || membership.Role is not (WorkspaceRole.Owner or WorkspaceRole.Admin)) return Results.Forbid();
+
+        if (await store.RemoveMemberAsync(workspaceId, memberId, cancellationToken)) return Results.NoContent();
+        var target = (await store.ListTeamMembersAsync(workspaceId, cancellationToken)).FirstOrDefault(member => member.UserId == memberId);
+        return target?.Role == WorkspaceRole.Owner
+            ? Results.Conflict(new Problem("Cannot remove the last owner", "Transfer ownership before removing the only workspace owner.", "last_owner_required"))
+            : Results.NotFound(new Problem("Member not found", "This member is no longer in the workspace.", "member_not_found"));
+    })
+    .RequireAuthorization()
+    .WithTags("Team");
 
 app.MapGet(
     "/api/invitations/{token}",
@@ -1220,12 +1373,12 @@ app.MapFallbackToFile("index.html");
 
 app.Run();
 
-static ProductResponse ToResponse(Product product) => new(
+static ProductResponse ToResponse(Product product, bool canSeePricing) => new(
     product.Id,
     product.Sku,
     product.Name,
     product.OnHand,
-    product.BasePrice,
+    canSeePricing ? product.BasePrice : null,
     product.Category);
 
 static Problem? ValidateProducts(IReadOnlyList<ProductRequest> products)
@@ -1351,6 +1504,10 @@ static InventoryListResponse BuildInventoryList(
 {
     var rows = BuildInventoryRows(products, reservedByProduct);
     var total = rows.Count;
+    if (role is not (WorkspaceRole.Owner or WorkspaceRole.Admin or WorkspaceRole.Manager))
+    {
+        rows = rows.Select(product => product with { BasePrice = null }).ToArray();
+    }
 
     return new InventoryListResponse(
         total,
@@ -1390,13 +1547,14 @@ static InventoryProductDetail BuildInventoryDetail(
     bool allFailing,
     IReadOnlyList<StoredPricingRule> rules)
 {
+    var canSeePricing = role is WorkspaceRole.Owner or WorkspaceRole.Admin or WorkspaceRole.Manager;
     return new InventoryProductDetail(
-        product,
+        canSeePricing ? product : product with { BasePrice = null },
         SafetyBufferEnabled: false,
         LowStockAlertAt: 5,
         "Backend inventory loaded from persisted products",
-        InventoryPricing(product, allFailing, rules),
-        InventoryAudit(product),
+        canSeePricing ? InventoryPricing(product, allFailing, rules) : [],
+        canSeePricing ? InventoryAudit(product) : InventoryAudit(product).Where(entry => entry.Kind != "Pricing").ToArray(),
         InventoryCapabilitiesFor(role));
 }
 
@@ -1421,13 +1579,14 @@ static IReadOnlyList<InventoryPricingRow> InventoryPricing(
     bool failing,
     IReadOnlyList<StoredPricingRule> rules)
 {
+    var basePrice = product.BasePrice ?? 0m;
     var today = DateOnly.FromDateTime(DateTime.UtcNow);
     return Pricing.Platforms.Select(platform =>
     {
         var result = Pricing.Evaluate(new Product(product.Id, Guid.Empty, product.Sku, product.Name,
-            product.OnHand, product.BasePrice, product.Category), platform, rules, today);
+            product.OnHand, basePrice, product.Category), platform, rules, today);
         var applied = rules.Where(rule => result.Applied.Contains(rule.Rule.Id)).Select(rule => rule.Rule).ToArray();
-        var adjustment = result.Price - product.BasePrice;
+        var adjustment = result.Price - basePrice;
         var adjustmentLabel = adjustment == 0 ? "—" : adjustment.ToString("+0.00;-0.00;0.00");
         var ruleLabel = applied.Length == 0 ? "Base price" : string.Join(", ", applied.Select(rule => rule.Name));
         var status = failing ? "Not connected" : applied.Length == 0 ? "No matching rule" : "Backend estimate";

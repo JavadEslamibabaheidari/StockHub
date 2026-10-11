@@ -480,6 +480,7 @@ public sealed class PostgresAccessStore(string connectionString) : IAccessStore
     }
 
     public async Task CreateInvitationAsync(
+        Guid invitationId,
         string tokenHash,
         Guid workspaceId,
         string email,
@@ -488,15 +489,62 @@ public sealed class PostgresAccessStore(string connectionString) : IAccessStore
         CancellationToken cancellationToken)
     {
         await using var connection = await OpenConnectionAsync(cancellationToken);
-        await using var command = new NpgsqlCommand(
-            "INSERT INTO invitations(token_hash, workspace_id, email, role, expires_at) VALUES (@hash, @workspace, @email, @role, @expires)",
-            connection);
-        command.Parameters.AddWithValue("hash", tokenHash);
-        command.Parameters.AddWithValue("workspace", workspaceId);
-        command.Parameters.AddWithValue("email", email.Trim());
-        command.Parameters.AddWithValue("role", role.ToString());
-        command.Parameters.AddWithValue("expires", expiresAt);
-        await command.ExecuteNonQueryAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await using (var lockCommand = new NpgsqlCommand(
+                "SELECT pg_advisory_xact_lock(hashtextextended(@workspace::text, 0))",
+                connection,
+                transaction))
+            {
+                lockCommand.Parameters.AddWithValue("workspace", workspaceId);
+                await lockCommand.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await using (var pending = new NpgsqlCommand(
+                "SELECT EXISTS (SELECT 1 FROM invitations WHERE workspace_id = @workspace AND email = @email::citext AND consumed_at IS NULL AND expires_at > now())",
+                connection,
+                transaction))
+            {
+                pending.Parameters.AddWithValue("workspace", workspaceId);
+                pending.Parameters.AddWithValue("email", email.Trim());
+                if ((bool)(await pending.ExecuteScalarAsync(cancellationToken) ?? false))
+                {
+                    throw new InvalidOperationException("invitation_already_pending");
+                }
+            }
+
+            await using (var member = new NpgsqlCommand(
+                "SELECT EXISTS (SELECT 1 FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.workspace_id = @workspace AND u.email = @email::citext)",
+                connection,
+                transaction))
+            {
+                member.Parameters.AddWithValue("workspace", workspaceId);
+                member.Parameters.AddWithValue("email", email.Trim());
+                if ((bool)(await member.ExecuteScalarAsync(cancellationToken) ?? false))
+                {
+                    throw new InvalidOperationException("user_already_member");
+                }
+            }
+
+            await using var command = new NpgsqlCommand(
+                "INSERT INTO invitations(id, token_hash, workspace_id, email, role, expires_at) VALUES (@id, @hash, @workspace, @email, @role, @expires)",
+                connection,
+                transaction);
+            command.Parameters.AddWithValue("id", invitationId);
+            command.Parameters.AddWithValue("hash", tokenHash);
+            command.Parameters.AddWithValue("workspace", workspaceId);
+            command.Parameters.AddWithValue("email", email.Trim());
+            command.Parameters.AddWithValue("role", role.ToString());
+            command.Parameters.AddWithValue("expires", expiresAt);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            throw;
+        }
     }
 
     public async Task<Invitation?> FindInvitationAsync(string tokenHash, CancellationToken cancellationToken)
@@ -504,7 +552,7 @@ public sealed class PostgresAccessStore(string connectionString) : IAccessStore
         await using var connection = await OpenConnectionAsync(cancellationToken);
         await using var command = new NpgsqlCommand(
             """
-            SELECT workspace_id, email::text, role, expires_at, consumed_at
+            SELECT id, workspace_id, email::text, role, expires_at, created_at, consumed_at
             FROM invitations
             WHERE token_hash = @hash AND consumed_at IS NULL AND expires_at > now()
             """,
@@ -519,10 +567,111 @@ public sealed class PostgresAccessStore(string connectionString) : IAccessStore
 
         return new Invitation(
             reader.GetGuid(0),
-            reader.GetString(1),
-            ParseRole(reader.GetString(2)),
-            reader.GetFieldValue<DateTimeOffset>(3),
-            reader.IsDBNull(4) ? null : reader.GetFieldValue<DateTimeOffset>(4));
+            reader.GetGuid(1),
+            reader.GetString(2),
+            ParseRole(reader.GetString(3)),
+            reader.GetFieldValue<DateTimeOffset>(4),
+            reader.GetFieldValue<DateTimeOffset>(5),
+            reader.IsDBNull(6) ? null : reader.GetFieldValue<DateTimeOffset>(6));
+    }
+
+    public async Task<IReadOnlyList<TeamMemberResponse>> ListTeamMembersAsync(Guid workspaceId, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var command = new NpgsqlCommand(
+            "SELECT u.id, u.full_name, u.email::text, m.role FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.workspace_id = @workspace ORDER BY (m.role = 'Owner') DESC, u.full_name, u.email",
+            connection);
+        command.Parameters.AddWithValue("workspace", workspaceId);
+        var members = new List<TeamMemberResponse>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            members.Add(new TeamMemberResponse(
+                reader.GetGuid(0), reader.GetString(1), reader.GetString(2), ParseRole(reader.GetString(3)), "Unavailable"));
+        }
+
+        return members;
+    }
+
+    public async Task<IReadOnlyList<PendingInvitationResponse>> ListPendingInvitationsAsync(Guid workspaceId, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var command = new NpgsqlCommand(
+            "SELECT id, email::text, role, created_at, expires_at FROM invitations WHERE workspace_id = @workspace AND consumed_at IS NULL AND expires_at > now() ORDER BY created_at",
+            connection);
+        command.Parameters.AddWithValue("workspace", workspaceId);
+        var invitations = new List<PendingInvitationResponse>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            invitations.Add(new PendingInvitationResponse(
+                reader.GetGuid(0), reader.GetString(1), ParseRole(reader.GetString(2)),
+                reader.GetFieldValue<DateTimeOffset>(3), reader.GetFieldValue<DateTimeOffset>(4)));
+        }
+
+        return invitations;
+    }
+
+    public async Task<bool> RotateInvitationAsync(Guid workspaceId, Guid invitationId, string tokenHash, DateTimeOffset expiresAt, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var command = new NpgsqlCommand(
+            "UPDATE invitations SET token_hash = @hash, expires_at = @expires, created_at = now() WHERE id = @id AND workspace_id = @workspace AND consumed_at IS NULL AND expires_at > now()",
+            connection);
+        command.Parameters.AddWithValue("hash", tokenHash);
+        command.Parameters.AddWithValue("expires", expiresAt);
+        command.Parameters.AddWithValue("id", invitationId);
+        command.Parameters.AddWithValue("workspace", workspaceId);
+        return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
+    }
+
+    public async Task<bool> CancelInvitationAsync(Guid workspaceId, Guid invitationId, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var command = new NpgsqlCommand(
+            "UPDATE invitations SET consumed_at = now() WHERE id = @id AND workspace_id = @workspace AND consumed_at IS NULL AND expires_at > now()",
+            connection);
+        command.Parameters.AddWithValue("id", invitationId);
+        command.Parameters.AddWithValue("workspace", workspaceId);
+        return await command.ExecuteNonQueryAsync(cancellationToken) == 1;
+    }
+
+    public async Task<bool> RemoveMemberAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await using (var workspaceLock = new NpgsqlCommand(
+                "SELECT id FROM workspaces WHERE id = @workspace FOR UPDATE",
+                connection,
+                transaction))
+            {
+                workspaceLock.Parameters.AddWithValue("workspace", workspaceId);
+                if (await workspaceLock.ExecuteScalarAsync(cancellationToken) is null)
+                {
+                    await transaction.RollbackAsync(CancellationToken.None);
+                    return false;
+                }
+            }
+
+            await using (var removal = new NpgsqlCommand(
+                "DELETE FROM memberships WHERE user_id = @user AND workspace_id = @workspace AND (role <> 'Owner' OR (SELECT count(*) FROM memberships WHERE workspace_id = @workspace AND role = 'Owner') > 1)",
+                connection,
+                transaction))
+            {
+                removal.Parameters.AddWithValue("user", userId);
+                removal.Parameters.AddWithValue("workspace", workspaceId);
+                var removed = await removal.ExecuteNonQueryAsync(cancellationToken) == 1;
+                await transaction.CommitAsync(cancellationToken);
+                return removed;
+            }
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            throw;
+        }
     }
 
     public async Task<Guid?> AcceptInvitationAsync(string tokenHash, Guid userId, string normalizedEmail, CancellationToken cancellationToken)
@@ -696,7 +845,7 @@ public static class PostgresDatabaseInitializer
 
         try
         {
-            foreach (var migrationName in new[] { "001_access.sql", "002_auth_completion.sql", "003_onboarding_products.sql", "004_dashboard_state.sql", "005_orders.sql", "006_pricing.sql", "007_reports.sql" })
+            foreach (var migrationName in new[] { "001_access.sql", "002_auth_completion.sql", "003_onboarding_products.sql", "004_dashboard_state.sql", "005_orders.sql", "006_pricing.sql", "007_reports.sql", "008_team_management.sql" })
             {
                 var migrationPath = Path.Combine(AppContext.BaseDirectory, "Database", "Migrations", migrationName);
                 if (!File.Exists(migrationPath))

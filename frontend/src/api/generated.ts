@@ -12,7 +12,7 @@ export type OnboardingTask = { key: string; title: string; status: string; hando
 export type InvitationRequest = { email: string; role: WorkspaceRole };
 export type InvitationResponse = { email: string; role: WorkspaceRole; status: string };
 export type ProductRequest = { sku: string; name: string; onHand: number; basePrice: number; category?: string | null };
-export type ProductResponse = ProductRequest & { id: string };
+export type ProductResponse = Omit<ProductRequest, 'basePrice'> & { id: string; basePrice: number | null };
 export type InventoryCapabilities = { canAdjustOnHand: boolean; canChangePrice: boolean; canManageListings: boolean };
 export type InventoryPlatformStatus = { platform: string; code: string; status: string; detail: string; availableShown: number; listed: boolean };
 export type InventoryProductSummary = ProductResponse & { category: string; reserved: number; available: number; stockStatus: string; platforms: InventoryPlatformStatus[] };
@@ -25,6 +25,9 @@ export type PricingPreview = { basePrice: number | null; finalPrice: number | nu
 export type InventoryAuditEntry = { kind: string; title: string; detail: string; when: string };
 export type InventoryProductDetail = { product: InventoryProductSummary; safetyBufferEnabled: boolean; lowStockAlertAt: number; syncAlert: string; pricing: InventoryPricingRow[]; auditLog: InventoryAuditEntry[]; capabilities: InventoryCapabilities };
 export type InventoryActionResponse = { status: string; product: InventoryProductSummary };
+export type TeamMemberResponse = { userId: string; fullName: string; email: string; role: WorkspaceRole; lastActive: string };
+export type PendingInvitationResponse = { id: string; email: string; role: WorkspaceRole; createdAt: string; expiresAt: string };
+export type TeamResponse = { members: TeamMemberResponse[]; invitations: PendingInvitationResponse[]; canManage: boolean };
 export type DashboardMetricResponse = { key: string; label: string; value: string; hint: string; tone: string };
 export type DashboardReservationResponse = { id: string; productName: string; platform: string; orderNumber: string; quantity: string; timeLeft: string; progressPercent: number };
 export type DashboardPlatformSaleResponse = { platform: string; percent: number; tone: string };
@@ -111,6 +114,10 @@ export class AccessApiClient {
   reportAlertSettings(workspaceId: string) { return this.request<ReportAlertSettings>(`/api/workspaces/${workspaceId}/reports/alert-settings`); }
   updateReportAlertSettings(workspaceId: string, settings: ReportAlertSettingsInput) { return this.request<ReportAlertSettings>(`/api/workspaces/${workspaceId}/reports/alert-settings`, { method: 'PUT', body: JSON.stringify(settings) }); }
   invite(workspaceId: string, request: InvitationRequest) { return this.request<{ status: string }>(`/api/workspaces/${workspaceId}/invitations`, { method: 'POST', body: JSON.stringify(request) }); }
+  team(workspaceId: string) { return this.request<TeamResponse>(`/api/workspaces/${workspaceId}/team`); }
+  resendInvitation(workspaceId: string, invitationId: string) { return this.request<{ status: string }>(`/api/workspaces/${workspaceId}/invitations/${invitationId}/resend`, { method: 'POST' }); }
+  cancelInvitation(workspaceId: string, invitationId: string) { return this.request<void>(`/api/workspaces/${workspaceId}/invitations/${invitationId}`, { method: 'DELETE' }); }
+  removeTeamMember(workspaceId: string, memberId: string) { return this.request<void>(`/api/workspaces/${workspaceId}/team/members/${memberId}`, { method: 'DELETE' }); }
   invitation(token: string) { return this.request<InvitationResponse>(`/api/invitations/${encodeURIComponent(token)}`); }
   acceptInvitation(token: string) { return this.request<{ status: string }>('/api/invitations/accept', { method: 'POST', body: JSON.stringify({ token }) }); }
 }

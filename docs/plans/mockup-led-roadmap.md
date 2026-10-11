@@ -66,7 +66,7 @@ No application implementation should start until the roadmap/spec is approved.
 ## Current milestone
 
 Milestones 0–8 are closed in GitHub with zero open issues. The next mockup-led
-section is `9 Team`, tracked in GitHub milestone #10 with issues #135–#138.
+section is `9 Team`, tracked in GitHub milestone #10 with open issues #136–#138.
 Team execution is specified in [milestone-9-team.md](milestone-9-team.md). Pricing execution is tracked in
 [milestone-7-pricing.md](milestone-7-pricing.md), issues #116–#119; closure
 evidence is in

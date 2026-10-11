@@ -53,6 +53,7 @@ public interface IAccessStore
         CancellationToken cancellationToken);
 
     Task CreateInvitationAsync(
+        Guid invitationId,
         string tokenHash,
         Guid workspaceId,
         string email,
@@ -61,6 +62,16 @@ public interface IAccessStore
         CancellationToken cancellationToken);
 
     Task<Invitation?> FindInvitationAsync(string tokenHash, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<TeamMemberResponse>> ListTeamMembersAsync(Guid workspaceId, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<PendingInvitationResponse>> ListPendingInvitationsAsync(Guid workspaceId, CancellationToken cancellationToken);
+
+    Task<bool> RotateInvitationAsync(Guid workspaceId, Guid invitationId, string tokenHash, DateTimeOffset expiresAt, CancellationToken cancellationToken);
+
+    Task<bool> CancelInvitationAsync(Guid workspaceId, Guid invitationId, CancellationToken cancellationToken);
+
+    Task<bool> RemoveMemberAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
 
     Task<Guid?> AcceptInvitationAsync(string tokenHash, Guid userId, string normalizedEmail, CancellationToken cancellationToken);
 

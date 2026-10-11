@@ -21,7 +21,7 @@ public sealed record InventoryProductSummary(
     int OnHand,
     int Reserved,
     int Available,
-    decimal BasePrice,
+    decimal? BasePrice,
     string StockStatus,
     IReadOnlyList<InventoryPlatformStatus> Platforms);
 

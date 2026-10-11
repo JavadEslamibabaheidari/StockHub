@@ -110,6 +110,7 @@ public sealed class InMemoryAccessStoreTests
         var workspace = await store.CreateWorkspaceAsync(owner.Id, new("Acme Goods", "IT", "EUR", null), "workspace", CancellationToken.None);
 
         await store.CreateInvitationAsync(
+            Guid.NewGuid(),
             "token-hash",
             workspace.Workspace.Id,
             "invited@example.com",
@@ -124,6 +125,52 @@ public sealed class InMemoryAccessStoreTests
         var memberships = await store.ListWorkspacesAsync(invited.Id, CancellationToken.None);
         var membership = Assert.Single(memberships);
         Assert.Equal(WorkspaceRole.Viewer, membership.Role);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => store.CreateInvitationAsync(
+            Guid.NewGuid(), "duplicate-member-token", workspace.Workspace.Id, invited.NormalizedEmail, WorkspaceRole.Viewer,
+            DateTimeOffset.UtcNow.AddHours(1), CancellationToken.None));
+
+        await store.CreateInvitationAsync(Guid.NewGuid(), "expired-token", workspace.Workspace.Id, "expired@example.com",
+            WorkspaceRole.Manager, DateTimeOffset.UtcNow.AddSeconds(-1), CancellationToken.None);
+        Assert.Null(await store.FindInvitationAsync("expired-token", CancellationToken.None));
+        Assert.Empty(await store.ListPendingInvitationsAsync(workspace.Workspace.Id, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Team_invitations_rotate_cancel_and_removals_preserve_the_last_owner()
+    {
+        var store = new InMemoryAccessStore();
+        var owner = await store.CreateUserAsync("Owner", "OWNER@EXAMPLE.COM", "hash", CancellationToken.None);
+        var teammate = await store.CreateUserAsync("Teammate", "TEAMMATE@EXAMPLE.COM", "hash", CancellationToken.None);
+        var otherOwner = await store.CreateUserAsync("Other Owner", "OTHER@EXAMPLE.COM", "hash", CancellationToken.None);
+        var workspace = await store.CreateWorkspaceAsync(owner.Id, new("Acme", "IT", "EUR", null), "team", CancellationToken.None);
+        var workspaceId = workspace.Workspace.Id;
+        var otherWorkspace = await store.CreateWorkspaceAsync(otherOwner.Id, new("Other", "IT", "EUR", null), "other-team", CancellationToken.None);
+        var invitationId = Guid.NewGuid();
+        await store.CreateInvitationAsync(invitationId, "old-token-hash", workspaceId, teammate.NormalizedEmail,
+            WorkspaceRole.Manager, DateTimeOffset.UtcNow.AddHours(72), CancellationToken.None);
+
+        var team = await store.ListPendingInvitationsAsync(workspaceId, CancellationToken.None);
+        Assert.Equal(invitationId, Assert.Single(team).Id);
+        Assert.Empty(await store.ListPendingInvitationsAsync(otherWorkspace.Workspace.Id, CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => store.CreateInvitationAsync(
+            Guid.NewGuid(), "duplicate-token", workspaceId, teammate.NormalizedEmail, WorkspaceRole.Manager,
+            DateTimeOffset.UtcNow.AddHours(72), CancellationToken.None));
+        Assert.True(await store.RotateInvitationAsync(workspaceId, invitationId, "new-token-hash", DateTimeOffset.UtcNow.AddHours(72), CancellationToken.None));
+        Assert.Null(await store.FindInvitationAsync("old-token-hash", CancellationToken.None));
+        Assert.NotNull(await store.FindInvitationAsync("new-token-hash", CancellationToken.None));
+        Assert.True(await store.CancelInvitationAsync(workspaceId, invitationId, CancellationToken.None));
+        Assert.Empty(await store.ListPendingInvitationsAsync(workspaceId, CancellationToken.None));
+
+        // A fresh invite demonstrates membership removal behavior after acceptance.
+        await store.CreateInvitationAsync(Guid.NewGuid(), "accepted-token", workspaceId, teammate.NormalizedEmail,
+            WorkspaceRole.Manager, DateTimeOffset.UtcNow.AddHours(72), CancellationToken.None);
+        Assert.Equal(workspaceId, await store.AcceptInvitationAsync("accepted-token", teammate.Id, teammate.NormalizedEmail, CancellationToken.None));
+        Assert.Equal(2, (await store.ListTeamMembersAsync(workspaceId, CancellationToken.None)).Count);
+        Assert.False(await store.RemoveMemberAsync(workspaceId, owner.Id, CancellationToken.None));
+        Assert.True(await store.RemoveMemberAsync(workspaceId, teammate.Id, CancellationToken.None));
+        Assert.Single(await store.ListTeamMembersAsync(workspaceId, CancellationToken.None));
+        Assert.DoesNotContain(await store.ListTeamMembersAsync(workspaceId, CancellationToken.None), member => member.UserId == teammate.Id);
+        Assert.Empty(await store.ListWorkspacesAsync(teammate.Id, CancellationToken.None));
     }
 
 }

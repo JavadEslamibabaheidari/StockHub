@@ -111,6 +111,40 @@ public sealed class PostgresAccessStoreTests
     }
 
     [Fact]
+    public async Task Team_invitation_lifecycle_and_member_removal_persist_safely()
+    {
+        var connectionString = Environment.GetEnvironmentVariable("STOCKHUB_POSTGRES_TEST_CONNECTION");
+        if (string.IsNullOrWhiteSpace(connectionString)) return;
+
+        await PostgresDatabaseInitializer.ApplyAsync(connectionString, CancellationToken.None);
+        var store = new PostgresAccessStore(connectionString);
+        var suffix = Guid.NewGuid().ToString("N");
+        var owner = await store.CreateUserAsync("Team Owner", $"OWNER-{suffix}@EXAMPLE.COM", "hash", CancellationToken.None);
+        var teammate = await store.CreateUserAsync("Team Member", $"MEMBER-{suffix}@EXAMPLE.COM", "hash", CancellationToken.None);
+        var workspace = await store.CreateWorkspaceAsync(owner.Id, new CreateWorkspaceRequest("Team Workspace", "IT", "EUR", null), $"team-{suffix}", CancellationToken.None);
+        var workspaceId = workspace.Workspace.Id;
+        var invitationId = Guid.NewGuid();
+        await store.CreateInvitationAsync(invitationId, $"old-{suffix}", workspaceId, teammate.NormalizedEmail,
+            WorkspaceRole.Manager, DateTimeOffset.UtcNow.AddHours(72), CancellationToken.None);
+
+        var recreated = new PostgresAccessStore(connectionString);
+        Assert.Equal(invitationId, Assert.Single(await recreated.ListPendingInvitationsAsync(workspaceId, CancellationToken.None)).Id);
+        Assert.True(await recreated.RotateInvitationAsync(workspaceId, invitationId, $"new-{suffix}", DateTimeOffset.UtcNow.AddHours(72), CancellationToken.None));
+        Assert.Null(await recreated.FindInvitationAsync($"old-{suffix}", CancellationToken.None));
+        Assert.NotNull(await recreated.FindInvitationAsync($"new-{suffix}", CancellationToken.None));
+        Assert.True(await recreated.CancelInvitationAsync(workspaceId, invitationId, CancellationToken.None));
+        Assert.Empty(await recreated.ListPendingInvitationsAsync(workspaceId, CancellationToken.None));
+
+        await recreated.CreateInvitationAsync(Guid.NewGuid(), $"accepted-{suffix}", workspaceId, teammate.NormalizedEmail,
+            WorkspaceRole.Manager, DateTimeOffset.UtcNow.AddHours(72), CancellationToken.None);
+        Assert.Equal(workspaceId, await recreated.AcceptInvitationAsync($"accepted-{suffix}", teammate.Id, teammate.NormalizedEmail, CancellationToken.None));
+        Assert.Equal(2, (await recreated.ListTeamMembersAsync(workspaceId, CancellationToken.None)).Count);
+        Assert.False(await recreated.RemoveMemberAsync(workspaceId, owner.Id, CancellationToken.None));
+        Assert.True(await recreated.RemoveMemberAsync(workspaceId, teammate.Id, CancellationToken.None));
+        Assert.Single(await recreated.ListTeamMembersAsync(workspaceId, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task Product_import_upserts_workspace_products()
     {
         var connectionString = Environment.GetEnvironmentVariable("STOCKHUB_POSTGRES_TEST_CONNECTION");
