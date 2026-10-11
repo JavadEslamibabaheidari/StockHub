@@ -8,7 +8,11 @@ vi.mock('./api/generated', () => ({
   AccessApiClient: class {
     session = async () => ({ fullName: 'Alex Morgan', email: 'alex@example.test', activeWorkspaceId: 'w1', workspaces: [{ id: 'w1', businessName: 'North Shop', country: 'Italy', currency: 'EUR', role: 'Owner' }] })
     products = async () => []
-    onboarding = async () => undefined
+    onboarding = async () => [
+      { key: 'import-products', title: 'Import products', status: 'available', handoff: 'inventory' },
+      { key: 'connect-platform', title: 'Connect a platform', status: 'selected', handoff: 'platforms' },
+      { key: 'invite-team', title: 'Invite your team', status: 'available', handoff: 'team' },
+    ]
     setActiveWorkspace = async () => undefined
   },
   AccessApiError: class extends Error {},
@@ -35,6 +39,12 @@ afterEach(async () => {
 })
 
 describe('Onboarding appearance toggle', () => {
+  it('opens the persisted next step returned by the onboarding API', () => {
+    const selectedStep = [...host.querySelectorAll<HTMLButtonElement>('.step-heading')]
+      .find(button => button.textContent?.includes('Connect your first platform'))
+    expect(selectedStep?.getAttribute('aria-expanded')).toBe('true')
+  })
+
   it('updates the shared document theme and persists the browser preference', async () => {
     const toggle = host.querySelector('.icon-button')
     expect(toggle).not.toBeNull()

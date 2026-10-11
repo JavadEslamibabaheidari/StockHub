@@ -89,6 +89,36 @@ public sealed class InMemoryAccessStoreTests
     }
 
     [Fact]
+    public async Task Onboarding_selection_is_persisted_per_user_and_workspace_without_completing_the_task()
+    {
+        var store = new InMemoryAccessStore();
+        var user = await store.CreateUserAsync("Ada", "ADA@EXAMPLE.COM", "hash", CancellationToken.None);
+        var firstWorkspace = await store.CreateWorkspaceAsync(
+            user.Id,
+            new CreateWorkspaceRequest("North Shop", "IT", "EUR", null),
+            "onboarding-1",
+            CancellationToken.None);
+        var secondWorkspace = await store.CreateWorkspaceAsync(
+            user.Id,
+            new CreateWorkspaceRequest("South Shop", "IT", "EUR", null),
+            "onboarding-2",
+            CancellationToken.None);
+
+        Assert.Null(await store.GetSelectedOnboardingActionAsync(user.Id, firstWorkspace.Workspace.Id, CancellationToken.None));
+        await store.RecordOnboardingActionAsync(user.Id, firstWorkspace.Workspace.Id, "connect-platform", CancellationToken.None);
+
+        Assert.Equal("connect-platform", await store.GetSelectedOnboardingActionAsync(user.Id, firstWorkspace.Workspace.Id, CancellationToken.None));
+        Assert.Null(await store.GetSelectedOnboardingActionAsync(user.Id, secondWorkspace.Workspace.Id, CancellationToken.None));
+        Assert.Equal("selected", Assert.Single(OnboardingTask.CreateChecklist("connect-platform"), task => task.Key == "connect-platform").Status);
+        Assert.All(OnboardingTask.CreateChecklist("connect-platform"), task => Assert.NotEqual("completed", task.Status));
+        await Assert.ThrowsAsync<ArgumentException>(() => store.RecordOnboardingActionAsync(
+            user.Id,
+            firstWorkspace.Workspace.Id,
+            "unknown",
+            CancellationToken.None));
+    }
+
+    [Fact]
     public async Task Duplicate_business_names_receive_unique_slugs()
     {
         var store = new InMemoryAccessStore();

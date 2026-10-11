@@ -87,3 +87,24 @@ mail test service belongs only in test/Compose configuration.
 - Real Google callback, external inbox delivery, deployed app verification, and
   provider secret setup remain open. Milestone stays open until those live checks
   pass.
+
+## Verification update (2026-10-12, issue #35 implementation in progress)
+
+- The M14 baseline exposed that onboarding action writes were not read back and
+  the in-memory store discarded them. The current issue #35 branch adds a
+  workspace-scoped persisted selection, validates the three supported action
+  keys, returns selected without claiming completion, and has the frontend
+  reopen the stored step after navigation and workspace switching.
+- Migration 009_onboarding_selection.sql introduces the durable selection
+  table without rewriting existing onboarding_actions history.
+- API-level tests exercise onboarding authorization/state, invitation sending,
+  matching-email acceptance, single use, delivery-failure invalidation, Google
+  availability/configuration errors, OIDC challenge, invalid callback state,
+  verified identity completion, and unverified-email rejection through a
+  deterministic test-only provider adapter.
+- Local dotnet test passed 45 tests and frontend tests passed 68 tests; Access
+  and Reports contract checks and the Vite production build passed. The local
+  PostgreSQL integration tests return early when no test connection is set;
+  Docker is unavailable in this sandbox, so durable migration coverage remains
+  delegated to the PR's PostgreSQL-backed CI gate. Real Google and SMTP
+  verification remains open because provider/runtime credentials are absent.

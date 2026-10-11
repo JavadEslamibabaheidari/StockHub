@@ -8,7 +8,8 @@ export type WorkspaceRole = 'Owner' | 'Admin' | 'Manager' | 'WarehouseStaff' | '
 export type WorkspaceSummary = { id: string; businessName: string; country: string; currency: string; role: WorkspaceRole };
 export type WorkspaceResponse = WorkspaceSummary & { vatNumber?: string | null; slug: string };
 export type SessionResponse = { userId: string; fullName: string; email: string; activeWorkspaceId?: string | null; workspaces: WorkspaceSummary[] };
-export type OnboardingTask = { key: string; title: string; status: string; handoff?: string | null };
+export type OnboardingTask = { key: string; title: string; status: 'available' | 'selected'; handoff?: string | null };
+export type OnboardingActionResponse = { selected: string; completed: false };
 export type InvitationRequest = { email: string; role: WorkspaceRole };
 export type InvitationResponse = { email: string; role: WorkspaceRole; status: string };
 export type ProductRequest = { sku: string; name: string; onHand: number; basePrice: number; category?: string | null };
@@ -89,7 +90,7 @@ export class AccessApiClient {
   createWorkspace(request: CreateWorkspaceRequest, idempotencyKey: string) { return this.request<WorkspaceResponse>('/api/workspaces', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify(request) }); }
   setActiveWorkspace(workspaceId: string) { return this.request<void>(`/api/workspaces/${workspaceId}/active`, { method: 'PUT' }); }
   onboarding(workspaceId: string) { return this.request<OnboardingTask[]>(`/api/workspaces/${workspaceId}/onboarding`); }
-  selectOnboardingAction(workspaceId: string, key: string) { return this.request<void>(`/api/workspaces/${workspaceId}/onboarding/actions`, { method: 'POST', body: JSON.stringify({ key }) }); }
+  selectOnboardingAction(workspaceId: string, key: string) { return this.request<OnboardingActionResponse>(`/api/workspaces/${workspaceId}/onboarding/actions`, { method: 'POST', body: JSON.stringify({ key }) }); }
   products(workspaceId: string) { return this.request<ProductResponse[]>(`/api/workspaces/${workspaceId}/products`); }
   pricingRules(workspaceId: string) { return this.request<PricingRuleList>(`/api/workspaces/${workspaceId}/pricing/rules`); }
   createPricingRule(workspaceId: string, rule: PricingRuleInput) { return this.request<PricingRule>(`/api/workspaces/${workspaceId}/pricing/rules`, { method: 'POST', body: JSON.stringify(rule) }); }
