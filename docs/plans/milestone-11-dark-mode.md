@@ -1,6 +1,6 @@
 # Milestone 11 Dark mode
 
-Status: in progress. The previous Settings milestone is complete: GitHub
+Status: implementation merged; closure evidence in progress. The previous Settings milestone is complete: GitHub
 milestone #11 is closed with zero open issues, the PASS report is on `main`,
 and the local closure hook passes. This plan covers roadmap milestone 11,
 GitHub milestone #12 `11 Dark mode`.
@@ -172,11 +172,16 @@ its acceptance criteria before integration/closure begins.
   Product detail and persisted quick-view browser review remain unavailable
   without workspace data; component fixtures are test-only. Both Inventory and
   Product detail auth and backend-failure states have regression tests.
-  Quick-view tests
-  cover persisted-detail content, keyboard open/close, Escape, focus
+  Quick-view tests cover persisted-detail content, keyboard open/close, Escape, focus
   trapping/restoration, direct detail links, retry, and role-based price
-  visibility. No runtime sample account or product was created. Required
-  PR/deployment and closure gates remain open until their evidence is available.
+  visibility. No runtime sample account or product was created. PR #155 passed
+  all required checks and merged to `main` at
+  `dceb8cf9adba52bca7c5964c427c49effee26e34`; main run #38178590480 passed and
+  published the source image. Persistent deployment run #38178865429 records
+  the same SHA and digest, completed migration, 1/1 available rollout, and
+  `/ready` HTTP 200. Review-staging and production were skipped and remain
+  unverified. GitHub issues #151–#154 and milestone #12 remain open pending the
+  final closure report and status gates.
 - Previous milestone hook: PASS. M10 report
   `docs/reports/milestone-10-settings-closure.md` says PASS, GitHub milestone
   #11 is closed with zero open issues, and
