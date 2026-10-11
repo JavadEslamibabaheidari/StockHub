@@ -1,13 +1,6 @@
 # Milestone 8 Reports
 
-Status: implementation PR [#133](https://github.com/JavadEslamibabaheidari/StockHub/pull/133) is open from isolated branch `codex/milestone-8-reports`; source HEAD is `1b975770b6599e52f87aed6074d0e9a33441f711` (implementation commit `2834bc5292eaf9e71684f9ec76496de8f357dc80`), based on main
-`539c412345a6a78211557c8624ad0ea7c4df26ea`. GitHub's authenticated in-app
-session confirmed milestone `8 Reports` (GitHub milestone number 9) is open;
-planning issue #126 is closed after contract freeze, while implementation issues #127–#130 and integration issue #131 remain open pending PR #133 merge. PR #133 has passed tracking consistency, backend CI, frontend CI, and Compose smoke checks; image scan and local Kubernetes smoke are still running. Maintenance issue #132
-tracks real outbound delivery. Milestones 0–7 were confirmed closed in the same
-GitHub session. Refreshed main is `539c412345a6a78211557c8624ad0ea7c4df26ea`
-and dev remains `21549b36342cb031dc94bc79b28ee502be5dbf9c`. The CLI token is
-invalid; the in-app GitHub browser is authenticated. GitHub shows PR #133 as the only open repository PR.
+Status: implementation PR [#133](https://github.com/JavadEslamibabaheidari/StockHub/pull/133) merged to `main` at `e2fa0bdc2cc3ef6ab1db670b363d3d7e1bba0ffb`; the Reports closure evidence is recorded in [milestone-8-reports-closure.md](../reports/milestone-8-reports-closure.md). Implementation issues #126–#130 are closed; issue #131 is the remaining integration/closure issue and is linked to the closure PR. The final live milestone state is verified during closure; alert delivery follow-up #132 remains in Maintenance. Refreshed `main` is `e2fa0bdc2cc3ef6ab1db670b363d3d7e1bba0ffb` and `dev` remains `21549b36342cb031dc94bc79b28ee502be5dbf9c`. Main delivery run [38122722365](https://github.com/JavadEslamibabaheidari/StockHub/actions/runs/38122722365) passed, published the immutable image, and dispatched the persistent local deployment. GitHub web session supplied live issue/milestone state because the saved CLI token is invalid.
 
 ## Goal and source material
 
@@ -25,8 +18,7 @@ The interaction and content source is the Reports section of
 No standalone Reports screenshot file was found in the project resources; the
 design review PDF contains the three Reports screen captures.
 
-The GitHub UI showed milestones 0–7 closed. Re-run the previous-milestone hook
-against the current main checkout before closure. The user's existing checkout
+Milestones 0–7 were refreshed and confirmed closed. The previous-milestone report hook passed for all eight earlier reports before M8 closure. The user's existing checkout
 is an older milestone-4 branch with uncommitted work; it is preserved and is
 not the milestone-8 implementation base.
 
@@ -202,19 +194,10 @@ the owning Orders boundary rather than flattening an order's items in the UI.
   open issues and a PASS report. Hosted environments are verified only if
   their deployment records name the source SHA/digest and healthy endpoint.
 
-## Current external blockers
+## Verified deployment state
 
-- `git fetch origin main dev` could not refresh refs because `.git/FETCH_HEAD`
-  is read-only in this workspace. Existing local refs show `origin/main` at
-  `7fb9350` and `origin/dev` at `21549b3`.
-- `gh auth status` reports the saved GitHub token is invalid and API calls fail
-  with a connectivity error. The GitHub in-app browser session is authenticated
-  and currently usable for issue/milestone review and issue creation. Repository
-  refs cannot be refreshed because `.git/FETCH_HEAD` is read-only.
-- Email and Slack delivery integrations are not present in the current
-  application. Persisting alert settings is in scope; actual outbound delivery
-  must be explicitly scoped as a Maintenance follow-up if it cannot be added
-  safely with existing infrastructure.
+Main run 38122722365 published `ghcr.io/javadeslamibabaheidari/stockhub@sha256:a412e8a0a2435589e5a1fe31f0313592bcbadda4d60627734cd7c28444a4fa0f` for source SHA `e2fa0bdc2cc3ef6ab1db670b363d3d7e1bba0ffb`. Its local Kubernetes migration and rollout smoke passed. The `kind-stockhub-local` deployment ConfigMap names that SHA and digest, migration Job `stockhub-migrate-e2fa0bdc2cc3` completed, deployment pod is Ready, and `http://127.0.0.1:8080/ready` returned `{"status":"ready"}`. Review-staging and production jobs were skipped and remain unverified. The `dev` branch remains at `21549b36342cb031dc94bc79b28ee502be5dbf9c`.
+
 
 ## Maintenance follow-up
 
