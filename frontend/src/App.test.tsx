@@ -48,6 +48,23 @@ describe('Milestone 0 Cover', () => {
   })
 })
 
+describe('Milestone 12 Design system', () => {
+  it('supports direct access and shows the token, typography, format, and component reference', () => {
+    const originalWindow = globalThis.window
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash: '#design-system' }, addEventListener: () => {}, removeEventListener: () => {} } })
+    const markup = renderToStaticMarkup(<App />)
+    expect(markup).toContain('Design system')
+    expect(markup).toContain('Light theme design tokens')
+    expect(markup).toContain('Dark theme design tokens')
+    expect(markup).toContain('Caprasimo for display moments')
+    expect(markup).toContain('€1,249.00')
+    expect(markup).toContain('€48.2k')
+    expect(markup).toContain('Preview light')
+    expect(markup).toContain('Search products, SKUs, orders')
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+  })
+})
+
 describe('Milestone 1 Access', () => {
   it('renders labelled sign-up controls and deferred legal state', () => {
     const originalWindow = globalThis.window

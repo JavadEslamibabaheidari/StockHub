@@ -9,6 +9,7 @@ import { Pricing } from './PricingScreens'
 import { Reports } from './ReportsScreens'
 import { Team } from './TeamScreens'
 import { Settings } from './SettingsScreens'
+import { DesignSystemScreen } from './DesignSystemScreen'
 
 const accessRouteHashes = [
   '#signup',
@@ -40,6 +41,7 @@ const accessRouteHashes = [
   '#reports',
   '#team',
   '#settings',
+  '#design-system',
 ] as const
 
 function Logo() {
@@ -144,6 +146,7 @@ export default function App() {
     if (hash === '#reports') return <Reports />
     if (hash === '#team') return <Team />
     if (hash === '#settings') return <Settings />
+    if (hash === '#design-system') return <DesignSystemScreen />
     if (hash === '#invite') return <Invite />
     if (hash === '#forgot') return <ForgotPassword />
     if (hash === '#accept' || hash.startsWith('#accept?')) return <AcceptInvite />
