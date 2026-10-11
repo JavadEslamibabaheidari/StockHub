@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import { toggleExplicitTheme } from './appearance'
 import {
   AccessApiClient,
@@ -24,7 +24,7 @@ const nav = [
 ] as const
 
 type Panel = { title: string; body: string; tone?: 'ok' | 'warn' } | null
-type ShellIdentity = { workspaceName: string; workspaceInitials: string; workspaceCount: number; fullName: string; userInitials: string; role: string }
+type ShellIdentity = { signedIn: boolean; workspaceName: string; workspaceInitials: string; workspaceCount: number; fullName: string; userInitials: string; role: string }
 
 const ownerCapabilities: InventoryCapabilities = { canAdjustOnHand: true, canChangePrice: true, canManageListings: true }
 const staffCapabilities: InventoryCapabilities = { canAdjustOnHand: true, canChangePrice: false, canManageListings: false }
@@ -79,12 +79,13 @@ function emptyList(staff = false): InventoryListResponse {
 
 function Shell({ children, role, sync = 'Backend inventory · platform sync pending', panel, setPanel }: { children: ReactNode; role?: string; sync?: string; panel: Panel; setPanel: (panel: Panel) => void }) {
   const [identity, setIdentity] = useState<ShellIdentity>({
-    workspaceName: 'Your workspace',
+    signedIn: false,
+    workspaceName: 'Sign in required',
     workspaceInitials: 'SH',
-    workspaceCount: 1,
-    fullName: 'Your account',
+    workspaceCount: 0,
+    fullName: 'Not signed in',
     userInitials: 'SH',
-    role: role || 'Owner',
+    role: 'Not signed in',
   })
   useEffect(() => {
     let alive = true
@@ -93,12 +94,13 @@ function Shell({ children, role, sync = 'Backend inventory · platform sync pend
         if (!alive) return
         const workspace = session.workspaces.find(item => item.id === session.activeWorkspaceId) || session.workspaces[0]
         setIdentity({
+          signedIn: Boolean(workspace),
           workspaceName: workspace?.businessName || 'Your workspace',
           workspaceInitials: initials(workspace?.businessName || ''),
           workspaceCount: Math.max(session.workspaces.length, 1),
           fullName: session.fullName || 'Your account',
           userInitials: initials(session.fullName || ''),
-          role: role || formatRole(workspace?.role),
+          role: workspace ? role || formatRole(workspace.role) : 'Not signed in',
         })
       })
       .catch(error => { if (!(error instanceof AccessApiError && error.status === 401)) console.warn(error) })
@@ -108,11 +110,11 @@ function Shell({ children, role, sync = 'Backend inventory · platform sync pend
     <main className="inventory-page">
       <div className="inventory-shell">
         <aside className="inventory-sidebar">
-          <a className="inventory-workspace" href="#dashboard" aria-label="Workspace dashboard">
-            <b>{identity.workspaceInitials}</b><span><strong>{identity.workspaceName}</strong><small>{identity.role} · {identity.workspaceCount} workspace{identity.workspaceCount === 1 ? '' : 's'}</small></span><span>⌄</span>
+          <a className="inventory-workspace" href={identity.signedIn ? '#dashboard' : '#signin'} aria-label={identity.signedIn ? 'Workspace dashboard' : 'Sign in'}>
+            <b>{identity.workspaceInitials}</b><span><strong>{identity.workspaceName}</strong><small>{identity.signedIn ? `${identity.role} · ${identity.workspaceCount} workspace${identity.workspaceCount === 1 ? '' : 's'}` : 'Not signed in'}</small></span>{identity.signedIn && <span>⌄</span>}
           </a>
           <nav aria-label="Main navigation">{nav.map(([label, href]) => <a key={label} className={label === 'Inventory' ? 'active' : ''} href={href}>{label}</a>)}</nav>
-          <div className="inventory-plan"><strong>{identity.role === 'Owner' ? 'Pro plan' : 'Free trial'}</strong><a href="#settings">Upgrade</a><span /></div>
+          {identity.signedIn ? <div className="inventory-plan"><strong>{identity.role === 'Owner' ? 'Pro plan' : 'Free trial'}</strong><a href="#settings">Upgrade</a><span /></div> : <div className="inventory-plan"><strong>Signed out</strong><a href="#signin">Sign in</a></div>}
         </aside>
         <section className="inventory-main">
           <header className="inventory-top">
@@ -121,7 +123,7 @@ function Shell({ children, role, sync = 'Backend inventory · platform sync pend
               <button className={sync.includes('failed') || sync.includes('failing') ? 'sync-alert' : 'sync-ok'} type="button" onClick={() => setPanel({ title: 'Sync status', body: sync })}>{sync}</button>
               <button type="button" aria-label="Toggle appearance" onClick={toggleExplicitTheme}>☾</button>
               <button type="button" aria-label="Notifications" onClick={() => setPanel({ title: 'Notifications', body: 'Inventory notifications are collected in the Reports milestone.' })}>♧</button>
-              <b>{identity.userInitials}</b><span>{identity.fullName}<small>{identity.role}</small></span>
+              <b>{identity.userInitials}</b><span>{identity.fullName}<small>{identity.signedIn ? identity.role : 'Sign in required'}</small></span>
             </div>
           </header>
           {children}
@@ -135,13 +137,14 @@ function Shell({ children, role, sync = 'Backend inventory · platform sync pend
 function useWorkspaceInventory(staff = false) {
   const [workspaceId, setWorkspaceId] = useState<string | null>(null)
   const [data, setData] = useState(() => emptyList(staff))
-  const [source, setSource] = useState<'loading' | 'api'>('loading')
+  const [source, setSource] = useState<'loading' | 'api' | 'unauthorized' | 'error'>('loading')
   useEffect(() => {
     let alive = true
     api.session()
       .then(session => {
         const workspace = session.workspaces.find(item => item.id === session.activeWorkspaceId) || session.workspaces[0]
-        if (!workspace || !alive) return
+        if (!alive) return
+        if (!workspace) { setSource('unauthorized'); return }
         setWorkspaceId(workspace.id)
         return api.inventory(workspace.id).then(next => {
           if (!alive) return
@@ -149,7 +152,11 @@ function useWorkspaceInventory(staff = false) {
           setSource('api')
         })
       })
-      .catch(error => { if (!(error instanceof AccessApiError && error.status === 401)) console.warn(error) })
+      .catch(error => {
+        if (!alive) return
+        if (error instanceof AccessApiError && error.status === 401) setSource('unauthorized')
+        else { console.warn(error); setSource('error') }
+      })
     return () => { alive = false }
   }, [staff])
   return { workspaceId, data, setData, source }
@@ -163,8 +170,82 @@ function PlatformDots({ product }: { product: InventoryProductSummary }) {
   return <span className="platform-dots">{product.platforms.map(platform => <span key={platform.platform} className={platform.status.toLowerCase().replace(' ', '-')} title={`${platform.platform}: ${platform.detail}`}>{platform.code}</span>)}</span>
 }
 
+function InventoryQuickView({ product, workspaceId, onClose }: { product: InventoryProductSummary; workspaceId: string; onClose: () => void }) {
+  const [detail, setDetail] = useState<InventoryProductDetail | null>(null)
+  const [loadError, setLoadError] = useState(false)
+  const [retry, setRetry] = useState(0)
+  const dialogRef = useRef<HTMLElement | null>(null)
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    const returnFocusTo = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    closeButtonRef.current?.focus()
+    return () => returnFocusTo?.focus()
+  }, [])
+
+  useEffect(() => {
+    let alive = true
+    setLoadError(false)
+    setDetail(null)
+    api.inventoryProduct(workspaceId, product.id)
+      .then(result => { if (alive) setDetail(result) })
+      .catch(() => { if (alive) setLoadError(true) })
+    return () => { alive = false }
+  }, [product.id, retry, workspaceId])
+
+  function onKeyDown(event: ReactKeyboardEvent<HTMLElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      onClose()
+      return
+    }
+    if (event.key !== 'Tab') return
+    const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [])
+      .filter(control => !control.hasAttribute('hidden'))
+    const first = controls[0]
+    const last = controls[controls.length - 1]
+    if (!first || !last) return
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
+  return (
+    <div className="inventory-quick-view-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
+      <section ref={dialogRef} className="inventory-quick-view" role="dialog" aria-modal="true" aria-labelledby="inventory-quick-view-title" aria-describedby="inventory-quick-view-sku" tabIndex={-1} onKeyDown={onKeyDown}>
+        <header className="inventory-quick-view-header">
+          <div>
+            <p>Inventory quick view</p>
+            <h2 id="inventory-quick-view-title">{product.name}</h2>
+            <span id="inventory-quick-view-sku">{product.sku} · {product.category}</span>
+          </div>
+          <button ref={closeButtonRef} className="inventory-quick-view-close" type="button" aria-label={`Close quick view for ${product.name}`} onClick={onClose}>×</button>
+        </header>
+        {detail ? <>
+          <div className="inventory-quick-view-stock" aria-label="Product stock">
+            <article><span>On hand</span><strong>{detail.product.onHand}</strong></article>
+            <article><span>Reserved</span><strong>{detail.product.reserved}</strong></article>
+            <article className="available"><span>Available</span><strong>{detail.product.available}</strong></article>
+          </div>
+          <p className="inventory-quick-view-status"><b>{detail.product.stockStatus}</b>{detail.product.basePrice !== null && detail.capabilities.canChangePrice && <span>Base price · €{detail.product.basePrice.toFixed(2)}</span>}</p>
+          <ul className="inventory-quick-view-platforms" aria-label="Platform listing status">
+            {detail.product.platforms.map(platform => <li key={platform.platform}><span>{platform.platform}</span><b className={platform.status.toLowerCase().replace(' ', '-')}>{platform.status}</b><small>{platform.detail}</small></li>)}
+          </ul>
+          {detail.syncAlert && <p className="inventory-quick-view-sync">{detail.syncAlert}</p>}
+          <a className="inventory-quick-view-detail-link" href={`#inventory-detail?product=${detail.product.id}`}>Open product detail</a>
+        </> : loadError ? <div className="inventory-quick-view-error" role="alert"><p>Product details could not be loaded.</p><button type="button" onClick={() => setRetry(value => value + 1)}>Try again</button></div> : <p role="status" className="inventory-quick-view-loading">Loading product details…</p>}
+      </section>
+    </div>
+  )
+}
+
 function InventoryTable({ data, setData, workspaceId, staff, setPanel }: { data: InventoryListResponse; setData: (data: InventoryListResponse) => void; workspaceId: string | null; staff: boolean; setPanel: (panel: Panel) => void }) {
   const [selected, setSelected] = useState(new Set<string>())
+  const [quickViewProduct, setQuickViewProduct] = useState<InventoryProductSummary | null>(null)
   async function adjust(product: InventoryProductSummary, next: number) {
     if (next < 0) return
     if (workspaceId) {
@@ -198,11 +279,12 @@ function InventoryTable({ data, setData, workspaceId, staff, setPanel }: { data:
             <span><b>{row.available}</b>{row.stockStatus !== 'In stock' && <em>{row.stockStatus}</em>}</span>
             {!staff && row.basePrice !== null && <span>€{row.basePrice.toFixed(2)}</span>}
             <span><PlatformDots product={row} /></span>
-            <a href={`#inventory-detail?product=${row.id}`} aria-label={`Open ${row.name}`}>›</a>
+            <span className="inventory-row-actions"><button type="button" aria-label={`Quick view ${row.name}`} onClick={event => { event.currentTarget.focus(); if (workspaceId) setQuickViewProduct(row) }}>Preview</button><a href={`#inventory-detail?product=${row.id}`} aria-label={`Open ${row.name}`}>›</a></span>
           </div>
         ))}
       </div>
       <footer className="table-foot">Showing {data.products.length} of {data.totalProducts.toLocaleString()} products <span><button disabled>Previous</button><button type="button" onClick={() => setPanel({ title: 'Next page', body: 'Pagination is wired for the Inventory list; more rows appear as products are imported.' })}>Next</button></span></footer>
+      {quickViewProduct && workspaceId && <InventoryQuickView product={quickViewProduct} workspaceId={workspaceId} onClose={() => setQuickViewProduct(null)} />}
     </section>
   )
 }
@@ -211,7 +293,7 @@ export function Inventory({ staff = false }: { staff?: boolean }) {
   const [panel, setPanel] = useState<Panel>(null)
   const { workspaceId, data, setData, source } = useWorkspaceInventory(staff)
   const exportRows = [['sku', 'name', 'category', 'on hand', 'reserved', 'available', 'base price', 'stock status'], ...data.products.map(row => [row.sku, row.name, row.category, row.onHand, row.reserved, row.available, row.basePrice, row.stockStatus])]
-  return <Shell role={staff ? 'Warehouse staff' : undefined} sync={data.syncSummary} panel={panel} setPanel={setPanel}><div className="inventory-heading"><div><h1>Inventory</h1><p>{source === 'loading' ? 'Loading backend inventory…' : `${data.totalProducts.toLocaleString()} products`}</p></div>{!staff && <div className="inventory-actions"><a href={csvDownload(exportRows)} download="stockhub-inventory.csv">Export CSV</a><a href="#dashboard">Import CSV/JSON</a><a href="#onboarding">Add product</a></div>}</div>{staff && <p className="staff-note">You are signed in as <b>Warehouse staff</b>. You can update <b>On hand</b> counts; Reserved and Available update automatically. Prices are managed by Owners and Managers.</p>}<div className="filters"><button>All <b>{data.totalProducts.toLocaleString()}</b></button><button>In stock</button><button>Low stock <b>{data.products.filter(item => item.stockStatus === 'Low stock').length}</b></button><button>Out of stock <b>{data.products.filter(item => item.stockStatus === 'Out of stock').length}</b></button><select aria-label="Platform filter"><option>Platform: All</option></select><select aria-label="Category filter"><option>Category: All</option></select></div><StockLegend />{data.products.length > 0 ? <InventoryTable data={data} setData={setData} workspaceId={workspaceId} staff={staff} setPanel={setPanel} /> : <section className="empty-inventory"><div><span className="empty-icon">box</span><h2>No backend products yet</h2><p>Upload a Dashboard JSON sample or product CSV to populate Inventory.</p><a className="primary-link-button" href="#dashboard">Go to Dashboard import</a></div></section>}</Shell>
+  return <Shell role={staff ? 'Warehouse staff' : undefined} sync={source === 'unauthorized' ? 'Sign in required' : source === 'error' ? 'Inventory unavailable' : data.syncSummary} panel={panel} setPanel={setPanel}><div className="inventory-heading"><div><h1>Inventory</h1><p>{source === 'loading' ? 'Loading backend inventory…' : source === 'api' ? `${data.totalProducts.toLocaleString()} products` : source === 'unauthorized' ? 'Sign in to load your workspace inventory' : 'Could not load backend inventory'}</p></div>{source === 'api' && !staff && <div className="inventory-actions"><a href={csvDownload(exportRows)} download="stockhub-inventory.csv">Export CSV</a><a href="#dashboard">Import CSV/JSON</a><a href="#onboarding">Add product</a></div>}</div>{staff && <p className="staff-note">You are signed in as <b>Warehouse staff</b>. You can update <b>On hand</b> counts; Reserved and Available update automatically. Prices are managed by Owners and Managers.</p>}{source === 'api' && <><div className="filters"><button>All <b>{data.totalProducts.toLocaleString()}</b></button><button>In stock</button><button>Low stock <b>{data.products.filter(item => item.stockStatus === 'Low stock').length}</b></button><button>Out of stock <b>{data.products.filter(item => item.stockStatus === 'Out of stock').length}</b></button><select aria-label="Platform filter"><option>Platform: All</option></select><select aria-label="Category filter"><option>Category: All</option></select></div><StockLegend />{data.products.length > 0 ? <InventoryTable data={data} setData={setData} workspaceId={workspaceId} staff={staff} setPanel={setPanel} /> : <section className="empty-inventory"><div><span className="empty-icon">box</span><h2>No backend products yet</h2><p>This workspace has no products. Import a product CSV or add a product to get started.</p><a className="primary-link-button" href="#dashboard">Go to Dashboard import</a></div></section>}</>}{source === 'unauthorized' && <section className="empty-inventory inventory-load-state"><div><span className="empty-icon">lock</span><h2>Sign in required</h2><p>StockHub could not verify a signed-in workspace, so it cannot report whether inventory is empty.</p><a className="primary-link-button" href="#settings">Open sign-in settings</a></div></section>}{source === 'error' && <section className="empty-inventory inventory-load-state"><div><span className="empty-icon">!</span><h2>Inventory could not be loaded</h2><p>The backend did not return inventory. Check the connection and retry.</p><button className="primary-link-button" type="button" onClick={() => window.location.reload()}>Retry</button></div></section>}</Shell>
 }
 
 export function InventoryEmpty() {
@@ -222,6 +304,7 @@ export function InventoryEmpty() {
 export function ProductDetail({ allFailing = false }: { allFailing?: boolean }) {
   const [panel, setPanel] = useState<Panel>(null)
   const [detail, setDetail] = useState<InventoryProductDetail | null>(null)
+  const [source, setSource] = useState<'loading' | 'loaded' | 'unauthorized' | 'error' | 'empty'>('loading')
   const params = typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.hash.split('?')[1] || '')
   const requestedProductId = params.get('product')
   useEffect(() => {
@@ -229,18 +312,29 @@ export function ProductDetail({ allFailing = false }: { allFailing?: boolean }) 
     api.session()
       .then(session => {
         const workspace = session.workspaces.find(item => item.id === session.activeWorkspaceId) || session.workspaces[0]
-        if (!workspace) return
-        if (requestedProductId) return api.inventoryProduct(workspace.id, requestedProductId, { allFailing }).then(next => { if (alive) setDetail(next) })
+        if (!alive) return
+        if (!workspace) { setSource('unauthorized'); return }
+        if (requestedProductId) return api.inventoryProduct(workspace.id, requestedProductId, { allFailing }).then(next => { if (alive) { setDetail(next); setSource('loaded') } })
         return api.inventory(workspace.id).then(list => {
           const first = list.products[0]
-          if (!first) return
-          return api.inventoryProduct(workspace.id, first.id, { allFailing }).then(next => { if (alive) setDetail(next) })
+          if (!first) { if (alive) setSource('empty'); return }
+          return api.inventoryProduct(workspace.id, first.id, { allFailing }).then(next => { if (alive) { setDetail(next); setSource('loaded') } })
         })
       })
-      .catch(error => { if (!(error instanceof AccessApiError && error.status === 401)) console.warn(error) })
+      .catch(error => {
+        if (!alive) return
+        if (error instanceof AccessApiError && error.status === 401) setSource('unauthorized')
+        else { console.warn(error); setSource('error') }
+      })
     return () => { alive = false }
   }, [allFailing, requestedProductId])
-  if (!detail) return <Shell sync="Loading backend inventory" panel={panel} setPanel={setPanel}><p>Loading product detail…</p></Shell>
+  if (!detail) {
+    const unauthorized = source === 'unauthorized'
+    const empty = source === 'empty'
+    const heading = source === 'loading' ? 'Loading product detail…' : unauthorized ? 'Sign in required' : empty ? 'No backend products yet' : 'Product detail could not be loaded'
+    const body = unauthorized ? 'StockHub could not verify a signed-in workspace, so it cannot load product details.' : empty ? 'This workspace has no products to show.' : 'The backend did not return product details. Check the connection and retry.'
+    return <Shell sync={source === 'loading' ? 'Loading backend inventory' : unauthorized ? 'Sign in required' : source === 'error' ? 'Product detail unavailable' : 'Backend inventory'} panel={panel} setPanel={setPanel}><section className="empty-inventory inventory-load-state" role={source === 'loading' ? undefined : 'status'}><div>{source !== 'loading' && <span className="empty-icon">{unauthorized ? 'lock' : empty ? 'box' : '!'}</span>}<h2>{heading}</h2>{source !== 'loading' && <><p>{body}</p>{unauthorized ? <a className="primary-link-button" href="#settings">Open sign-in settings</a> : empty ? <a className="primary-link-button" href="#inventory">Go to Inventory</a> : <button className="primary-link-button" type="button" onClick={() => window.location.reload()}>Retry</button>}</>}</div></section></Shell>
+  }
   const product = detail.product
   function localAdjust(delta: number) {
     if (!detail) return

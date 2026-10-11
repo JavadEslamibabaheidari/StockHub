@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://localhost:7047',
+        target: process.env.STOCKHUB_API_TARGET ?? 'http://127.0.0.1:8080',
         secure: false,
       },
     },
