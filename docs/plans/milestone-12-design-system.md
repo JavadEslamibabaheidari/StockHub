@@ -177,13 +177,15 @@ reference screen, then integration and closure.
   linked to this repository yet.” Milestone and issue tracking are available;
   the absent project board is recorded as an access/configuration gap, not a
   product implementation blocker.
-- Implementation branch `codex/milestone-12-design-system` is pushed to GitHub.
-  Latest local verification passes
-  67 frontend tests, TypeScript build, Access/Reports contract checks, and
-  `git diff --check`. Numeric alignment has focused CSS regression coverage.
-  Contrast coverage includes normal text/status pairs,
-  neutral labels, the distinct Admin role badge, focus outlines, and accent
-  text on accent tint in both themes.
+- Implementation PR #162 from `codex/milestone-12-design-system` is merged to
+  `main` at `8f9a656657e725c1ce4e9ade1777f89e321b557c`, from source
+  `315664b0a582e481bb31b39106543a2f3780dcd4`. PR checks passed 67 frontend
+  tests, lint, TypeScript/Vite build, Access/Reports contracts, backend tests
+  with PostgreSQL, Compose health/route smoke, image vulnerability checks,
+  ephemeral Kubernetes migration/rollout smoke, and repository sanity.
+  Numeric alignment has focused CSS regression coverage. Contrast coverage
+  includes normal text/status pairs, neutral labels, the distinct Admin role
+  badge, focus outlines, and accent text on accent tint in both themes.
 - The authenticated coordinator browser reviewed `#design-system` at 1280×720
   and 390×844 in Light and Dark. The narrow view stacked without page-level
   horizontal overflow and retained visible keyboard focus. A subsequent
@@ -212,14 +214,24 @@ reference screen, then integration and closure.
   initial saved browser appearance in this review was System; using the header
   appearance toggle changed it to Dark during desktop checks. Settings is
   blocked by the signed-out redirect, so the original preference could not be
-  restored from this browser. The coordinator is checking for an accessible
-  Settings session. No business data was changed. The narrow
-  pass did not render authenticated Orders,
+  restored from this browser. The shared browser-local preference remains
+  Dark and may need to be restored by the user. No business data was changed.
+  The narrow pass did not render authenticated Orders,
   Pricing, Reports, Team, Settings, or Dashboard screens because the available
   browser had no signed-in session. The browser-local preference visible after
   the review is Dark. No signed-in workspace data or business actions were
-  seeded or changed. Route-family theme coverage for inaccessible authenticated screens,
-  CI/delivery, tracking hook, and milestone closure remain outstanding.
+  seeded or changed. Route-family theme coverage for inaccessible authenticated
+  screens remains queued for the user-requested full audit after M14. CI,
+  publication, local deployment, and main-branch tracking checks are complete;
+  M12 issue and milestone closure remain outstanding.
+- Main delivery run #38182610493 passed for merge SHA
+  `8f9a656657e725c1ce4e9ade1777f89e321b557c` and published
+  `ghcr.io/javadeslamibabaheidari/stockhub@sha256:ab1a11b751a32d09e74ea285287af6589ff6ba9a51cce8dd97520f65ca446776`.
+  Persistent local deployment run #38182882314 deployed that SHA/digest;
+  migration Job `stockhub-migrate-8f9a656657e7` completed, the deployment
+  reached 1/1 available, and the deployment's `/ready` probe passed. Review
+  staging and production promotion were skipped and remain unverified. Live
+  `dev` remains `21549b36342cb031dc94bc79b28ee502be5dbf9c`.
 - Remaining CSS hex values after the Design system reference styles are
   opacity-based shadows, generic contrasting control/icon whites, brand glyphs,
   and Cover/decorative or role-specific values. Repeated semantic surface,
