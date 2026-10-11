@@ -1,6 +1,6 @@
 # Milestone 11 Dark mode
 
-Status: in progress. The previous Settings milestone is complete: GitHub
+Status: implementation merged and locally deployed; GitHub closure remains in progress. The previous Settings milestone is complete: GitHub
 milestone #11 is closed with zero open issues, the PASS report is on `main`,
 and the local closure hook passes. This plan covers roadmap milestone 11,
 GitHub milestone #12 `11 Dark mode`.
@@ -182,3 +182,14 @@ its acceptance criteria before integration/closure begins.
   #11 is closed with zero open issues, and
   `scripts/check-milestone-closure.sh docs/reports/milestone-10-settings-closure.md`
   passed against this base.
+
+
+## Final integration and deployment status (12 October 2026)
+
+Feature PR [#155](https://github.com/JavadEslamibabaheidari/StockHub/pull/155) from branch `codex/milestone-11-dark-mode`, source SHA `75a8890539718d36afeab217edbfbee4efe786f4`, merged to `main` at `dceb8cf9adba52bca7c5964c427c49effee26e34`. GitHub `dev` remains at `21549b36342cb031dc94bc79b28ee502be5dbf9c` and does not contain this feature.
+
+Main delivery run #38178590480 passed required checks and published `ghcr.io/javadeslamibabaheidari/stockhub@sha256:fb973f320d4ade2703167960a2685bae423f7553c81071762595fa04dee2a54e`. Persistent local deployment run #38178865429 applied that source and digest; migration and rollout each reached 1/1, and `http://localhost:8080/ready` returned HTTP 200 with `{"status":"ready"}`. Hosted review-staging and production jobs were skipped and remain unverified.
+
+The review browser had no authenticated workspace or persisted products. Desktop 1280×720 and narrow 390×844 signed-out Inventory and Product detail dark states were reviewed; quick-view product interactions are covered only by component fixtures. No runtime sample account/product was created. Frontend tests (54), production build, Access/Reports contract checks, contrast measurements, and required CI passed.
+
+Closure report and status reconciliation are in PR #156. GitHub milestone #12 is open with issues #151–#154 open as of this plan update. After the closure PR merges and its report hook passes, close issues #151–#154, close milestone #12 with zero open issues, and run `scripts/check-tracking-status.sh`. The plan is not marked fully closed until that live GitHub transition is verified.
