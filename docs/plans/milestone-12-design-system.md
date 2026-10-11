@@ -205,7 +205,11 @@ reference screen, then integration and closure.
   and none of the captured narrow states showed horizontal overflow. At this
   width, Tab from page navigation visibly focused the StockHub home link on
   signup. M12's reference page had earlier been checked in both Light and Dark
-  at desktop and 390px. The narrow pass did not render authenticated Orders,
+  at desktop and 390px. A further 390×844 Light-theme pass captured `#signup`,
+  `#signin`, `#inventory`, `#platforms`, and `#reservations`; each fit with
+  vertical stacking/scroll only and no visible horizontal overflow. The saved
+  browser appearance was returned to Dark after the theme review. The narrow
+  pass did not render authenticated Orders,
   Pricing, Reports, Team, Settings, or Dashboard screens because the available
   browser had no signed-in session. The browser-local preference visible in
   the current pass is Dark; restoring the original System preference through
