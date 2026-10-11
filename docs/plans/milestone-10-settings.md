@@ -1,9 +1,10 @@
 # Milestone 10 Settings
 
-Status: implementation merged; closure evidence in progress. GitHub milestone
-#11 `10 Settings` is open with three open issues: #144 (Billing), #145
-(Appearance), and #146 (integration and closure). This plan follows their
-acceptance criteria; implementation was merged to `main` by PR #147.
+Status: delivery merged and deployed; GitHub closure is pending. Milestone #11
+`10 Settings` and its issues #144 (Billing), #145 (Appearance), and #146
+(integration and closure) remain open. The implementation merged to `main` in
+PR #147 and the dark-card contrast fix merged in PR #148; this plan records the
+verified delivery evidence.
 
 ## Goal
 
@@ -126,17 +127,15 @@ Detailed acceptance criteria and task ownership are tracked in GitHub issues
 
 ## Dependencies and risks
 
-- GitHub milestone #11 is verified open and now has three open issues (#144,
-  #145, and #146). Their bodies define the current implementation scope. Keep
-  the plan aligned with these issues as implementation details change.
-- PR #147 merged to `main` at `3c4b655c4017f78b686bd6cdbf2594e1104e7c0f`
-  from branch `codex/milestone-10-settings`, source
-  `68af3ffc43a17780b8cdf0651fd53a312e95c648`. Live GitHub reports `dev` at
+- PRs #147 and #148 merged; the corrected image is deployed and verified.
+  Issues #144–#146 and milestone #11 remain open pending GitHub closure.
+- PR #147 merged feature source `68af3ffc43a17780b8cdf0651fd53a312e95c648`
+  to `main` at `3c4b655c4017f78b686bd6cdbf2594e1104e7c0f`. PR #148 merged
+  contrast-fix source `2a961a415e0f3e3b763a1499ce0f06fb12530418` to `main` at
+  `e280c0ada8464a82ca25ef8f4a77fd3df2896988`. Live `dev` is
   `21549b36342cb031dc94bc79b28ee502be5dbf9c`; M10 is not integrated there.
 - No billing provider, subscription API, payment-method model, or billing
   mutation is present in the code. Those features remain unavailable by design.
-- Milestone #11 remains open with issues #144–#146 open. M10 cannot close until
-  remaining acceptance evidence and closure gates pass.
 
 ## Verification and deployment strategy
 
@@ -146,10 +145,12 @@ Detailed acceptance criteria and task ownership are tracked in GitHub issues
 - Run generated-contract checks, frontend tests/build, backend tests, Compose
   health and route smoke, repository/tracking checks, vulnerability checks, and
   CI-required Kubernetes migration/rollout smoke as applicable.
-- Main delivery run #38173937734 for merge SHA
-  `3c4b655c4017f78b686bd6cdbf2594e1104e7c0f` passed and published the image.
-  The persistent local target independently records this source and digest;
-  its migration completed, its pod is Ready, and `/ready` returned HTTP 200.
+- Main delivery run #38175305112 passed for merge SHA
+  `e280c0ada8464a82ca25ef8f4a77fd3df2896988` and published immutable image
+  digest `sha256:51d2f10d05b3da9919e280c6c8b88db65aedc81b0cb319086edc57bb8e99e640`.
+  Persistent deployment run #38175592124 succeeded; the local target records
+  this source/digest, its migration completed, rollout reached 1/1 available,
+  and `/ready` returned HTTP 200. Review-staging and production are unverified.
   Record source branch/SHA, whether code is integrated into `dev` or `main`,
   image digest publication, local deployment health, and shared hosted
   deployment health as separate facts. A skipped hosted deployment job is
@@ -163,9 +164,11 @@ Detailed acceptance criteria and task ownership are tracked in GitHub issues
 ## Prior milestone gate
 
 The M9 report at `docs/reports/milestone-9-team-closure.md` records PASS and
-identifies GitHub milestone #10 as closed with zero open issues. This M10
-closure worktree is based on merged `main` source `3c4b655`; live GitHub reports
-`dev` at `21549b3`. Earlier milestone reports remain historical evidence.
+identifies GitHub milestone #10 as closed with zero open issues. M10 closure
+evidence is based on merged `main` source
+`e280c0ada8464a82ca25ef8f4a77fd3df2896988`; live GitHub reports `dev` at
+`21549b36342cb031dc94bc79b28ee502be5dbf9c`. Earlier milestone reports remain
+historical evidence.
 
 ## Local implementation progress
 
@@ -178,25 +181,19 @@ closure worktree is based on merged `main` source `3c4b655`; live GitHub reports
 - Appearance supports browser-local Light, Dark, and System preferences,
   including OS preference changes, migration from the old light/dark key, and
   the existing shell appearance toggles across implemented routes.
-- PR #147 and main CI passed frontend tests/build, Access and Reports contract
-  checks, backend/PostgreSQL tests, Compose smoke, image scan, and ephemeral
-  Kubernetes migration/rollout smoke.
-- Main run #38173937734 published digest
-  `ghcr.io/javadeslamibabaheidari/stockhub@sha256:7075e65faa64e2946f0d74905ce55b4fdb73673d07414596f097d9af662eba81`
-  for source `3c4b655c4017f78b686bd6cdbf2594e1104e7c0f`. The persistent local
-  target record confirms the same source and digest, a completed migration,
-  a 1/1 Ready pod, and `/ready` HTTP 200.
+- PR #148 and main run #38175305112 passed frontend tests/build,
+  backend/PostgreSQL tests, Compose smoke, image scan/security gate, and
+  ephemeral Kubernetes migration/rollout smoke. PR closure evidence,
+  milestone comparison, repository sanity, and Trivy also passed.
+- Main run #38175305112 published digest
+  `ghcr.io/javadeslamibabaheidari/stockhub@sha256:51d2f10d05b3da9919e280c6c8b88db65aedc81b0cb319086edc57bb8e99e640`
+  for source `e280c0ada8464a82ca25ef8f4a77fd3df2896988`. Persistent
+  deployment run #38175592124 and the local target record confirm this source
+  and digest, completed migration, 1/1 available rollout, a 1/1 Ready pod, and
+  `/ready` HTTP 200.
 - Browser review at 1280×900 and 390×844 checked Billing, Appearance,
   keyboard focus/selection, no horizontal overflow, and dark preference across
-  nine implemented routes. It exposed a dark card contrast issue, now corrected
-  in the closure worktree. This correction is not yet merged or deployed.
-- Closure branch build, 44 frontend tests, Access/Reports contract checks, and
-  `git diff --check` pass. The correction still needs required CI and a new
-  main image/deployment verification before the closure gate passes.
-- The closure worktree is based on verified merged `main` source
-  `3c4b655c4017f78b686bd6cdbf2594e1104e7c0f` on branch
-  `codex/milestone-10-closure`. Live `dev` remains at
-  `21549b36342cb031dc94bc79b28ee502be5dbf9c`.
-- GitHub milestone #11 remains open with three open issues (#144–#146). No
-  issue or milestone is closed. Review-staging and production remain
-  unverified; the main run's production promotion job is skipped.
+  nine implemented routes. PR #148 corrected the discovered dark-card contrast
+  issue; the corrected dark Appearance and Billing screens were reviewed.
+- GitHub milestone #11 remains open with three open issues (#144–#146).
+  Review-staging and production remain unverified; their jobs were skipped.
