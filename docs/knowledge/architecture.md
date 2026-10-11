@@ -2,9 +2,13 @@
 
 Status: accepted direction; architecture ADRs merged and Cover closure verified in PR #18
 
-Milestones 0–6 are closed in GitHub. See [project status](../project-status.md)
+Milestones 0–7 are closed in GitHub. See [project status](../project-status.md)
 for delivery evidence; inspect live GitHub before claiming deployment freshness.
-Pricing rules planning is in [milestone 7](../plans/milestone-7-pricing.md).
+Pricing rules implementation and its OpenAPI contract are documented in
+[milestone 7](../plans/milestone-7-pricing.md) and
+[pricing knowledge](pricing.md). The module owns its domain evaluator,
+workspace-scoped PostgreSQL store, API endpoints, and React screen inside the
+existing modular monolith.
 
 StockHub starts as an extraction-ready modular monolith. Modules own their
 domain, persistence boundaries, contracts, configuration, and tests. The first

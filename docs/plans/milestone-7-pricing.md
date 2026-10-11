@@ -1,10 +1,10 @@
 # Milestone 7 Pricing rules
 
-Status: start gate ready; GitHub milestone 8 is authoritative.
+Status: PASS; implementation merged to `main` at `2c43ca9927a0784838d6c512fafe129ed7439d3b`; GitHub milestone 8 is closed with zero open issues. See `docs/reports/milestone-7-pricing-closure.md`.
 
 ## Goal and evidence
 
-Implement screenshot 7.1 from `/home/javad/Pictures/Screenshots/Screenshot From 2026-10-11 00-35-48.png` (visually inspected), with durable workspace rules and functional controls. Previous milestone hook PASS: Platforms report passes structural validation; GitHub milestone 7 is closed with zero open issues. Refreshed main `9b79701ada8b959529deb05aaad57f049c8934c0`, dev `21549b36342cb031dc94bc79b28ee502be5dbf9c`; no open PRs. Main delivery 38091518130 published and passed local Kubernetes smoke; shared staging/production skipped.
+Implement screenshot 7.1 from `/home/javad/Pictures/Screenshots/Screenshot From 2026-10-11 00-35-48.png` (visually inspected), with durable workspace rules and functional controls. Previous milestone hook PASS: Platforms report passes structural validation; GitHub milestone 7 is closed with zero open issues. The plan and frozen contract were merged in PR #120. Backend PR #121 merged to main at `06a00536bb7dca984ac01501b31521e9f6965dac`; frontend PR #122 merged at `2c43ca9927a0784838d6c512fafe129ed7439d3b`. Backend, frontend, contract, Compose, image scan, and temporary Kubernetes smoke checks passed on the merged commit. Main publication and local deployment evidence are being recorded before closure. `dev` remains at `21549b36342cb031dc94bc79b28ee502be5dbf9c`; shared staging and production are unverified.
 
 ## Decisions and acceptance
 
@@ -31,10 +31,10 @@ RuleInput fields: `name, platform, scope, scopeValue: string|null, adjustment: n
 
 ## Issue execution and dependencies
 
-- [#116](https://github.com/JavadEslamibabaheidari/StockHub/issues/116): plan/contract baseline, coordinator; first.
-- [#117](https://github.com/JavadEslamibabaheidari/StockHub/issues/117): backend persistence/evaluation, isolated branch after baseline.
-- [#118](https://github.com/JavadEslamibabaheidari/StockHub/issues/118): frontend editor/shell, isolated branch after baseline, parallel to backend against frozen contract.
-- [#119](https://github.com/JavadEslamibabaheidari/StockHub/issues/119): integrated verification, regression repair, delivery/closure after both.
+- [#116](https://github.com/JavadEslamibabaheidari/StockHub/issues/116): plan/contract baseline; closed after PR #120 merged.
+- [#117](https://github.com/JavadEslamibabaheidari/StockHub/issues/117): backend persistence/evaluation; closed after PR #121 merged.
+- [#118](https://github.com/JavadEslamibabaheidari/StockHub/issues/118): frontend editor/shell; closed after PR #122 merged.
+- [#119](https://github.com/JavadEslamibabaheidari/StockHub/issues/119): integrated verification, regression repair, delivery/closure; closed after report PASS and GitHub milestone 8 closure.
 
 Each issue gets a focused PR. Coordinator reviews contracts, resolves conflicts and merges only passing required checks. User authorized parallel issue work and autonomous merging. Project board synchronization is blocked: authenticated token lacks read:project scope. GitHub issues, milestones, PRs and checks are accessible; board access is not required to implement the frozen issue contracts.
 
