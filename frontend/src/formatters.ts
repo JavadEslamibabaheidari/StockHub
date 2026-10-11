@@ -54,6 +54,18 @@ export function formatSignedPercent(value: number): string {
   return formatted
 }
 
+/** Formats API values expressed as percentage points (4.2 means 4.2%). */
+export function formatPercentPoints(value: number): string {
+  return formatPercent(value / 100)
+}
+
+export function formatSignedPercentPoints(value: number): string {
+  const formatted = formatPercentPoints(Math.abs(value))
+  if (value > 0) return `+${formatted}`
+  if (value < 0) return `−${formatted}`
+  return formatted
+}
+
 export function formatCountdown(totalSeconds: number): string {
   const seconds = Math.max(0, Math.floor(totalSeconds))
   const minutes = Math.floor(seconds / 60)

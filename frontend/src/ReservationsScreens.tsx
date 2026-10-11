@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { toggleExplicitTheme } from './appearance'
+import { formatCountdown, formatCurrency } from './formatters'
 import { AccessApiClient, AccessApiError, type WorkspaceSummary } from './api/generated'
 
 type Panel = { title: string; body: string; tone?: 'ok' | 'warn' } | null
@@ -69,13 +70,11 @@ function formatRole(role?: WorkspaceSummary['role'] | string | null) {
 }
 
 function eur(value: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(value)
+  return formatCurrency(value, 'EUR')
 }
 
 function mmss(seconds: number) {
-  const minutes = Math.floor(seconds / 60)
-  const rest = seconds % 60
-  return `${minutes.toString().padStart(2, '0')}:${rest.toString().padStart(2, '0')}`
+  return formatCountdown(seconds)
 }
 
 function csvEscape(value: string | number) {

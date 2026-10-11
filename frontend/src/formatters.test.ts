@@ -5,9 +5,11 @@ import {
   formatCurrency,
   formatKpiCurrency,
   formatPercent,
+  formatPercentPoints,
   formatQuantity,
   formatRecentDate,
   formatSignedPercent,
+  formatSignedPercentPoints,
 } from './formatters'
 
 describe('design system number and date formats', () => {
@@ -28,6 +30,8 @@ describe('design system number and date formats', () => {
     expect(formatSignedPercent(0.042)).toBe('+4.2%')
     expect(formatSignedPercent(-0.018)).toBe('−1.8%')
     expect(formatSignedPercent(0)).toBe('0.0%')
+    expect(formatPercentPoints(4.2)).toBe('4.2%')
+    expect(formatSignedPercentPoints(-1.8)).toBe('−1.8%')
   })
 
   it('keeps countdown widths stable at the minute boundary', () => {
