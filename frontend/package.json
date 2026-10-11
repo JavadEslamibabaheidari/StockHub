@@ -9,7 +9,7 @@
     "lint": "tsc --noEmit -p tsconfig.app.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "contract:check": "node ../scripts/check-access-contract.mjs",
+    "contract:check": "node ../scripts/check-access-contract.mjs && node ../scripts/check-reports-contract.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

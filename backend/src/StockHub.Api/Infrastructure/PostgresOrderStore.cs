@@ -246,6 +246,41 @@ public sealed class PostgresOrderStore(string connectionString) : IOrderStore
         return result;
     }
 
+    public async Task<IReadOnlyList<ReportOrderRecord>> LoadReportOrdersAsync(Guid workspaceId, DateTimeOffset start, DateTimeOffset endExclusive, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var command = new NpgsqlCommand("""
+            SELECT o.id,o.order_number,o.platform,o.placed_at,o.status,o.return_stage,
+                   COALESCE(SUM(i.quantity*i.unit_price),0)::numeric,
+                   COALESCE(MIN(i.product_name),'Unlinked product'),COALESCE(SUM(i.quantity),0)::int
+            FROM orders o LEFT JOIN order_items i ON i.order_id=o.id
+            WHERE o.workspace_id=@workspace AND o.placed_at >= @start AND o.placed_at < @end
+            GROUP BY o.id ORDER BY o.placed_at
+            """,connection);
+        command.Parameters.AddWithValue("workspace",workspaceId); command.Parameters.AddWithValue("start",start); command.Parameters.AddWithValue("end",endExclusive);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var result = new List<ReportOrderRecord>();
+        while (await reader.ReadAsync(cancellationToken)) result.Add(new ReportOrderRecord(reader.GetGuid(0),reader.GetString(1),reader.GetString(2),reader.GetFieldValue<DateTimeOffset>(3),reader.GetString(4),reader.IsDBNull(5)?null:reader.GetString(5),reader.GetDecimal(6),reader.GetString(7),reader.GetInt32(8)));
+        return result;
+    }
+
+    public async Task<IReadOnlyList<ReportProductSalesRecord>> LoadReportProductSalesAsync(Guid workspaceId, DateTimeOffset start, DateTimeOffset endExclusive, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var command = new NpgsqlCommand("""
+            SELECT i.product_id,COALESCE(SUM(i.quantity),0)::int,COALESCE(SUM(i.quantity*i.unit_price),0)::numeric
+            FROM order_items i JOIN orders o ON o.id=i.order_id
+            WHERE o.workspace_id=@workspace AND i.product_id IS NOT NULL AND o.placed_at >= @start AND o.placed_at < @end
+              AND o.status IN ('PaidToPick','PickedToShip','Shipped','Delivered','ReturnRequested') AND o.return_stage IS DISTINCT FROM 'Refunded'
+            GROUP BY i.product_id
+            """,connection);
+        command.Parameters.AddWithValue("workspace",workspaceId); command.Parameters.AddWithValue("start",start); command.Parameters.AddWithValue("end",endExclusive);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var result = new List<ReportProductSalesRecord>();
+        while (await reader.ReadAsync(cancellationToken)) result.Add(new ReportProductSalesRecord(reader.GetGuid(0),reader.GetInt32(1),reader.GetDecimal(2)));
+        return result;
+    }
+
     private async Task<IReadOnlyList<OrderSummaryResponse>> LoadSummariesAsync(Guid workspaceId, Guid? orderId, CancellationToken cancellationToken)
     {
         await using var connection = await OpenConnectionAsync(cancellationToken);

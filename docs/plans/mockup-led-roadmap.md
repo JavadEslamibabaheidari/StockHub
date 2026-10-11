@@ -72,6 +72,8 @@ evidence is in
 [milestone-7-pricing-closure.md](../reports/milestone-7-pricing-closure.md).
 The narrow-viewport browser automation follow-up is in Maintenance issue #123.
 
+Reports execution is specified in [milestone-8-reports.md](milestone-8-reports.md), with implementation tracked in milestone 9 issues #126–#131. Configured alert delivery is tracked separately in Maintenance issue #132. The source screens are on page 1 of [StockHub Design Review.pdf](../mockups/StockHub%20Design%20Review.pdf) and in the matching Reports section of [StockHub Final.html](../mockups/StockHub%20Final.html).
+
 GitHub issues should exist for the current milestone with detailed acceptance
 criteria and direct mockup references. Future milestone records may exist before
 their start gate, but detailed issues should be created when that milestone is

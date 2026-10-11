@@ -259,3 +259,22 @@ describe('Milestone 7 Pricing rules route', () => {
     Object.defineProperty(globalThis, 'document', { configurable: true, value: originalDocument })
   })
 })
+
+describe('Milestone 8 Reports route', () => {
+  it('renders all report tabs and the initial loading state', () => {
+    const originalWindow = globalThis.window
+    const originalDocument = globalThis.document
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: { documentElement: { dataset: {} } } })
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash: '#reports' }, addEventListener: () => {}, removeEventListener: () => {} } })
+    const markup = renderToStaticMarkup(<App />)
+    expect(markup).toContain('Reports')
+    expect(markup).toContain('Daily digest')
+    expect(markup).toContain('Weekly summary')
+    expect(markup).toContain('Alert settings')
+    expect(markup).toContain('Loading report data')
+    expect(markup).toContain('Download PDF')
+    expect(markup).toContain('href="#reports"')
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: originalDocument })
+  })
+})

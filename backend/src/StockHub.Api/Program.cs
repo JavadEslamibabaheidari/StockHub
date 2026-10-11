@@ -24,6 +24,7 @@ builder.Services.AddSingleton<IAccessStore>(_ => new PostgresAccessStore(connect
 builder.Services.AddSingleton<IProductStore>(_ => new PostgresProductStore(connectionString));
 builder.Services.AddSingleton<IDashboardStore>(_ => new PostgresDashboardStore(connectionString));
 builder.Services.AddSingleton<IOrderStore>(_ => new PostgresOrderStore(connectionString));
+builder.Services.AddSingleton<PostgresReportsStore>(_ => new PostgresReportsStore(connectionString));
 builder.Services.AddSingleton<PostgresPricingStore>(_ => new PostgresPricingStore(connectionString));
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<IRecoveryEmailSender, SmtpRecoveryEmailSender>();
@@ -145,6 +146,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapPricing();
+app.MapReports();
 
 app.MapPost(
     "/api/auth/sign-up",
