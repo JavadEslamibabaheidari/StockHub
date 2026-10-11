@@ -33,6 +33,14 @@ describe('semantic design tokens', () => {
     expect(light).toContain('--font-body: "Figtree Variable"')
   })
 
+  it('right-aligns tabular numeric columns in operational tables', () => {
+    expect(css).toContain('.inventory-tr > :nth-child(3), .inventory-tr > :nth-child(4), .inventory-tr > :nth-child(5)')
+    expect(css).toContain('.orders-tr > :nth-child(4), .orders-table:not(.staff) .orders-tr > :nth-child(n+6):nth-child(-n+9)')
+    expect(css).toContain('.reservation-tr > :nth-child(4), .reservation-tr > :nth-child(6)')
+    expect(css).toContain('.reports-table .numeric{text-align:right;font-variant-numeric:tabular-nums}')
+    expect(css).toContain('.mini-table .mini-row > :nth-child(n+2)')
+  })
+
   it('keeps text and status label pairs at AA contrast in both themes', () => {
     for (const theme of [light, dark]) {
       const page = token(theme, '--color-page')

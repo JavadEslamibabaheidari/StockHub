@@ -3,6 +3,7 @@ import {
   formatAbsoluteDateTime,
   formatCountdown,
   formatCurrency,
+  formatDecimal,
   formatKpiCurrency,
   formatPercent,
   formatPercentPoints,
@@ -26,6 +27,8 @@ describe('design system number and date formats', () => {
 
   it('formats grouped quantities and one-decimal percentages', () => {
     expect(formatQuantity(1240)).toBe('1,240')
+    expect(formatDecimal(1.5)).toBe('1.5')
+    expect(formatDecimal(2)).toBe('2.0')
     expect(formatPercent(0.042)).toBe('4.2%')
     expect(formatSignedPercent(0.042)).toBe('+4.2%')
     expect(formatSignedPercent(-0.018)).toBe('−1.8%')

@@ -39,6 +39,10 @@ export function formatQuantity(value: number): string {
   return numberFormat({ maximumFractionDigits: 0 }).format(value)
 }
 
+export function formatDecimal(value: number, fractionDigits = 1): string {
+  return numberFormat({ minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }).format(value)
+}
+
 export function formatPercent(value: number): string {
   return numberFormat({
     style: 'percent',

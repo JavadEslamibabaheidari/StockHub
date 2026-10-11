@@ -179,8 +179,8 @@ contrast, keyboard, responsive, and delivery evidence.
 The `#design-system` route is the reference for semantic Light/Dark tokens,
 Caprasimo display type, Figtree application type, accessible status examples,
 shared controls, and strict en-GB formatting. `frontend/src/formatters.ts` owns
-currency, KPI currency, grouped quantities, percentages and signed percentage
-points, countdowns, relative recent dates, and absolute timestamps. Existing
+currency, KPI currency, grouped quantities and decimals, percentages and signed
+percentage points, countdowns, relative recent dates, and absolute timestamps. Existing
 Dashboard, Inventory, Orders, Reservations, Platforms, Pricing, Reports, and
 Team screens consume those formatters and shared CSS tokens; Cover styles remain
 separate. Temporary theme previews on the reference route do not change the
@@ -188,7 +188,9 @@ stored Light/Dark/System preference.
 
 `frontend/src/designTokens.test.ts` measures semantic foreground/background
 pairs in both themes, including neutral and Admin role labels, accent text/tint,
-and focus outlines. `frontend/src/formatters.test.ts` covers locale examples and
+and focus outlines. Operational table quantity and amount columns are right
+aligned and tabular; Reports marks numeric columns explicitly.
+`frontend/src/formatters.test.ts` covers locale examples and
 boundary behavior. The branch verification record and remaining delivery gates
 are in `docs/plans/milestone-12-design-system.md` until the GitHub closure report
 is merged.

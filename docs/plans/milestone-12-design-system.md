@@ -177,10 +177,11 @@ reference screen, then integration and closure.
   linked to this repository yet.” Milestone and issue tracking are available;
   the absent project board is recorded as an access/configuration gap, not a
   product implementation blocker.
-- Implementation branch `codex/milestone-12-design-system` is pushed at
-  `99a1ccef7922571551f44da162dc391ffd225c77`. Latest local verification passes:
-  66 frontend tests, TypeScript build, Access/Reports contract checks, and
-  `git diff --check`. Contrast coverage includes normal text/status pairs,
+- Implementation branch `codex/milestone-12-design-system` is pushed to GitHub.
+  Latest local verification passes
+  67 frontend tests, TypeScript build, Access/Reports contract checks, and
+  `git diff --check`. Numeric alignment has focused CSS regression coverage.
+  Contrast coverage includes normal text/status pairs,
   neutral labels, the distinct Admin role badge, focus outlines, and accent
   text on accent tint in both themes.
 - The authenticated coordinator browser reviewed `#design-system` at 1280×720
