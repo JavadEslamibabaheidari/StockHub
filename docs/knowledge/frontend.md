@@ -150,8 +150,11 @@ plan comparison, and billing mutations unavailable. It does not use mockup
 sample values or represent account email as a billing contact.
 
 Appearance offers Light, Dark, and System. `frontend/src/appearance.ts`
-initializes the preference before React mounts, persists it in browser storage,+migrates the legacy light/dark key, and follows OS changes while System is
+initializes the preference before React mounts, persists it in browser storage,
+migrates the legacy light/dark key, and follows OS changes while System is
 selected. Existing route shells use the shared explicit toggle helper. Focused
 coverage lives in `appearance.test.ts`, `SettingsScreens.test.tsx`, and
-`OnboardingAppearance.test.tsx`. Current merge and closure/deployment evidence
-is in `docs/reports/milestone-10-settings-closure.md`.
+`OnboardingAppearance.test.tsx`. PR #148 corrected dark card contrast; the fix
+was deployed in main SHA `e280c0ada8464a82ca25ef8f4a77fd3df2896988`. Current
+closure and deployment evidence is in
+`docs/reports/milestone-10-settings-closure.md`.

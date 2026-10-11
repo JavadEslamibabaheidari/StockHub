@@ -65,10 +65,10 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-Milestones 0–9 are closed in GitHub with zero open issues. Milestone `10 Settings`
-is the current closure task: its implementation merged to `main` in PR #147 at
-`3c4b655`, and issues #144–#146 remain open while the delivery and closure
-evidence is completed. Settings execution and closure evidence are in
+Milestones 0–9 are closed in GitHub with zero open issues. M10 Settings merged
+in PR #147 at `3c4b655`; the dark-card contrast correction merged in PR #148 at
+`e280c0a`, and deployment/closure evidence is recorded in the Settings report.
+Issues #144–#146 and milestone #11 remain open pending GitHub closure. Settings execution and closure evidence are in
 [milestone-10-settings.md](milestone-10-settings.md) and
 [`milestone-10-settings-closure.md`](../reports/milestone-10-settings-closure.md).
 Team execution and closure evidence are in
