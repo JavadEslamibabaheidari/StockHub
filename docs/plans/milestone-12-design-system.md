@@ -1,6 +1,7 @@
 # Milestone 12 Design system
 
-Status: implementation ready. GitHub milestone #13 `12 Design system` is open
+Status: implementation and focused local verification complete; PR, delivery,
+tracking, and closure gates remain. GitHub milestone #13 `12 Design system` is open
 with three issues (#159–#161), created after confirming the milestone had zero
 issues. M11 Dark mode is complete: its PASS report is on `main` at
 `17ae97645cf898bb68a73323e42f75da8e2eef1c`, milestone #12 is closed, and the
@@ -169,9 +170,25 @@ reference screen, then integration and closure.
   #159–#161 are attached to it and assigned to the repository owner. The
   configured `gh` token is invalid; direct API requests fail DNS in the normal
   sandbox and return HTTP 403 when network escalation is granted. Browser
-  verification is authoritative for issue/milestone state here. The tracking
-  script remains unverified until a valid API credential is available.
+  verification is authoritative for issue/milestone state from this checkout.
+  The coordinator environment has authenticated tracking access and owns the
+  PR, delivery checks, and live closure transitions.
 - The authenticated repository Projects page reports “There are no projects
   linked to this repository yet.” Milestone and issue tracking are available;
   the absent project board is recorded as an access/configuration gap, not a
   product implementation blocker.
+- Implementation branch `codex/milestone-12-design-system` is pushed at
+  `99a1ccef7922571551f44da162dc391ffd225c77`. Latest local verification passes:
+  66 frontend tests, TypeScript build, Access/Reports contract checks, and
+  `git diff --check`. Contrast coverage includes normal text/status pairs,
+  neutral labels, the distinct Admin role badge, focus outlines, and accent
+  text on accent tint in both themes.
+- The authenticated coordinator browser reviewed `#design-system` at 1280×720
+  and 390×844 in Light and Dark. The narrow view stacked without page-level
+  horizontal overflow and retained visible keyboard focus. Full browser review
+  of all application routes, CI/delivery, tracking hook, and milestone closure
+  remain outstanding. No signed-in workspace data was seeded during M12.
+- Remaining CSS hex values after the Design system reference styles are
+  opacity-based shadows, generic contrasting control/icon whites, brand glyphs,
+  and Cover/decorative or role-specific values. Repeated semantic surface,
+  foreground, status, and focus values use shared tokens.
