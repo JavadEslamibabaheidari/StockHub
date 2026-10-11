@@ -150,9 +150,10 @@ its acceptance criteria before integration/closure begins.
   and hosted target status separately.
 - Progress evidence (11 October 2026): the isolated frontend has 54 passing
   tests, a successful TypeScript/Vite production build, and passing Access and
-  Reports contract checks. Local browser review confirmed the Dark Inventory
-  empty state at desktop and 390px with no horizontal page overflow; a
-  low-contrast secondary action was fixed. Sample text/background contrast
+  Reports contract checks. The first browser review exposed that a 401 was
+  being presented as an empty Inventory; that was fixed. A low-contrast
+  secondary action in the empty-state layout was also corrected. Sample
+  text/background contrast
   calculations range from 5.84:1 (retry badge) to 16.29:1 (primary text on
   page), and the warning, danger, success, accent, button, and focus pairs all
   exceed 4.5:1.
