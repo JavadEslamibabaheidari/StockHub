@@ -1,6 +1,6 @@
 # StockHub Mockup-Led Roadmap
 
-Status: milestones 0–9 are closed in GitHub. Team (`9 Team`) was completed by PRs #139, #140, and #142, with integration/closure issue #138 closed after the PASS report.
+Status: milestones 0–10 are closed in GitHub. Settings (`10 Settings`) is complete with its PASS closure report. Dark mode (`11 Dark mode`) is now in progress under GitHub milestone #12 with issues #151–#154.
 
 ## Source of truth
 
@@ -65,12 +65,19 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-Milestones 0–10 are closed in GitHub with zero open issues. M10 Settings merged
-in PR #147 at `3c4b655`; the dark-card contrast correction merged in PR #148 at
-`e280c0a`, and deployment/closure evidence is recorded in the Settings report.
-Issues #144–#146 and milestone #11 are closed. Settings execution and closure evidence are in
-[milestone-10-settings.md](milestone-10-settings.md) and
+Milestones 0–10 are closed in GitHub with zero open issues. M10 Settings
+feature PR #147 merged at `3c4b655`; the dark-card contrast correction PR #148
+merged at `e280c0a`; closure evidence PR #150 merged at `32a3d12`. Issues
+#144–#146 and GitHub milestone #11 are closed. Settings execution and closure
+evidence are in [milestone-10-settings.md](milestone-10-settings.md) and
 [`milestone-10-settings-closure.md`](../reports/milestone-10-settings-closure.md).
+
+The current milestone is `11 Dark mode`, GitHub milestone #12. It delivers
+dark Dashboard, Inventory with quick view, and Product detail variants using
+M10's shared Light/Dark/System preference. Issues #151–#154 track the screens,
+integration, accessibility review, and closure. Its execution plan is
+[milestone-11-dark-mode.md](milestone-11-dark-mode.md); implementation and
+deployment are in progress.
 Team execution and closure evidence are in
 [milestone-9-team.md](milestone-9-team.md) and
 [`milestone-9-team-closure.md`](../reports/milestone-9-team-closure.md). Pricing execution is tracked in

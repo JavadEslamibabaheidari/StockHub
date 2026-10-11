@@ -43,3 +43,11 @@ npm test -- --run
 npm run contract:check
 npm run build
 ```
+
+## Local browser review
+
+The Vite development server proxies `/api` to the local Compose app at
+`http://127.0.0.1:8080` by default. Start the app with `docker compose up -d`
+and confirm `curl --fail http://127.0.0.1:8080/ready` returns ready before
+running `npm run dev` from `frontend/`. To review against another API, set
+`STOCKHUB_API_TARGET` before starting Vite.

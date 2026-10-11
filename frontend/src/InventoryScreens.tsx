@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import { toggleExplicitTheme } from './appearance'
 import {
   AccessApiClient,
@@ -163,8 +163,82 @@ function PlatformDots({ product }: { product: InventoryProductSummary }) {
   return <span className="platform-dots">{product.platforms.map(platform => <span key={platform.platform} className={platform.status.toLowerCase().replace(' ', '-')} title={`${platform.platform}: ${platform.detail}`}>{platform.code}</span>)}</span>
 }
 
+function InventoryQuickView({ product, workspaceId, onClose }: { product: InventoryProductSummary; workspaceId: string; onClose: () => void }) {
+  const [detail, setDetail] = useState<InventoryProductDetail | null>(null)
+  const [loadError, setLoadError] = useState(false)
+  const [retry, setRetry] = useState(0)
+  const dialogRef = useRef<HTMLElement | null>(null)
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    const returnFocusTo = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    closeButtonRef.current?.focus()
+    return () => returnFocusTo?.focus()
+  }, [])
+
+  useEffect(() => {
+    let alive = true
+    setLoadError(false)
+    setDetail(null)
+    api.inventoryProduct(workspaceId, product.id)
+      .then(result => { if (alive) setDetail(result) })
+      .catch(() => { if (alive) setLoadError(true) })
+    return () => { alive = false }
+  }, [product.id, retry, workspaceId])
+
+  function onKeyDown(event: ReactKeyboardEvent<HTMLElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      onClose()
+      return
+    }
+    if (event.key !== 'Tab') return
+    const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [])
+      .filter(control => !control.hasAttribute('hidden'))
+    const first = controls[0]
+    const last = controls[controls.length - 1]
+    if (!first || !last) return
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
+  return (
+    <div className="inventory-quick-view-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
+      <section ref={dialogRef} className="inventory-quick-view" role="dialog" aria-modal="true" aria-labelledby="inventory-quick-view-title" aria-describedby="inventory-quick-view-sku" tabIndex={-1} onKeyDown={onKeyDown}>
+        <header className="inventory-quick-view-header">
+          <div>
+            <p>Inventory quick view</p>
+            <h2 id="inventory-quick-view-title">{product.name}</h2>
+            <span id="inventory-quick-view-sku">{product.sku} · {product.category}</span>
+          </div>
+          <button ref={closeButtonRef} className="inventory-quick-view-close" type="button" aria-label={`Close quick view for ${product.name}`} onClick={onClose}>×</button>
+        </header>
+        {detail ? <>
+          <div className="inventory-quick-view-stock" aria-label="Product stock">
+            <article><span>On hand</span><strong>{detail.product.onHand}</strong></article>
+            <article><span>Reserved</span><strong>{detail.product.reserved}</strong></article>
+            <article className="available"><span>Available</span><strong>{detail.product.available}</strong></article>
+          </div>
+          <p className="inventory-quick-view-status"><b>{detail.product.stockStatus}</b>{detail.product.basePrice !== null && detail.capabilities.canChangePrice && <span>Base price · €{detail.product.basePrice.toFixed(2)}</span>}</p>
+          <ul className="inventory-quick-view-platforms" aria-label="Platform listing status">
+            {detail.product.platforms.map(platform => <li key={platform.platform}><span>{platform.platform}</span><b className={platform.status.toLowerCase().replace(' ', '-')}>{platform.status}</b><small>{platform.detail}</small></li>)}
+          </ul>
+          {detail.syncAlert && <p className="inventory-quick-view-sync">{detail.syncAlert}</p>}
+          <a className="inventory-quick-view-detail-link" href={`#inventory-detail?product=${detail.product.id}`}>Open product detail</a>
+        </> : loadError ? <div className="inventory-quick-view-error" role="alert"><p>Product details could not be loaded.</p><button type="button" onClick={() => setRetry(value => value + 1)}>Try again</button></div> : <p role="status" className="inventory-quick-view-loading">Loading product details…</p>}
+      </section>
+    </div>
+  )
+}
+
 function InventoryTable({ data, setData, workspaceId, staff, setPanel }: { data: InventoryListResponse; setData: (data: InventoryListResponse) => void; workspaceId: string | null; staff: boolean; setPanel: (panel: Panel) => void }) {
   const [selected, setSelected] = useState(new Set<string>())
+  const [quickViewProduct, setQuickViewProduct] = useState<InventoryProductSummary | null>(null)
   async function adjust(product: InventoryProductSummary, next: number) {
     if (next < 0) return
     if (workspaceId) {
@@ -198,11 +272,12 @@ function InventoryTable({ data, setData, workspaceId, staff, setPanel }: { data:
             <span><b>{row.available}</b>{row.stockStatus !== 'In stock' && <em>{row.stockStatus}</em>}</span>
             {!staff && row.basePrice !== null && <span>€{row.basePrice.toFixed(2)}</span>}
             <span><PlatformDots product={row} /></span>
-            <a href={`#inventory-detail?product=${row.id}`} aria-label={`Open ${row.name}`}>›</a>
+            <span className="inventory-row-actions"><button type="button" aria-label={`Quick view ${row.name}`} onClick={event => { event.currentTarget.focus(); if (workspaceId) setQuickViewProduct(row) }}>Preview</button><a href={`#inventory-detail?product=${row.id}`} aria-label={`Open ${row.name}`}>›</a></span>
           </div>
         ))}
       </div>
       <footer className="table-foot">Showing {data.products.length} of {data.totalProducts.toLocaleString()} products <span><button disabled>Previous</button><button type="button" onClick={() => setPanel({ title: 'Next page', body: 'Pagination is wired for the Inventory list; more rows appear as products are imported.' })}>Next</button></span></footer>
+      {quickViewProduct && workspaceId && <InventoryQuickView product={quickViewProduct} workspaceId={workspaceId} onClose={() => setQuickViewProduct(null)} />}
     </section>
   )
 }

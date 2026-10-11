@@ -158,3 +158,14 @@ coverage lives in `appearance.test.ts`, `SettingsScreens.test.tsx`, and
 was deployed in main SHA `e280c0ada8464a82ca25ef8f4a77fd3df2896988`. Current
 closure and deployment evidence is in
 `docs/reports/milestone-10-settings-closure.md`.
+
+## Milestone 11 Dark mode
+
+Milestone 11 adds dark Dashboard, Inventory with an open product quick view,
+and Product detail variants. It consumes the shared Light/Dark/System
+preference from `frontend/src/appearance.ts`; do not create another preference
+store or API. The quick view must show an active-workspace persisted product
+(prefer Samsung only when that product exists) and preserve direct row links to
+Product detail. Issues #151–#154 under GitHub milestone #12 define the
+acceptance criteria. See `docs/plans/milestone-11-dark-mode.md` for the
+accessibility, contrast, keyboard, responsive, and delivery gates.
