@@ -691,6 +691,124 @@ h1 {
 @media (max-width: 980px) { .inventory-shell { grid-template-columns: 76px minmax(0,1fr); } .inventory-workspace span, .inventory-sidebar nav a, .inventory-plan { font-size: 0; } .inventory-sidebar nav a::first-letter { font-size: 14px; } .inventory-top, .inventory-heading { align-items: flex-start; flex-direction: column; } .inventory-search { width: 100%; } .detail-grid, .empty-inventory { grid-template-columns: 1fr; } .audit { grid-column: auto; grid-row: auto; } .pricing { grid-column: auto; } }
 @media (max-width: 640px) { .inventory-page { padding: 0; } .inventory-shell { display: block; min-height: 100vh; border-radius: 0; } .inventory-sidebar { display: none; } .inventory-main { padding: 14px; } .inventory-user { flex-wrap: wrap; } .inventory-card { overflow-x: auto; } .stock-legend { width: 100%; } .inventory-warning, .staff-note, .bulk-row, .table-foot { align-items: flex-start; flex-direction: column; } .bulk-row .legend { margin-left: 0; } .detail-title { grid-template-columns: 1fr; } .detail-title h1, .detail-title p { grid-column: auto; } .stock-math { grid-template-columns: 1fr; } .stock-math > span { text-align: center; } }
 
+/* Milestone 9 Team */
+.team-page .inventory-shell { width: min(1400px,100%); }
+.team-page .inventory-main { position: relative; }
+.team-page .inventory-heading { align-items: flex-end; margin: 22px 0 17px; }
+.team-heading .inventory-eyebrow { color: #8a7762; font-size: 10px; font-weight: 850; letter-spacing: .12em; }
+.team-heading h1 { margin: 3px 0 0; font-family: Georgia,'Times New Roman',serif; font-size: 30px; letter-spacing: -.045em; }
+.team-primary-button, .team-danger-button { min-height: 38px; padding: 9px 16px; border: 1px solid transparent; border-radius: 999px; background: #c67139; color: #fff; font: inherit; font-size: 12px; font-weight: 850; cursor: pointer; }
+.team-primary-button:hover { background: #a85626; }
+.team-primary-button:disabled, .team-danger-button:disabled { opacity: .58; cursor: wait; }
+.team-danger-button { background: #a43f28; }
+.team-danger-button:hover { background: #87331f; }
+.team-role-cards { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 0 0 14px; }
+.team-role-card { position: relative; display: grid; min-height: 112px; padding: 16px 18px; border: 1px solid #ded2c0; border-radius: 18px; background: #fbf7ef; box-shadow: 0 1px 2px #21180712; grid-template-columns: 1fr auto; align-content: start; gap: 5px 12px; }
+.team-role-card > span { color: #6f665a; font-size: 12px; font-weight: 800; }
+.team-role-card > strong { color: #24211d; font-size: 24px; line-height: 1; }
+.team-role-card > small { grid-column: 1 / -1; max-width: 330px; color: #6f665a; font-size: 11px; line-height: 1.45; }
+.team-role-owner { border-top: 3px solid #c67139; }
+.team-role-manager { border-top: 3px solid #7b8a5d; }
+.team-role-warehousestaff { border-top: 3px solid #8a8174; }
+.team-roster, .team-invitations, .team-permissions { margin: 0 0 14px; overflow: hidden; }
+.team-section-heading { display: flex; min-height: 65px; align-items: center; justify-content: space-between; padding: 13px 18px; gap: 12px; }
+.team-section-heading h2, .team-permissions h2 { margin: 0; font-family: Georgia,'Times New Roman',serif; font-size: 17px; letter-spacing: -.025em; }
+.team-section-heading p, .team-permissions header p { margin: 4px 0 0; color: #6f665a; font-size: 11px; }
+.team-count { flex: 0 0 auto; padding: 6px 10px; border-radius: 999px; background: #f2e5cf; color: #625647; font-size: 10px; font-weight: 800; }
+.team-table-scroll, .team-matrix-scroll { width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+.team-table, .team-matrix-scroll table { width: 100%; border-collapse: collapse; text-align: left; }
+.team-table { min-width: 760px; }
+.team-invite-table { min-width: 740px; }
+.team-table thead, .team-matrix-scroll thead { background: #f4eee4; }
+.team-table th, .team-table td, .team-matrix-scroll th, .team-matrix-scroll td { padding: 11px 14px; border-top: 1px solid #e4d9c9; font-size: 11px; vertical-align: middle; }
+.team-table thead th, .team-matrix-scroll thead th { border-top: 0; color: #766b5e; font-size: 9px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; }
+.team-table tbody th { font-weight: 600; }
+.team-person { display: flex; min-width: 150px; align-items: center; gap: 9px; }
+.team-person > b { display: grid; width: 31px; height: 31px; flex: 0 0 31px; border-radius: 50%; background: #eee2cf; color: #6d573e; font-size: 10px; font-weight: 850; place-items: center; }
+.team-person > span, .team-pending-email { display: grid; gap: 3px; }
+.team-person small, .team-pending-email small { color: #7a7166; font-size: 9px; font-weight: 500; }
+.team-role-pill { display: inline-flex; width: fit-content; padding: 5px 9px; border-radius: 999px; background: #eee7db; color: #5c574f; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.role-owner { background: #f3dfcf; color: #8e4b22; }
+.role-admin { background: #e6deef; color: #5c4674; }
+.role-manager { background: #e2e9d5; color: #526b3a; }
+.role-warehousestaff { background: #e9e5de; color: #5f584f; }
+.role-viewer { background: #e5e7e8; color: #4f5b61; }
+.team-row-actions { min-width: 145px; text-align: right; white-space: nowrap; }
+.team-text-action { min-height: 30px; padding: 6px 9px; border: 0; border-radius: 999px; background: transparent; color: #8f4c24; font: inherit; font-size: 10px; font-weight: 850; cursor: pointer; }
+.team-text-action:hover { background: #f2e5cf; }
+.team-text-action.danger { color: #a43f28; }
+.team-empty { padding: 22px 18px 25px; border-top: 1px solid #e4d9c9; }
+.team-empty strong { font-size: 12px; }
+.team-empty p, .team-filter-empty { margin: 5px 0 0; color: #6f665a; font-size: 11px; }
+.team-filter-empty { padding: 22px 14px !important; text-align: center; }
+.team-permissions header { padding: 17px 18px 12px; }
+.team-matrix-scroll table { min-width: 850px; }
+.team-matrix-scroll th:first-child { width: 32%; }
+.team-matrix-scroll tbody th { font-weight: 650; }
+.team-matrix-scroll td { text-align: center; }
+.team-permission-yes { color: #526b3a; font-weight: 850; }
+.team-permission-no { color: #8c8172; }
+.team-matrix-note { margin: 0; padding: 10px 18px 15px; color: #6f665a; font-size: 10px; line-height: 1.5; }
+.team-readonly-note { display: flex; align-items: center; margin: 0 0 12px; padding: 11px 14px; border-radius: 12px; background: #f2e5cf; color: #5f503e; font-size: 11px; gap: 10px; }
+.team-readonly-note strong { color: #51412f; }
+.team-state { margin: 0 0 14px; padding: 23px 18px; font-size: 12px; }
+.team-error { border-color: #e6b8aa; background: #fff5f1; }
+.team-error p { margin: 6px 0 12px; color: #7d382b; }
+.team-error button { min-height: 32px; padding: 6px 12px; border: 1px solid #d2c7b5; border-radius: 999px; background: #fbf7ef; font: inherit; font-size: 11px; font-weight: 800; cursor: pointer; }
+.team-inline-error { margin: 0 0 12px; color: #a43f28; font-size: 11px; }
+.team-modal-backdrop { position: fixed; inset: 0; z-index: 80; display: grid; overflow-y: auto; padding: 20px; background: rgb(39 32 24 / 58%); place-items: center; }
+.team-modal { position: relative; width: min(470px,100%); max-height: min(90vh,720px); overflow-y: auto; padding: 24px; border: 1px solid #ded2c0; border-radius: 22px; background: #fbf7ef; box-shadow: 0 18px 52px #21180750; }
+.team-modal h2 { margin: 0 36px 10px 0; font-family: Georgia,'Times New Roman',serif; font-size: 22px; letter-spacing: -.035em; }
+.team-modal-intro { margin: 0 0 17px; color: #6f665a; font-size: 12px; line-height: 1.5; }
+.team-modal-close { position: absolute; top: 13px; right: 14px; display: grid; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #f2e5cf; color: #24211d; font-size: 21px; cursor: pointer; place-items: center; }
+.team-form { display: grid; gap: 13px; }
+.team-form label { display: grid; color: #514a40; font-size: 11px; font-weight: 800; gap: 6px; }
+.team-form input, .team-form select { width: 100%; min-height: 40px; padding: 9px 12px; border: 1px solid #d2c7b5; border-radius: 10px; background: #fffdf9; color: #24211d; font: inherit; font-size: 12px; }
+.team-form input:focus-visible, .team-form select:focus-visible { outline: 3px solid #9d4c21; outline-offset: 2px; }
+.team-form-note { margin: 0; color: #6f665a; font-size: 10px; line-height: 1.45; }
+.team-form-error { margin: 0; color: #a43f28; font-size: 11px; line-height: 1.45; }
+.team-modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; margin-top: 8px; gap: 9px; }
+.team-modal-actions > button:not(.team-primary-button):not(.team-danger-button) { min-height: 38px; padding: 8px 14px; border: 1px solid #d2c7b5; border-radius: 999px; background: #fbf7ef; color: #24211d; font: inherit; font-size: 11px; font-weight: 800; cursor: pointer; }
+.team-modal-actions button:disabled { opacity: .58; cursor: wait; }
+.team-popover { position: absolute; top: 61px; right: 25px; z-index: 22; width: min(260px,calc(100% - 32px)); padding: 14px; }
+.team-popover p { margin: 0 0 8px; font-size: 11px; }
+.team-popover button { min-height: 30px; padding: 5px 10px; border: 1px solid #d2c7b5; border-radius: 999px; background: #fbf7ef; font: inherit; font-size: 10px; cursor: pointer; }
+.team-mobile-nav { display: none; }
+.team-page :focus-visible { outline: 3px solid #9d4c21; outline-offset: 3px; }
+[data-theme='dark'] .team-role-card, [data-theme='dark'] .team-modal { background: #221f1b; color: #f8f1e8; border-color: #514638; }
+[data-theme='dark'] .team-role-card > strong { color: #f8f1e8; }
+[data-theme='dark'] .team-role-card > span, [data-theme='dark'] .team-role-card > small, [data-theme='dark'] .team-section-heading p, [data-theme='dark'] .team-permissions header p, [data-theme='dark'] .team-empty p, [data-theme='dark'] .team-matrix-note, [data-theme='dark'] .team-modal-intro, [data-theme='dark'] .team-form-note { color: #cbbba8; }
+[data-theme='dark'] .team-table thead, [data-theme='dark'] .team-matrix-scroll thead { background: #332d25; }
+[data-theme='dark'] .team-table th, [data-theme='dark'] .team-table td, [data-theme='dark'] .team-matrix-scroll th, [data-theme='dark'] .team-matrix-scroll td { border-color: #514638; }
+[data-theme='dark'] .team-person > b, [data-theme='dark'] .team-count, [data-theme='dark'] .team-modal-close { background: #42382c; color: #f8f1e8; }
+[data-theme='dark'] .team-form input, [data-theme='dark'] .team-form select { background: #332d25; border-color: #625444; color: #f8f1e8; }
+[data-theme='dark'] .team-readonly-note { background: #42382c; color: #e9d5b9; }
+@media (max-width: 760px) {
+  .team-role-cards { grid-template-columns: 1fr; }
+  .team-role-card { min-height: 94px; }
+  .team-heading { align-items: flex-start !important; }
+  .team-heading .team-primary-button { width: 100%; }
+  .team-section-heading { align-items: flex-start; }
+}
+@media (max-width: 640px) {
+  .team-page .inventory-main { padding: 14px; }
+  .team-page .inventory-top { align-items: stretch; }
+  .team-page .inventory-search { width: 100%; }
+  .team-page .inventory-user { justify-content: space-between; gap: 7px; }
+  .team-page .inventory-user .sync-ok { display: none; }
+  .team-mobile-nav { display: flex; overflow-x: auto; margin: 0 -14px -14px; padding: 10px 14px 13px; border-top: 1px solid #ded2c0; background: #f4eee4; gap: 5px; }
+  .team-mobile-nav a { flex: 0 0 auto; padding: 8px 10px; border-radius: 999px; color: #514a40; font-size: 10px; font-weight: 800; text-decoration: none; }
+  .team-mobile-nav a.active { background: #e2d4c1; color: #6e411f; }
+  .team-modal-backdrop { align-items: start; padding: 14px; }
+  .team-modal { margin: auto 0; padding: 21px 18px; border-radius: 18px; }
+  .team-section-heading { padding: 13px 14px; }
+  .team-section-heading p { max-width: 230px; line-height: 1.45; }
+  .team-mobile-nav { scrollbar-width: thin; }
+  [data-theme='dark'] .team-mobile-nav { background: #332d25; border-color: #514638; }
+  [data-theme='dark'] .team-mobile-nav a { color: #e5d7c6; }
+  [data-theme='dark'] .team-mobile-nav a.active { background: #4c3929; color: #f0b181; }
+}
+
 /* Milestone 4 Orders */
 .orders-page .inventory-shell { width: min(1400px,100%); }
 .orders-filters { margin-bottom: 8px; }

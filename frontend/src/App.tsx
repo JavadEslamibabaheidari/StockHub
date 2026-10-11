@@ -7,6 +7,7 @@ import { Platforms } from './PlatformsScreens'
 import { Reservations } from './ReservationsScreens'
 import { Pricing } from './PricingScreens'
 import { Reports } from './ReportsScreens'
+import { Team } from './TeamScreens'
 
 const accessRouteHashes = [
   '#signup',
@@ -140,6 +141,7 @@ export default function App() {
     if (hash === '#platforms') return <Platforms />
     if (hash === '#pricing') return <Pricing />
     if (hash === '#reports') return <Reports />
+    if (hash === '#team') return <Team />
     if (hash === '#invite') return <Invite />
     if (hash === '#forgot') return <ForgotPassword />
     if (hash === '#accept' || hash.startsWith('#accept?')) return <AcceptInvite />
