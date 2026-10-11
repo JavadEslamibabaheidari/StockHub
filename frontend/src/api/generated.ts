@@ -52,6 +52,25 @@ export type OrderReturnResponse = { stage: string; reason: string; requestedAt: 
 export type OrderDetailResponse = { summary: OrderSummaryResponse; items: OrderItemResponse[]; customerAndShipping: OrderCustomerShippingResponse; timeline: OrderTimelineStepResponse[]; stockMovements: OrderStockMovementResponse[]; financials: OrderFinancialsResponse; return?: OrderReturnResponse | null };
 export type OrderActionRequest = { action: string; reason?: string | null };
 export type OrderActionResponse = { status: string; message: string; order: OrderDetailResponse };
+export type ReportPeriod = { start: string; endExclusive: string; label: string; timeZone: 'UTC'; currency: string };
+export type ReportSummary = { revenue: number; orderCount: number; unitCount: number; averageOrderValue: number };
+export type UnavailableMetric = { available: boolean; count: number | null; estimatedValue: number | null; explanation: string };
+export type PlatformSales = { platform: string; orderCount: number; unitCount: number; revenue: number; share: number };
+export type ProductSales = { productId: string; name: string; sku: string; unitCount: number; revenue: number };
+export type LostSale = { orderNumber: string; productName: string; platform: string; expiredAt: string; value: number };
+export type RestockSuggestion = { productId: string; name: string; sku: string; available: number; averageUnitsPerDay: number; daysUntilStockout: number | null; suggestedUnits: number; onReorderList: boolean };
+export type DailyReport = { period: ReportPeriod; summary: ReportSummary; expiredReservations: UnavailableMetric; salesByPlatform: PlatformSales[]; lostSales: LostSale[]; topProducts: ProductSales[]; bottomProducts: ProductSales[]; restockSuggestions: RestockSuggestion[] };
+export type RevenueByDay = { date: string; revenue: number };
+export type WeeklyPlatformSales = PlatformSales & { changePercent: number | null };
+export type WeeklyReport = { period: ReportPeriod; summary: ReportSummary; revenueChangePercent: number | null; expiredReservations: UnavailableMetric; revenueByDay: RevenueByDay[]; salesByPlatform: WeeklyPlatformSales[]; topProducts: ProductSales[]; bottomProducts: ProductSales[]; restockSuggestions: RestockSuggestion[] };
+export type ReportsReorderList = { productIds: string[] };
+export type ReportsReorderListItem = { productId: string; listed: boolean };
+export type ReportAlertKey = 'lowStock' | 'outOfStock' | 'syncFailure' | 'oversellingRisk';
+export type ReportAlertFrequency = 'instant' | 'hourly' | 'daily';
+export type ReportAlertChannels = { email: boolean; inApp: boolean; slack: boolean };
+export type ReportAlertRule = { key: ReportAlertKey; enabled: boolean; threshold: number | null; channels: ReportAlertChannels; frequency: ReportAlertFrequency };
+export type ReportAlertSettingsInput = { alerts: ReportAlertRule[] };
+export type ReportAlertSettings = ReportAlertSettingsInput & { canEdit: boolean; deliveryStatus: 'notConfigured' };
 
 export class AccessApiError extends Error { constructor(public readonly status: number, public readonly problem: Problem) { super(problem.detail); } }
 export class AccessApiClient {
@@ -85,6 +104,12 @@ export class AccessApiClient {
   orders(workspaceId: string) { return this.request<OrderListResponse>(`/api/workspaces/${workspaceId}/orders`); }
   order(workspaceId: string, orderId: string) { return this.request<OrderDetailResponse>(`/api/workspaces/${workspaceId}/orders/${orderId}`); }
   orderAction(workspaceId: string, orderId: string, request: OrderActionRequest) { return this.request<OrderActionResponse>(`/api/workspaces/${workspaceId}/orders/${orderId}/actions`, { method: 'POST', body: JSON.stringify(request) }); }
+  dailyReport(workspaceId: string) { return this.request<DailyReport>(`/api/workspaces/${workspaceId}/reports/daily`); }
+  weeklyReport(workspaceId: string) { return this.request<WeeklyReport>(`/api/workspaces/${workspaceId}/reports/weekly`); }
+  reportsReorderList(workspaceId: string) { return this.request<ReportsReorderList>(`/api/workspaces/${workspaceId}/reports/reorder-list`); }
+  setReportsReorderListItem(workspaceId: string, productId: string, listed: boolean) { return this.request<ReportsReorderListItem>(`/api/workspaces/${workspaceId}/reports/reorder-list/${productId}`, { method: 'PUT', body: JSON.stringify({ listed }) }); }
+  reportAlertSettings(workspaceId: string) { return this.request<ReportAlertSettings>(`/api/workspaces/${workspaceId}/reports/alert-settings`); }
+  updateReportAlertSettings(workspaceId: string, settings: ReportAlertSettingsInput) { return this.request<ReportAlertSettings>(`/api/workspaces/${workspaceId}/reports/alert-settings`, { method: 'PUT', body: JSON.stringify(settings) }); }
   invite(workspaceId: string, request: InvitationRequest) { return this.request<{ status: string }>(`/api/workspaces/${workspaceId}/invitations`, { method: 'POST', body: JSON.stringify(request) }); }
   invitation(token: string) { return this.request<InvitationResponse>(`/api/invitations/${encodeURIComponent(token)}`); }
   acceptInvitation(token: string) { return this.request<{ status: string }>('/api/invitations/accept', { method: 'POST', body: JSON.stringify({ token }) }); }

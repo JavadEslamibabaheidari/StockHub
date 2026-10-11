@@ -25,4 +25,8 @@ public interface IOrderStore
     Task<IReadOnlyDictionary<Guid, int>> ReservedByProductAsync(
         Guid workspaceId,
         CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<ReportOrderRecord>> LoadReportOrdersAsync(Guid workspaceId, DateTimeOffset start, DateTimeOffset endExclusive, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<ReportProductSalesRecord>> LoadReportProductSalesAsync(Guid workspaceId, DateTimeOffset start, DateTimeOffset endExclusive, CancellationToken cancellationToken);
 }

@@ -1,0 +1,379 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "StockHub Reports",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/workspaces/{workspaceId}/reports/daily": {
+      "get": {
+        "operationId": "getDailyReport",
+        "parameters": [
+          { "$ref": "#/components/parameters/WorkspaceId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily report for the most recent complete UTC day.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DailyReport" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Problem" },
+          "403": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/reports/weekly": {
+      "get": {
+        "operationId": "getWeeklyReport",
+        "parameters": [
+          { "$ref": "#/components/parameters/WorkspaceId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Weekly report for the most recent complete Monday-through-Sunday UTC week.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WeeklyReport" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Problem" },
+          "403": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/reports/reorder-list": {
+      "get": {
+        "operationId": "getReportsReorderList",
+        "parameters": [
+          { "$ref": "#/components/parameters/WorkspaceId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Products currently added to the workspace reorder handoff.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReorderList" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Problem" },
+          "403": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/reports/reorder-list/{productId}": {
+      "put": {
+        "operationId": "setReportsReorderListItem",
+        "parameters": [
+          { "$ref": "#/components/parameters/WorkspaceId" },
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReorderListInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Current workspace reorder-list state for the product.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReorderListItem" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "401": { "$ref": "#/components/responses/Problem" },
+          "403": { "$ref": "#/components/responses/Problem" },
+          "404": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/reports/alert-settings": {
+      "get": {
+        "operationId": "getReportAlertSettings",
+        "parameters": [
+          { "$ref": "#/components/parameters/WorkspaceId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current workspace alert preferences. These preferences do not indicate delivery status.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AlertSettings" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Problem" },
+          "403": { "$ref": "#/components/responses/Problem" }
+        }
+      },
+      "put": {
+        "operationId": "updateReportAlertSettings",
+        "parameters": [
+          { "$ref": "#/components/parameters/WorkspaceId" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AlertSettingsInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved preferences for the active workspace; no message delivery is implied.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AlertSettings" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "401": { "$ref": "#/components/responses/Problem" },
+          "403": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "WorkspaceId": {
+        "name": "workspaceId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" }
+      }
+    },
+    "responses": {
+      "Problem": {
+        "description": "Request rejected using the StockHub problem response.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Problem" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": ["title", "detail"],
+        "properties": {
+          "title": { "type": "string" },
+          "detail": { "type": "string" },
+          "code": { "type": "string", "nullable": true }
+        }
+      },
+      "ReportPeriod": {
+        "type": "object",
+        "required": ["start", "endExclusive", "label", "timeZone", "currency"],
+        "properties": {
+          "start": { "type": "string", "format": "date" },
+          "endExclusive": { "type": "string", "format": "date" },
+          "label": { "type": "string" },
+          "timeZone": { "type": "string", "enum": ["UTC"] },
+          "currency": { "type": "string", "minLength": 3, "maxLength": 3 }
+        }
+      },
+      "ReportSummary": {
+        "type": "object",
+        "required": ["revenue", "orderCount", "unitCount", "averageOrderValue"],
+        "properties": {
+          "revenue": { "type": "number", "format": "decimal", "minimum": 0 },
+          "orderCount": { "type": "integer", "minimum": 0 },
+          "unitCount": { "type": "integer", "minimum": 0 },
+          "averageOrderValue": { "type": "number", "format": "decimal", "minimum": 0 }
+        }
+      },
+      "UnavailableMetric": {
+        "type": "object",
+        "required": ["available", "count", "estimatedValue", "explanation"],
+        "properties": {
+          "available": { "type": "boolean" },
+          "count": { "type": "integer", "nullable": true, "minimum": 0 },
+          "estimatedValue": { "type": "number", "format": "decimal", "nullable": true, "minimum": 0 },
+          "explanation": { "type": "string" }
+        }
+      },
+      "PlatformSales": {
+        "type": "object",
+        "required": ["platform", "orderCount", "unitCount", "revenue", "share"],
+        "properties": {
+          "platform": { "type": "string" },
+          "orderCount": { "type": "integer", "minimum": 0 },
+          "unitCount": { "type": "integer", "minimum": 0 },
+          "revenue": { "type": "number", "format": "decimal", "minimum": 0 },
+          "share": { "type": "number", "minimum": 0, "maximum": 100 }
+        }
+      },
+      "ProductSales": {
+        "type": "object",
+        "required": ["productId", "name", "sku", "unitCount", "revenue"],
+        "properties": {
+          "productId": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "sku": { "type": "string" },
+          "unitCount": { "type": "integer", "minimum": 0 },
+          "revenue": { "type": "number", "format": "decimal", "minimum": 0 }
+        }
+      },
+      "LostSale": {
+        "type": "object",
+        "required": ["orderNumber", "productName", "platform", "expiredAt", "value"],
+        "properties": {
+          "orderNumber": { "type": "string" },
+          "productName": { "type": "string" },
+          "platform": { "type": "string" },
+          "expiredAt": { "type": "string", "format": "date-time" },
+          "value": { "type": "number", "format": "decimal", "minimum": 0 }
+        }
+      },
+      "RestockSuggestion": {
+        "type": "object",
+        "required": ["productId", "name", "sku", "available", "averageUnitsPerDay", "daysUntilStockout", "suggestedUnits", "onReorderList"],
+        "properties": {
+          "productId": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "sku": { "type": "string" },
+          "available": { "type": "integer", "minimum": 0 },
+          "averageUnitsPerDay": { "type": "number", "minimum": 0 },
+          "daysUntilStockout": { "type": "number", "nullable": true, "minimum": 0 },
+          "suggestedUnits": { "type": "integer", "minimum": 0 },
+          "onReorderList": { "type": "boolean" }
+        }
+      },
+      "DailyReport": {
+        "type": "object",
+        "required": ["period", "summary", "expiredReservations", "salesByPlatform", "lostSales", "topProducts", "bottomProducts", "restockSuggestions"],
+        "properties": {
+          "period": { "$ref": "#/components/schemas/ReportPeriod" },
+          "summary": { "$ref": "#/components/schemas/ReportSummary" },
+          "expiredReservations": { "$ref": "#/components/schemas/UnavailableMetric" },
+          "salesByPlatform": { "type": "array", "items": { "$ref": "#/components/schemas/PlatformSales" } },
+          "lostSales": { "type": "array", "items": { "$ref": "#/components/schemas/LostSale" } },
+          "topProducts": { "type": "array", "description": "Top five products by units sold in this report period, ordered from most to fewest.", "items": { "$ref": "#/components/schemas/ProductSales" } },
+          "bottomProducts": { "type": "array", "description": "Five products with the fewest units sold during the trailing 30 days, including products with zero sales.", "items": { "$ref": "#/components/schemas/ProductSales" } },
+          "restockSuggestions": { "type": "array", "items": { "$ref": "#/components/schemas/RestockSuggestion" } }
+        }
+      },
+      "RevenueByDay": {
+        "type": "object",
+        "required": ["date", "revenue"],
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "revenue": { "type": "number", "format": "decimal", "minimum": 0 }
+        }
+      },
+      "WeeklyPlatformSales": {
+        "allOf": [
+          { "$ref": "#/components/schemas/PlatformSales" },
+          {
+            "type": "object",
+            "required": ["changePercent"],
+            "properties": { "changePercent": { "type": "number", "nullable": true } }
+          }
+        ]
+      },
+      "WeeklyReport": {
+        "type": "object",
+        "required": ["period", "summary", "revenueChangePercent", "expiredReservations", "revenueByDay", "salesByPlatform", "topProducts", "bottomProducts", "restockSuggestions"],
+        "properties": {
+          "period": { "$ref": "#/components/schemas/ReportPeriod" },
+          "summary": { "$ref": "#/components/schemas/ReportSummary" },
+          "revenueChangePercent": { "type": "number", "format": "decimal", "nullable": true, "description": "Percent change in revenue from the previous complete Monday-through-Sunday UTC week; null when the previous week has no revenue." },
+          "expiredReservations": { "$ref": "#/components/schemas/UnavailableMetric" },
+          "revenueByDay": { "type": "array", "items": { "$ref": "#/components/schemas/RevenueByDay" }, "minItems": 7, "maxItems": 7 },
+          "salesByPlatform": { "type": "array", "items": { "$ref": "#/components/schemas/WeeklyPlatformSales" } },
+          "topProducts": { "type": "array", "description": "Top five products by units sold in this report period, ordered from most to fewest.", "items": { "$ref": "#/components/schemas/ProductSales" } },
+          "bottomProducts": { "type": "array", "description": "Five products with the fewest units sold during the trailing 30 days, including products with zero sales.", "items": { "$ref": "#/components/schemas/ProductSales" } },
+          "restockSuggestions": { "type": "array", "items": { "$ref": "#/components/schemas/RestockSuggestion" } }
+        }
+      },
+      "ReorderList": {
+        "type": "object",
+        "required": ["productIds"],
+        "properties": { "productIds": { "type": "array", "items": { "type": "string", "format": "uuid" } } }
+      },
+      "ReorderListInput": {
+        "type": "object",
+        "required": ["listed"],
+        "properties": { "listed": { "type": "boolean" } }
+      },
+      "ReorderListItem": {
+        "type": "object",
+        "required": ["productId", "listed"],
+        "properties": {
+          "productId": { "type": "string", "format": "uuid" },
+          "listed": { "type": "boolean" }
+        }
+      },
+      "AlertKey": {
+        "type": "string",
+        "enum": ["lowStock", "outOfStock", "syncFailure", "oversellingRisk"]
+      },
+      "AlertFrequency": {
+        "type": "string",
+        "enum": ["instant", "hourly", "daily"]
+      },
+      "AlertChannels": {
+        "type": "object",
+        "required": ["email", "inApp", "slack"],
+        "properties": {
+          "email": { "type": "boolean" },
+          "inApp": { "type": "boolean" },
+          "slack": { "type": "boolean" }
+        }
+      },
+      "AlertRule": {
+        "type": "object",
+        "required": ["key", "enabled", "threshold", "channels", "frequency"],
+        "properties": {
+          "key": { "$ref": "#/components/schemas/AlertKey" },
+          "enabled": { "type": "boolean" },
+          "threshold": { "type": "integer", "nullable": true, "minimum": 0, "maximum": 100000, "description": "Null is rejected on update. Key-specific constraints are enforced by the API (outOfStock is fixed at 0, syncFailure is measured in minutes)." },
+          "channels": { "$ref": "#/components/schemas/AlertChannels" },
+          "frequency": { "$ref": "#/components/schemas/AlertFrequency" }
+        }
+      },
+      "AlertSettingsInput": {
+        "type": "object",
+        "required": ["alerts"],
+        "properties": {
+          "alerts": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": { "$ref": "#/components/schemas/AlertRule" }
+          }
+        }
+      },
+      "AlertSettings": {
+        "allOf": [
+          { "$ref": "#/components/schemas/AlertSettingsInput" },
+          {
+            "type": "object",
+            "required": ["canEdit", "deliveryStatus"],
+            "properties": {
+              "canEdit": { "type": "boolean" },
+              "deliveryStatus": { "type": "string", "enum": ["notConfigured"] }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
