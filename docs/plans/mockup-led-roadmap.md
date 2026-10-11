@@ -65,8 +65,13 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-Milestones 0–9 are closed in GitHub with zero open issues. The next mockup-led
-section is `10 Settings`. Team execution and closure evidence are in
+Milestones 0–9 are closed in GitHub with zero open issues. Milestone `10 Settings`
+is the current closure task: its implementation merged to `main` in PR #147 at
+`3c4b655`, and issues #144–#146 remain open while the delivery and closure
+evidence is completed. Settings execution and closure evidence are in
+[milestone-10-settings.md](milestone-10-settings.md) and
+[`milestone-10-settings-closure.md`](../reports/milestone-10-settings-closure.md).
+Team execution and closure evidence are in
 [milestone-9-team.md](milestone-9-team.md) and
 [`milestone-9-team-closure.md`](../reports/milestone-9-team-closure.md). Pricing execution is tracked in
 [milestone-7-pricing.md](milestone-7-pricing.md), issues #116–#119; closure

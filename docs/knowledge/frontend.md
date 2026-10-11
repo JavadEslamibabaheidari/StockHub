@@ -140,3 +140,18 @@ and keyboard-visible focus. `frontend/src/TeamScreens.test.tsx` covers route
 loading, empty/error recovery, invitation and removal flows, role restrictions,
 search, dialogs, shell controls, and workspace isolation. Closure evidence is
 tracked in `docs/reports/milestone-9-team-closure.md`.
+
+## Milestone 10 Settings
+
+The `#settings` route is implemented in `frontend/src/SettingsScreens.tsx`.
+Billing displays active-session workspace identity and signed-in account email;
+it marks subscription, payment, VAT detail absent from the session, invoice,
+plan comparison, and billing mutations unavailable. It does not use mockup
+sample values or represent account email as a billing contact.
+
+Appearance offers Light, Dark, and System. `frontend/src/appearance.ts`
+initializes the preference before React mounts, persists it in browser storage,+migrates the legacy light/dark key, and follows OS changes while System is
+selected. Existing route shells use the shared explicit toggle helper. Focused
+coverage lives in `appearance.test.ts`, `SettingsScreens.test.tsx`, and
+`OnboardingAppearance.test.tsx`. Current merge and closure/deployment evidence
+is in `docs/reports/milestone-10-settings-closure.md`.
