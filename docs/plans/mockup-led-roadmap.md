@@ -1,6 +1,6 @@
 # StockHub Mockup-Led Roadmap
 
-Status: milestones 0–7 are closed in GitHub; milestone 8 Reports is the next active product milestone.
+Status: milestones 0–7 are closed in GitHub; Reports implementation is merged and its closure evidence PR is in progress. Team (`9 Team`) follows Reports in the mockup roadmap; its GitHub start gate has not been opened.
 
 ## Source of truth
 
@@ -65,14 +65,15 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-The active product milestone is `8 Reports` (GitHub milestone 9). Milestones
-0–7 are closed in GitHub with zero open issues. Pricing execution is tracked in
+Milestones 0–7 are closed in GitHub with zero open issues. Reports implementation
+is merged and the closure evidence PR is being finalized. The next mockup-led
+section is `9 Team`; GitHub planning and its start gate are pending. Pricing execution is tracked in
 [milestone-7-pricing.md](milestone-7-pricing.md), issues #116–#119; closure
 evidence is in
 [milestone-7-pricing-closure.md](../reports/milestone-7-pricing-closure.md).
 The narrow-viewport browser automation follow-up is in Maintenance issue #123.
 
-Reports execution is specified in [milestone-8-reports.md](milestone-8-reports.md), with implementation tracked in milestone 9 issues #126–#131. Configured alert delivery is tracked separately in Maintenance issue #132. The source screens are on page 1 of [StockHub Design Review.pdf](../mockups/StockHub%20Design%20Review.pdf) and in the matching Reports section of [StockHub Final.html](../mockups/StockHub%20Final.html).
+Reports execution is specified in [milestone-8-reports.md](milestone-8-reports.md), and its PASS closure evidence is in [milestone-8-reports-closure.md](../reports/milestone-8-reports-closure.md). PR #133 merged; closure PR #134 records the integration evidence and closes issue #131. Configured alert delivery is tracked separately in Maintenance issue #132. The source screens are on page 1 of [StockHub Design Review.pdf](../mockups/StockHub%20Design%20Review.pdf) and in the matching Reports section of [StockHub Final.html](../mockups/StockHub%20Final.html).
 
 GitHub issues should exist for the current milestone with detailed acceptance
 criteria and direct mockup references. Future milestone records may exist before
