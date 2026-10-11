@@ -302,6 +302,7 @@ export function InventoryEmpty() {
 export function ProductDetail({ allFailing = false }: { allFailing?: boolean }) {
   const [panel, setPanel] = useState<Panel>(null)
   const [detail, setDetail] = useState<InventoryProductDetail | null>(null)
+  const [source, setSource] = useState<'loading' | 'loaded' | 'unauthorized' | 'error' | 'empty'>('loading')
   const params = typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.hash.split('?')[1] || '')
   const requestedProductId = params.get('product')
   useEffect(() => {
@@ -309,18 +310,29 @@ export function ProductDetail({ allFailing = false }: { allFailing?: boolean }) 
     api.session()
       .then(session => {
         const workspace = session.workspaces.find(item => item.id === session.activeWorkspaceId) || session.workspaces[0]
-        if (!workspace) return
-        if (requestedProductId) return api.inventoryProduct(workspace.id, requestedProductId, { allFailing }).then(next => { if (alive) setDetail(next) })
+        if (!alive) return
+        if (!workspace) { setSource('unauthorized'); return }
+        if (requestedProductId) return api.inventoryProduct(workspace.id, requestedProductId, { allFailing }).then(next => { if (alive) { setDetail(next); setSource('loaded') } })
         return api.inventory(workspace.id).then(list => {
           const first = list.products[0]
-          if (!first) return
-          return api.inventoryProduct(workspace.id, first.id, { allFailing }).then(next => { if (alive) setDetail(next) })
+          if (!first) { if (alive) setSource('empty'); return }
+          return api.inventoryProduct(workspace.id, first.id, { allFailing }).then(next => { if (alive) { setDetail(next); setSource('loaded') } })
         })
       })
-      .catch(error => { if (!(error instanceof AccessApiError && error.status === 401)) console.warn(error) })
+      .catch(error => {
+        if (!alive) return
+        if (error instanceof AccessApiError && error.status === 401) setSource('unauthorized')
+        else { console.warn(error); setSource('error') }
+      })
     return () => { alive = false }
   }, [allFailing, requestedProductId])
-  if (!detail) return <Shell sync="Loading backend inventory" panel={panel} setPanel={setPanel}><p>Loading product detail…</p></Shell>
+  if (!detail) {
+    const unauthorized = source === 'unauthorized'
+    const empty = source === 'empty'
+    const heading = source === 'loading' ? 'Loading product detail…' : unauthorized ? 'Sign in required' : empty ? 'No backend products yet' : 'Product detail could not be loaded'
+    const body = unauthorized ? 'StockHub could not verify a signed-in workspace, so it cannot load product details.' : empty ? 'This workspace has no products to show.' : 'The backend did not return product details. Check the connection and retry.'
+    return <Shell sync={source === 'loading' ? 'Loading backend inventory' : unauthorized ? 'Sign in required' : source === 'error' ? 'Product detail unavailable' : 'Backend inventory'} panel={panel} setPanel={setPanel}><section className="empty-inventory inventory-load-state" role={source === 'loading' ? undefined : 'status'}><div>{source !== 'loading' && <span className="empty-icon">{unauthorized ? 'lock' : empty ? 'box' : '!'}</span>}<h2>{heading}</h2>{source !== 'loading' && <><p>{body}</p>{unauthorized ? <a className="primary-link-button" href="#settings">Open sign-in settings</a> : empty ? <a className="primary-link-button" href="#inventory">Go to Inventory</a> : <button className="primary-link-button" type="button" onClick={() => window.location.reload()}>Retry</button>}</>}</div></section></Shell>
+  }
   const product = detail.product
   function localAdjust(delta: number) {
     if (!detail) return

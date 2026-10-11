@@ -164,8 +164,11 @@ closure and deployment evidence is in
 Milestone 11 adds dark Dashboard, Inventory with an open product quick view,
 and Product detail variants. It consumes the shared Light/Dark/System
 preference from `frontend/src/appearance.ts`; do not create another preference
-store or API. The quick view must show an active-workspace persisted product
-(prefer Samsung only when that product exists) and preserve direct row links to
-Product detail. Issues #151–#154 under GitHub milestone #12 define the
-acceptance criteria. See `docs/plans/milestone-11-dark-mode.md` for the
-accessibility, contrast, keyboard, responsive, and delivery gates.
+store or API. The quick view shows the selected active-workspace persisted
+product (prefer Samsung only when that product exists) and preserves direct row
+links to Product detail. Test fixtures remain component-test-only. Inventory
+and Product detail distinguish 401 from a successful empty response; never
+show “No products” or an indefinite spinner when workspace authentication
+failed. Issues #151–#154 under GitHub milestone #12 define the acceptance
+criteria. See `docs/plans/milestone-11-dark-mode.md` for accessibility,
+contrast, keyboard, responsive, and delivery evidence.

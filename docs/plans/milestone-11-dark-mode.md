@@ -67,8 +67,13 @@ authorization policy, and unrelated screen redesign.
    does not break existing direct detail navigation.
 4. Earlier route behavior and business data remain unchanged; no dark-mode path
    substitutes mocked product, inventory, account, or platform values.
-5. Focused unit/component tests and keyboard/pointer browser review cover the
-   quick view and the three dark screen variants at desktop and narrow widths.
+5. Focused unit/component tests cover persisted-product quick-view content,
+   keyboard focus, dismissal, direct detail navigation, and authenticated/error
+   states. Browser review covers the available desktop and narrow-width states.
+   If the review environment has no authenticated workspace/product, record
+   that limitation and use isolated component fixtures only for product
+   interactions; never insert runtime sample accounts or products to force the
+   panel open.
 6. Frontend test/build, relevant contract/backend checks, Compose/container
    smoke, image security, required CI, migration, and rollout gates pass where
    affected. Hosted deployment is reported as unverified when skipped.
@@ -143,7 +148,7 @@ its acceptance criteria before integration/closure begins.
 - At completion, record the feature branch/source SHA, merged main SHA, dev
   integration state, published digest, persistent local deployment/readiness,
   and hosted target status separately.
-- Progress evidence (11 October 2026): the isolated frontend has 50 passing
+- Progress evidence (11 October 2026): the isolated frontend has 54 passing
   tests, a successful TypeScript/Vite production build, and passing Access and
   Reports contract checks. Local browser review confirmed the Dark Inventory
   empty state at desktop and 390px with no horizontal page overflow; a
@@ -156,11 +161,20 @@ its acceptance criteria before integration/closure begins.
   now defaults to that target and supports `STOCKHUB_API_TARGET` overrides;
   README documents the local review setup. The API now responds, but its
   session endpoint returns 401 in the review browser, which has no authenticated
-  workspace, and the local Inventory contains no accessible persisted
-  products. Therefore live Dashboard data, Product detail, and persisted
-  quick-view browser review remain unverified; mocked component fixtures are
-  test-only and are not evidence of persisted data. Do not close the milestone
-  until those browser/data gates and CI/deployment gates are verified.
+  workspace, and Inventory has no accessible persisted products. The 401 path
+  now shows an explicit sign-in-required state in Inventory and Product detail
+  instead of claiming the workspace is empty or leaving detail in an indefinite
+  loading state. At desktop 1280×720 and narrow 390×844, both dark auth-required
+  states were reviewed; `document.body` and the root stayed at viewport width.
+  Dashboard navigation redirects to Sign in on this unauthenticated session.
+  Product detail and persisted quick-view browser review remain unavailable
+  without workspace data; component fixtures are test-only. Both Inventory and
+  Product detail auth and backend-failure states have regression tests.
+  Quick-view tests
+  cover persisted-detail content, keyboard open/close, Escape, focus
+  trapping/restoration, direct detail links, retry, and role-based price
+  visibility. No runtime sample account or product was created. Required
+  PR/deployment and closure gates remain open until their evidence is available.
 - Previous milestone hook: PASS. M10 report
   `docs/reports/milestone-10-settings-closure.md` says PASS, GitHub milestone
   #11 is closed with zero open issues, and

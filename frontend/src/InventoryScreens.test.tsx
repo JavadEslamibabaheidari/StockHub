@@ -2,7 +2,7 @@
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Inventory } from './InventoryScreens'
+import { Inventory, ProductDetail } from './InventoryScreens'
 import { AccessApiError } from './api/generated'
 
 const { sessionMock, inventoryMock, inventoryProductMock } = vi.hoisted(() => ({
@@ -144,5 +144,42 @@ describe('Inventory authentication state', () => {
     expect(host.textContent).toContain('Sign in required')
     expect(host.textContent).toContain('cannot report whether inventory is empty')
     expect(host.textContent).not.toContain('No backend products yet')
+  })
+
+  it('does not leave Product detail stuck loading when the session is unauthorized', async () => {
+    sessionMock.mockReset().mockRejectedValue(new AccessApiError(401, { title: 'Unauthorized', detail: 'Sign in required' }))
+    await act(async () => root.unmount())
+    root = createRoot(host)
+    await act(async () => root.render(createElement(ProductDetail)))
+    await flush()
+    expect(host.textContent).toContain('Sign in required')
+    expect(host.textContent).toContain('cannot load product details')
+    expect(host.textContent).not.toContain('Loading product detail…')
+  })
+
+  it('shows a retryable Inventory error for backend failures', async () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    sessionMock.mockReset().mockRejectedValue(new Error('offline'))
+    await act(async () => root.unmount())
+    root = createRoot(host)
+    await act(async () => root.render(createElement(Inventory)))
+    await flush()
+    expect(host.textContent).toContain('Inventory could not be loaded')
+    expect(host.textContent).toContain('Check the connection and retry')
+    expect(host.textContent).not.toContain('No backend products yet')
+    warning.mockRestore()
+  })
+
+  it('shows a retryable Product detail error for backend failures', async () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    sessionMock.mockReset().mockRejectedValue(new Error('offline'))
+    await act(async () => root.unmount())
+    root = createRoot(host)
+    await act(async () => root.render(createElement(ProductDetail)))
+    await flush()
+    expect(host.textContent).toContain('Product detail could not be loaded')
+    expect(host.textContent).toContain('Check the connection and retry')
+    expect(host.textContent).not.toContain('Loading product detail…')
+    warning.mockRestore()
   })
 })
