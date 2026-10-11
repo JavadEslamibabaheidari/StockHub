@@ -186,8 +186,19 @@ reference screen, then integration and closure.
   text on accent tint in both themes.
 - The authenticated coordinator browser reviewed `#design-system` at 1280×720
   and 390×844 in Light and Dark. The narrow view stacked without page-level
-  horizontal overflow and retained visible keyboard focus. Full browser review
-  of all application routes, CI/delivery, tracking hook, and milestone closure
+  horizontal overflow and retained visible keyboard focus. A subsequent
+  signed-out route-family review at the available 1265×713 desktop viewport
+  covered signup, password recovery, inventory, reservations, platforms, and
+  the auth redirects for dashboard, orders, pricing, reports, team, and
+  settings. Keyboard Tab reached the signup home link with a visible focus
+  outline. Inventory showed its explicit sign-in-required state. Dashboard,
+  orders, pricing, reports, team, and settings redirected to Sign in; therefore
+  their authenticated screens were not visually reviewed. Reservations and
+  Platforms rendered sample workspace figures while signed out; this is an
+  audit finding, not verified account data, and no data/action was changed.
+  Desktop visual checks showed no page-level horizontal overflow in the
+  captured route states. Route-family Light/Dark coverage at desktop and the
+  390×844 cross-route pass, CI/delivery, tracking hook, and milestone closure
   remain outstanding. No signed-in workspace data was seeded during M12.
 - Remaining CSS hex values after the Design system reference styles are
   opacity-based shadows, generic contrasting control/icon whites, brand glyphs,
