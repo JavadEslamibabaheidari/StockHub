@@ -197,9 +197,22 @@ reference screen, then integration and closure.
   Platforms rendered sample workspace figures while signed out; this is an
   audit finding, not verified account data, and no data/action was changed.
   Desktop visual checks showed no page-level horizontal overflow in the
-  captured route states. Route-family Light/Dark coverage at desktop and the
-  390×844 cross-route pass, CI/delivery, tracking hook, and milestone closure
-  remain outstanding. No signed-in workspace data was seeded during M12.
+  captured route states. A 390×844 pass then captured `#signup` and `#signin`
+  in the active dark appearance, `#inventory` in its sign-in-required state,
+  `#platforms` and `#reservations` in the active dark appearance, plus
+  `#design-system` with its temporary Light preview. Auth forms and platform
+  cards stacked vertically, the reservations summary stacked above its table,
+  and none of the captured narrow states showed horizontal overflow. At this
+  width, Tab from page navigation visibly focused the StockHub home link on
+  signup. M12's reference page had earlier been checked in both Light and Dark
+  at desktop and 390px. The narrow pass did not render authenticated Orders,
+  Pricing, Reports, Team, Settings, or Dashboard screens because the available
+  browser had no signed-in session. The browser-local preference visible in
+  the current pass is Dark; restoring the original System preference through
+  Settings is blocked by its sign-in redirect and is being handled by the
+  coordinator. No signed-in workspace data or business actions were seeded or
+  changed. Route-family theme coverage for inaccessible authenticated screens,
+  CI/delivery, tracking hook, and milestone closure remain outstanding.
 - Remaining CSS hex values after the Design system reference styles are
   opacity-based shadows, generic contrasting control/icon whites, brand glyphs,
   and Cover/decorative or role-specific values. Repeated semantic surface,
