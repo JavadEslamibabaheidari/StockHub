@@ -78,17 +78,23 @@ M11 Dark mode PR #155 merged to `main` at
 to the persistent local target. Live `dev` remains at
 `21549b36342cb031dc94bc79b28ee502be5dbf9c`.
 
-M12 Design system, GitHub milestone #13, is active. Live GitHub UI confirmed the
-milestone was open with zero issues; issues #159–#161 have since been created
-under it and assigned to the repository owner. The implementation plan is
-[milestone-12-design-system.md](milestone-12-design-system.md). Its scope is
-page 2 of the Design Review PDF: shared light/dark semantic tokens, typography,
-strict en-GB formats, an interactive design-system reference screen, and
-adoption across implemented application routes. The previous M11 closure hook
-passes against `main` at `17ae97645cf898bb68a73323e42f75da8e2eef1c`.
-The authenticated repository Projects page reports no linked projects; this
-board configuration gap is recorded in the M12 plan. The CLI tracking hook
-cannot verify live state with the configured GitHub credentials.
+M12 Design system, GitHub milestone #13, remains open while its three issues
+#159–#161 are closed and final evidence is synchronized. Implementation PR
+#162 merged from `codex/milestone-12-design-system`, source
+`315664b0a582e481bb31b39106543a2f3780dcd4`, to `main` at
+`8f9a656657e725c1ce4e9ade1777f89e321b557c`. Main run #38182610493 published
+`ghcr.io/javadeslamibabaheidari/stockhub@sha256:ab1a11b751a32d09e74ea285287af6589ff6ba9a51cce8dd97520f65ca446776`; persistent
+local deployment run #38182882314 completed the migration, 1/1 rollout, and
+`/ready` check for that SHA/digest. Review-staging and production promotion
+were skipped. Live `dev` remains at
+`21549b36342cb031dc94bc79b28ee502be5dbf9c`. The implementation plan is
+[milestone-12-design-system.md](milestone-12-design-system.md), and its
+closure evidence is in
+[milestone-12-design-system-closure.md](../reports/milestone-12-design-system-closure.md).
+The full Sign-up-to-end authenticated real-data audit remains queued until
+after the unparented milestone. The authenticated repository Projects page
+reports no linked projects; this board configuration gap is recorded in the
+M12 plan.
 
 Completed milestone `11 Dark mode`, GitHub milestone #12, delivered dark
 Dashboard, Inventory with quick view, and Product detail variants using M10's
