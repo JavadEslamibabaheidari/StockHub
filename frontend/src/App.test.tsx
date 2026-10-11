@@ -243,6 +243,17 @@ describe('Milestone 6 Platforms route', () => {
   })
 })
 
+describe('Milestone 10 Settings route', () => {
+  it('routes #settings to the workspace Settings screen', () => {
+    const originalWindow = globalThis.window
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hash: '#settings' }, addEventListener: () => {}, removeEventListener: () => {} } })
+    const markup = renderToStaticMarkup(<App />)
+    expect(markup).toContain('id="settings-title">Settings</h1>')
+    expect(markup).toContain('Loading workspace settings')
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow })
+  })
+})
+
 describe('Milestone 7 Pricing rules route', () => {
   it('opens the real pricing rules shell and editor route', () => {
     const originalWindow = globalThis.window

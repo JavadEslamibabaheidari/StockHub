@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
+import { toggleExplicitTheme } from './appearance'
 import {
   AccessApiClient,
   AccessApiError,
@@ -61,9 +62,6 @@ function TeamShell({
   const [accountOpen, setAccountOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
-  useEffect(() => {
-    document.documentElement.dataset.theme = localStorage.getItem('stockhub-theme') || 'light'
-  }, [])
 
   async function signOut() {
     try {
@@ -96,7 +94,7 @@ function TeamShell({
             <label className="inventory-search"><span>Search members and invitations</span><input aria-label="Search members and invitations" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search members and invitations…" /></label>
             <div className="inventory-user">
               <button className="sync-ok" type="button" onClick={() => setPanel({ title: 'Team data', body: 'Member and invitation data is loaded from the active workspace.' })}>Team data</button>
-              <button type="button" aria-label="Toggle appearance" onClick={() => { const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = next; localStorage.setItem('stockhub-theme', next) }}>☾</button>
+              <button type="button" aria-label="Toggle appearance" onClick={toggleExplicitTheme}>☾</button>
               <button type="button" aria-label="Notifications" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen(open => !open)}>!</button>
               <button className="reservation-account" type="button" onClick={() => setAccountOpen(open => !open)} aria-expanded={accountOpen}>
                 <b>{initials(fullName)}</b><span>{fullName}<small>{roleNames[workspace?.role || 'Owner']}</small></span><span aria-hidden="true">⌄</span>

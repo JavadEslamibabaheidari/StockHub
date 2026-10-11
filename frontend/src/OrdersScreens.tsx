@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { toggleExplicitTheme } from './appearance'
 import {
   AccessApiClient,
   AccessApiError,
@@ -131,7 +132,7 @@ function Shell({
             <label className="inventory-search"><span>Search</span><input value={search || ''} onChange={event => setSearch?.(event.target.value)} placeholder="Search products, SKUs, orders..." /></label>
             <div className="inventory-user">
               <button className={sync.includes('failed') ? 'sync-alert' : 'sync-ok'} type="button" onClick={() => setPanel({ title: 'Sync status', body: sync })}>{sync}</button>
-              <button type="button" aria-label="Toggle appearance" onClick={() => { document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark' }}>☾</button>
+              <button type="button" aria-label="Toggle appearance" onClick={toggleExplicitTheme}>☾</button>
               <button type="button" aria-label="Notifications" onClick={() => setPanel({ title: 'Notifications', body: 'Order notifications come from persisted order state.' })}>!</button>
               <b>{identity.userInitials}</b><span>{identity.fullName}<small>{identity.role}</small></span>
             </div>
