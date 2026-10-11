@@ -1,6 +1,6 @@
 # StockHub Mockup-Led Roadmap
 
-Status: milestones 0–7 are closed in GitHub; Reports implementation is merged and its closure evidence PR is in progress. Team (`9 Team`) follows Reports in the mockup roadmap; its GitHub start gate has not been opened.
+Status: milestones 0–8 are closed in GitHub. Team (`9 Team`) is the active mockup-led milestone; its plan and issues #135–#138 are recorded.
 
 ## Source of truth
 
@@ -65,9 +65,9 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-Milestones 0–7 are closed in GitHub with zero open issues. Reports implementation
-is merged and the closure evidence PR is being finalized. The next mockup-led
-section is `9 Team`; GitHub planning and its start gate are pending. Pricing execution is tracked in
+Milestones 0–8 are closed in GitHub with zero open issues. The next mockup-led
+section is `9 Team`, tracked in GitHub milestone #10 with issues #135–#138.
+Team execution is specified in [milestone-9-team.md](milestone-9-team.md). Pricing execution is tracked in
 [milestone-7-pricing.md](milestone-7-pricing.md), issues #116–#119; closure
 evidence is in
 [milestone-7-pricing-closure.md](../reports/milestone-7-pricing-closure.md).
