@@ -1,6 +1,6 @@
 # StockHub Mockup-Led Roadmap
 
-Status: milestones 0–12 are closed in GitHub with PASS reports. The unparented milestone (GitHub title `unparentted milestone`, #14) is next and must remain the final milestone before the whole-app audit.
+Status: milestones 0–12 are closed in GitHub with PASS reports. The final `Unparented milestone` (#14) is active and must close before the whole-app audit.
 
 ## Source of truth
 
@@ -91,11 +91,11 @@ local deployment run #38182882314 completed migration, 1/1 rollout, and the
 promotion were skipped. Live `dev` remains at
 `21549b36342cb031dc94bc79b28ee502be5dbf9c`.
 
-The final open milestone is GitHub milestone #14, titled `unparentted
+The final open milestone is GitHub milestone #14, titled `Unparented
 milestone`, with seven issues #27, #35, #47, #48, #65, #123, and #132. It is
 the last milestone by user direction. Its issue scopes include deferred Access
 and onboarding work, responsive verification, alert delivery, and delivery
-targets. Work starts only after M12 closure. After M14 closes, run the full
+targets. The M14 execution plan is active after M12 closure. After M14 closes, run the full
 Sign-up-to-end audit against real persisted data, excluding Cover, as requested.
 M12 authenticated route visuals, sample-looking signed-out Reservations and
 Platforms content, and the browser-local appearance preference cleanup are

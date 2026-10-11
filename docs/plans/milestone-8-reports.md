@@ -202,7 +202,7 @@ Main run 38122722365 published `ghcr.io/javadeslamibabaheidari/stockhub@sha256:a
 ## Maintenance follow-up
 
 [Issue #132](https://github.com/JavadEslamibabaheidari/StockHub/issues/132), in
-the existing `unparentted milestone` (#14), tracks actual scheduled Email,
+the existing `Unparented milestone` (#14), tracks actual scheduled Email,
 In-app, and Slack alert delivery, retries/deduplication, and operational
 evidence. Reports implements truthful preference persistence and makes the
 delivery limitation visible; it does not claim to send messages.
