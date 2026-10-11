@@ -80,4 +80,9 @@ public interface IAccessStore
         Guid workspaceId,
         string actionKey,
         CancellationToken cancellationToken);
+
+    Task<string?> GetSelectedOnboardingActionAsync(
+        Guid userId,
+        Guid workspaceId,
+        CancellationToken cancellationToken);
 }

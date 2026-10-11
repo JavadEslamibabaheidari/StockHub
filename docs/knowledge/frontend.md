@@ -194,3 +194,8 @@ aligned and tabular; Reports marks numeric columns explicitly.
 boundary behavior. The branch verification record and remaining delivery gates
 are in `docs/plans/milestone-12-design-system.md` until the GitHub closure report
 is merged.
+
+The Onboarding route reads the active workspace's persisted selected action
+from the Access API and reopens that step after navigation or workspace
+switching. A selected handoff remains uncompleted until its owning capability
+confirms completion; the frontend must not infer completion from selection.

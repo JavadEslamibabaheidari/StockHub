@@ -47,6 +47,12 @@ var authenticationBuilder = builder.Services
 
             return Task.CompletedTask;
         };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+
+            return Task.CompletedTask;
+        };
         options.Events.OnValidatePrincipal = async context =>
         {
             if (!Guid.TryParse(context.Principal?.FindFirstValue("session_id"), out var sessionId)
@@ -567,12 +573,8 @@ app.MapGet(
             return Results.Forbid();
         }
 
-        return Results.Ok(new[]
-        {
-            new OnboardingTask("import-products", "Import products", "available", "inventory"),
-            new OnboardingTask("connect-platform", "Connect a platform", "available", "platforms"),
-            new OnboardingTask("invite-team", "Invite your team", "available", "team")
-        });
+        var selectedAction = await store.GetSelectedOnboardingActionAsync(userId, workspaceId, cancellationToken);
+        return Results.Ok(OnboardingTask.CreateChecklist(selectedAction));
     })
     .RequireAuthorization()
     .WithTags("Onboarding");
@@ -597,6 +599,14 @@ app.MapPost(
         if (!isMember)
         {
             return Results.Forbid();
+        }
+
+        if (!OnboardingTask.IsSupportedAction(request.Key))
+        {
+            return Results.Problem(
+                "Choose one of the available onboarding steps.",
+                statusCode: StatusCodes.Status400BadRequest,
+                extensions: new Dictionary<string, object?> { ["code"] = "onboarding_action_invalid" });
         }
 
         await store.RecordOnboardingActionAsync(userId, workspaceId, request.Key, cancellationToken);
