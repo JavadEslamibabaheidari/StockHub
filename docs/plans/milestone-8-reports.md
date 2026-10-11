@@ -1,14 +1,13 @@
 # Milestone 8 Reports
 
-Status: implementation in progress on isolated local branch `codex/milestone-8-reports`, based on main
+Status: implementation PR [#133](https://github.com/JavadEslamibabaheidari/StockHub/pull/133) is open from isolated branch `codex/milestone-8-reports`; source HEAD is `1b975770b6599e52f87aed6074d0e9a33441f711` (implementation commit `2834bc5292eaf9e71684f9ec76496de8f357dc80`), based on main
 `539c412345a6a78211557c8624ad0ea7c4df26ea`. GitHub's authenticated in-app
 session confirmed milestone `8 Reports` (GitHub milestone number 9) is open;
-planning issue #126 is closed after contract freeze, while implementation and
-integration issues #127–#131 remain open. Maintenance issue #132
+planning issue #126 is closed after contract freeze, while implementation issues #127–#130 and integration issue #131 remain open pending PR #133 merge. PR #133 has passed tracking consistency, backend CI, frontend CI, and Compose smoke checks; image scan and local Kubernetes smoke are still running. Maintenance issue #132
 tracks real outbound delivery. Milestones 0–7 were confirmed closed in the same
 GitHub session. Refreshed main is `539c412345a6a78211557c8624ad0ea7c4df26ea`
 and dev remains `21549b36342cb031dc94bc79b28ee502be5dbf9c`. The CLI token is
-invalid; the in-app GitHub browser is authenticated.
+invalid; the in-app GitHub browser is authenticated. GitHub shows PR #133 as the only open repository PR.
 
 ## Goal and source material
 
