@@ -1,6 +1,6 @@
 # Unparented milestone execution plan
 
-Status: active; M12 is closed in GitHub with zero open issues and a PASS report. The final unparented milestone is GitHub milestone #14.
+Status: active; M12 is closed in GitHub with zero open issues and a PASS report. The final `Unparented milestone` is GitHub milestone #14. Issue #35 implementation is merged to main at `39eb728ad958b2f01e9cc4894987614e16c4e873`; its persistent local deployment run #38185661756 recorded digest `sha256:0c54de86147fc256a7fdf89637f2b2bef10a136029677f3dbea7fa0288428632`. Live Google OIDC and real email delivery remain unverified because provider credentials and callback configuration are unavailable.
 
 ## Goal
 
@@ -27,7 +27,7 @@ The audit will compare every implemented screen and interaction with the approve
 ## Current baseline and start gate
 
 - Previous milestone hook: PASS. `docs/reports/milestone-12-design-system-closure.md` is merged, reports PASS, and GitHub milestone #13 is closed with zero open issues.
-- Main baseline: `1652da6bc3426140ac017b8ae1ac593421155b17`. Refreshed `dev`: `21549b36342cb031dc94bc79b28ee502be5dbf9c`.
+- Main baseline before M14 planning: `1652da6bc3426140ac017b8ae1ac593421155b17`. Current refreshed `main`: `39eb728ad958b2f01e9cc4894987614e16c4e873`. Refreshed `dev`: `21549b36342cb031dc94bc79b28ee502be5dbf9c`.
 - GitHub milestone #14 is open and has seven open issues: #27, #35, #47, #48, #65, #123, and #132. Their live issue criteria are the execution contract; this plan records their dependency order and verification.
 - **Branch transition constraint:** after the M14 plan merged, main advanced to f58266e23d8210361a8bc0933550d06361d92e80, while dev remained at 21549b36342cb031dc94bc79b28ee502be5dbf9c. They diverge from 8c5fe1f8f5d371f70a1a9a49bb99e4d60b754420: main is 60 commits ahead and dev has 2 unique commits; dev currently requires linear history. Therefore issues #35, #65, #123, and #132 use protected-main PRs from the already-current product baseline. Issue #47 must validate a protected synchronization path that preserves both branches' intended content and updates dev to main before any subsequent product PR targets dev. Do not merge main into dev through a linear-history squash that obscures ancestry or creates a misleading future promotion diff.
 - Existing backend and frontend already contain parts of the Access follow-ups. Each issue starts with acceptance validation against current main and changes only verified gaps; existing code presence alone does not close an issue.
@@ -81,7 +81,7 @@ Each issue is handled alone on a dedicated branch and PR. Because the verified m
 
 ## GitHub tracking
 
-- Milestone: [#14 unparented follow-up](https://github.com/JavadEslamibabaheidari/StockHub/milestone/14).
+- Milestone: [#14 Unparented milestone](https://github.com/JavadEslamibabaheidari/StockHub/milestone/14).
 - Issues in execution order: [#35](https://github.com/JavadEslamibabaheidari/StockHub/issues/35), [#65](https://github.com/JavadEslamibabaheidari/StockHub/issues/65), [#123](https://github.com/JavadEslamibabaheidari/StockHub/issues/123), [#132](https://github.com/JavadEslamibabaheidari/StockHub/issues/132), [#47](https://github.com/JavadEslamibabaheidari/StockHub/issues/47), [#48](https://github.com/JavadEslamibabaheidari/StockHub/issues/48), [#27](https://github.com/JavadEslamibabaheidari/StockHub/issues/27).
 - Previous milestone gate: M12 closed with zero open issues and its PASS report merged before this plan branch was created.
 - After meaningful implementation changes, update relevant `docs/knowledge/` files and validate planned state before issue closure.
