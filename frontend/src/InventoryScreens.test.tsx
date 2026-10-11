@@ -144,6 +144,8 @@ describe('Inventory authentication state', () => {
     expect(host.textContent).toContain('Sign in required')
     expect(host.textContent).toContain('cannot report whether inventory is empty')
     expect(host.textContent).not.toContain('No backend products yet')
+    expect(host.textContent).toContain('Not signed in')
+    expect(host.textContent).not.toContain('Pro plan')
   })
 
   it('does not leave Product detail stuck loading when the session is unauthorized', async () => {
@@ -155,6 +157,8 @@ describe('Inventory authentication state', () => {
     expect(host.textContent).toContain('Sign in required')
     expect(host.textContent).toContain('cannot load product details')
     expect(host.textContent).not.toContain('Loading product detail…')
+    expect(host.textContent).toContain('Not signed in')
+    expect(host.textContent).not.toContain('Pro plan')
   })
 
   it('shows a retryable Inventory error for backend failures', async () => {

@@ -24,7 +24,7 @@ const nav = [
 ] as const
 
 type Panel = { title: string; body: string; tone?: 'ok' | 'warn' } | null
-type ShellIdentity = { workspaceName: string; workspaceInitials: string; workspaceCount: number; fullName: string; userInitials: string; role: string }
+type ShellIdentity = { signedIn: boolean; workspaceName: string; workspaceInitials: string; workspaceCount: number; fullName: string; userInitials: string; role: string }
 
 const ownerCapabilities: InventoryCapabilities = { canAdjustOnHand: true, canChangePrice: true, canManageListings: true }
 const staffCapabilities: InventoryCapabilities = { canAdjustOnHand: true, canChangePrice: false, canManageListings: false }
@@ -79,12 +79,13 @@ function emptyList(staff = false): InventoryListResponse {
 
 function Shell({ children, role, sync = 'Backend inventory · platform sync pending', panel, setPanel }: { children: ReactNode; role?: string; sync?: string; panel: Panel; setPanel: (panel: Panel) => void }) {
   const [identity, setIdentity] = useState<ShellIdentity>({
-    workspaceName: 'Your workspace',
+    signedIn: false,
+    workspaceName: 'Sign in required',
     workspaceInitials: 'SH',
-    workspaceCount: 1,
-    fullName: 'Your account',
+    workspaceCount: 0,
+    fullName: 'Not signed in',
     userInitials: 'SH',
-    role: role || 'Owner',
+    role: 'Not signed in',
   })
   useEffect(() => {
     let alive = true
@@ -93,12 +94,13 @@ function Shell({ children, role, sync = 'Backend inventory · platform sync pend
         if (!alive) return
         const workspace = session.workspaces.find(item => item.id === session.activeWorkspaceId) || session.workspaces[0]
         setIdentity({
+          signedIn: Boolean(workspace),
           workspaceName: workspace?.businessName || 'Your workspace',
           workspaceInitials: initials(workspace?.businessName || ''),
           workspaceCount: Math.max(session.workspaces.length, 1),
           fullName: session.fullName || 'Your account',
           userInitials: initials(session.fullName || ''),
-          role: role || formatRole(workspace?.role),
+          role: workspace ? role || formatRole(workspace.role) : 'Not signed in',
         })
       })
       .catch(error => { if (!(error instanceof AccessApiError && error.status === 401)) console.warn(error) })
@@ -108,11 +110,11 @@ function Shell({ children, role, sync = 'Backend inventory · platform sync pend
     <main className="inventory-page">
       <div className="inventory-shell">
         <aside className="inventory-sidebar">
-          <a className="inventory-workspace" href="#dashboard" aria-label="Workspace dashboard">
-            <b>{identity.workspaceInitials}</b><span><strong>{identity.workspaceName}</strong><small>{identity.role} · {identity.workspaceCount} workspace{identity.workspaceCount === 1 ? '' : 's'}</small></span><span>⌄</span>
+          <a className="inventory-workspace" href={identity.signedIn ? '#dashboard' : '#signin'} aria-label={identity.signedIn ? 'Workspace dashboard' : 'Sign in'}>
+            <b>{identity.workspaceInitials}</b><span><strong>{identity.workspaceName}</strong><small>{identity.signedIn ? `${identity.role} · ${identity.workspaceCount} workspace${identity.workspaceCount === 1 ? '' : 's'}` : 'Not signed in'}</small></span>{identity.signedIn && <span>⌄</span>}
           </a>
           <nav aria-label="Main navigation">{nav.map(([label, href]) => <a key={label} className={label === 'Inventory' ? 'active' : ''} href={href}>{label}</a>)}</nav>
-          <div className="inventory-plan"><strong>{identity.role === 'Owner' ? 'Pro plan' : 'Free trial'}</strong><a href="#settings">Upgrade</a><span /></div>
+          {identity.signedIn ? <div className="inventory-plan"><strong>{identity.role === 'Owner' ? 'Pro plan' : 'Free trial'}</strong><a href="#settings">Upgrade</a><span /></div> : <div className="inventory-plan"><strong>Signed out</strong><a href="#signin">Sign in</a></div>}
         </aside>
         <section className="inventory-main">
           <header className="inventory-top">
@@ -121,7 +123,7 @@ function Shell({ children, role, sync = 'Backend inventory · platform sync pend
               <button className={sync.includes('failed') || sync.includes('failing') ? 'sync-alert' : 'sync-ok'} type="button" onClick={() => setPanel({ title: 'Sync status', body: sync })}>{sync}</button>
               <button type="button" aria-label="Toggle appearance" onClick={toggleExplicitTheme}>☾</button>
               <button type="button" aria-label="Notifications" onClick={() => setPanel({ title: 'Notifications', body: 'Inventory notifications are collected in the Reports milestone.' })}>♧</button>
-              <b>{identity.userInitials}</b><span>{identity.fullName}<small>{identity.role}</small></span>
+              <b>{identity.userInitials}</b><span>{identity.fullName}<small>{identity.signedIn ? identity.role : 'Sign in required'}</small></span>
             </div>
           </header>
           {children}

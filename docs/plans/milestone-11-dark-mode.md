@@ -164,7 +164,8 @@ its acceptance criteria before integration/closure begins.
   workspace, and Inventory has no accessible persisted products. The 401 path
   now shows an explicit sign-in-required state in Inventory and Product detail
   instead of claiming the workspace is empty or leaving detail in an indefinite
-  loading state. At desktop 1280×720 and narrow 390×844, both dark auth-required
+  loading state; the shell also no longer presents a signed-out user as an
+  Owner on the Pro plan. At desktop 1280×720 and narrow 390×844, both dark auth-required
   states were reviewed; `document.body` and the root stayed at viewport width.
   Dashboard navigation redirects to Sign in on this unauthenticated session.
   Product detail and persisted quick-view browser review remain unavailable

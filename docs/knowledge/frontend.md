@@ -167,7 +167,8 @@ preference from `frontend/src/appearance.ts`; do not create another preference
 store or API. The quick view shows the selected active-workspace persisted
 product (prefer Samsung only when that product exists) and preserves direct row
 links to Product detail. Test fixtures remain component-test-only. Inventory
-and Product detail distinguish 401 from a successful empty response; never
+and Product detail distinguish 401 from a successful empty response; their
+shell also avoids inventing signed-out workspace, owner, or plan details. Never
 show “No products” or an indefinite spinner when workspace authentication
 failed. Issues #151–#154 under GitHub milestone #12 define the acceptance
 criteria. See `docs/plans/milestone-11-dark-mode.md` for accessibility,
