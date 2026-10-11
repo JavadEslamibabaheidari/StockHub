@@ -46,9 +46,11 @@ role permission matrix.
   can view stock, orders, and reservations; Warehouse staff can adjust on-hand
   stock but cannot access price data; Owner/Admin/Manager can see and change
   prices and pricing rules and can edit report alerts. Platform connection
-  management and billing are owner/admin capabilities. Before implementation,
-  verify each row against its endpoint and do not claim finer permissions
-  unless those endpoints enforce them.
+  management and billing are owner/admin capabilities. The audit found that
+  inventory detail currently returns price data to every member, so the API
+  must enforce the matrix before the screen can claim that restriction. Check
+  all rows against their endpoints and tests; do not imply restrictions that
+  the server does not enforce.
 - Treat memberships and invitations as Access-domain state. Extend the Access
   store and workspace-scoped Access endpoints; do not query another module's
   tables directly.
