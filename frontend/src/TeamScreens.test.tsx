@@ -31,6 +31,7 @@ let host: HTMLDivElement
 let teamOne: TeamResponse
 let teamTwo: TeamResponse
 let failResend = false
+let failTeamLoad = false
 let requests: { url: string; method: string; body?: string }[]
 let fetchMock: ReturnType<typeof vi.fn>
 
@@ -43,6 +44,7 @@ beforeEach(() => {
   teamOne = structuredClone(initialTeam)
   teamTwo = structuredClone(secondTeam)
   failResend = false
+  failTeamLoad = false
   requests = []
   fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
@@ -50,7 +52,7 @@ beforeEach(() => {
     requests.push({ url, method, body: typeof init?.body === 'string' ? init.body : undefined })
     if (url === '/api/auth/session') return json(session)
     if (url.endsWith('/api/workspaces/workspace-1/active') || url.endsWith('/api/workspaces/workspace-2/active')) return json(undefined, 204)
-    if (url === '/api/workspaces/workspace-1/team') return json(teamOne)
+    if (url === '/api/workspaces/workspace-1/team') return failTeamLoad ? json({ title: 'Unavailable', detail: 'Team service is temporarily unavailable.' }, 503) : json(teamOne)
     if (url === '/api/workspaces/workspace-2/team') return json(teamTwo)
     if (url === '/api/workspaces/workspace-1/invitations' && method === 'POST') {
       const body = JSON.parse(String(init?.body))
@@ -121,6 +123,29 @@ describe('Milestone 9 Team route', () => {
     expect(host.textContent).toContain('What each role can do')
     expect(host.textContent?.toLowerCase()).toContain('cannot access price data')
     expect(requests).toContainEqual(expect.objectContaining({ url: '/api/workspaces/workspace-1/team', method: 'GET' }))
+  })
+
+  it('shows loading, empty, and recoverable Team request error states', async () => {
+    teamOne = { canManage: true, members: [], invitations: [] }
+    root = createRoot(host)
+    act(() => { root?.render(<App />) })
+    expect(host.textContent).toContain('Loading Team members…')
+    await flush()
+    expect(host.textContent).toContain('No members yet')
+    expect(host.textContent).toContain('No pending invitations')
+
+    await act(async () => { root?.unmount() })
+    root = createRoot(host)
+    teamOne = structuredClone(initialTeam)
+    failTeamLoad = true
+    await act(async () => { root?.render(<App />); await new Promise(resolve => setTimeout(resolve, 0)) })
+    await flush()
+    expect(host.textContent).toContain('Team service is temporarily unavailable.')
+    failTeamLoad = false
+    await click(button('Try again'))
+    await flush()
+    expect(host.textContent).toContain('Team members')
+    expect(host.textContent).not.toContain('Team service is temporarily unavailable.')
   })
 
   it('validates an invitation locally and sends a selected role only after valid input', async () => {
@@ -202,5 +227,51 @@ describe('Milestone 9 Team route', () => {
     expect(host.textContent).toContain('Read-only access')
     expect(host.querySelector('button.team-primary-button')).toBeNull()
     expect([...host.querySelectorAll('button')].some(item => item.textContent?.trim() === 'Remove')).toBe(false)
+  })
+
+  it('filters members and invitations from the shared Team search', async () => {
+    await renderTeam()
+    await setValue(host.querySelector<HTMLInputElement>('input[aria-label="Search members and invitations"]')!, 'giulia')
+    await flush()
+    const members = host.querySelector('section[aria-labelledby="team-members-title"]')!
+    const invitations = host.querySelector('section[aria-labelledby="team-invitations-title"]')!
+    expect(members.textContent).toContain('Giulia Rossi')
+    expect(members.textContent).not.toContain('Luca Bianchi')
+    expect(invitations.textContent).toContain('No invitations match your search')
+    expect(invitations.textContent).not.toContain('andrea@example.test')
+  })
+
+  it('keeps the shared shell controls functional', async () => {
+    await renderTeam()
+    await click(button('Team data'))
+    expect(host.textContent).toContain('Member and invitation data is loaded from the active workspace.')
+    await click(button('Close panel'))
+
+    await click(button('Toggle appearance'))
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(localStorage.getItem('stockhub-theme')).toBe('dark')
+    await click(button('Toggle appearance'))
+    expect(document.documentElement.dataset.theme).toBe('light')
+
+    await click(button(/Notifications/))
+    expect(host.textContent).toContain('No new Team notifications.')
+    await click(button('Close'))
+    expect(host.textContent).not.toContain('No new Team notifications.')
+
+    await click(button(/Marco Rossi/))
+    expect(host.textContent).toContain('Account settings')
+    await click(button('View profile'))
+    expect(host.textContent).toContain('Account profile settings are available from Settings.')
+    await click(button('Close panel'))
+
+    await click(button('Collapse navigation'))
+    expect(host.querySelector('.team-page')?.classList.contains('team-collapsed')).toBe(true)
+    await click(button('Expand navigation'))
+    expect(host.querySelector('.team-page')?.classList.contains('team-collapsed')).toBe(false)
+
+    await click(button('Sign out'))
+    await flush()
+    expect(requests).toContainEqual(expect.objectContaining({ url: '/api/auth/sign-out', method: 'POST' }))
+    expect(window.location.hash).toBe('#signin')
   })
 })

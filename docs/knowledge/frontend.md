@@ -41,7 +41,7 @@ and production build in `.github/workflows/frontend-ci.yml`.
 Access routes are hash-addressable in the current shell (`#signup`, `#signin`,
 `#workspace`, `#onboarding`, `#invite`, and deferred handoffs). Forms use the
 generated client, expose labelled controls and live alert errors, and keep
-future Inventory, Platforms, and Team handoffs explicitly deferred. Password
+future Inventory and Platforms handoffs explicitly deferred. Password
 recovery now has request and reset screens backed by the access API. Milestone 1
 has been reopened; see `docs/plans/milestone-1-access-remediation.md` for its
 current acceptance gate.
@@ -117,3 +117,26 @@ shell, and the add-platform modal supports Connect, Done, close X, Escape, and
 backdrop close. Real marketplace OAuth, credential persistence, sync workers,
 stock/price publication, and product listing selection remain future durable
 Platforms integration work.
+
+## Milestone 9 Team
+
+The `#team` route is implemented in `frontend/src/TeamScreens.tsx` and uses the
+generated Access client for the active workspace session and Team roster. It
+shows Owner/Manager/Warehouse staff summary cards, the full Owner/Admin/Manager/
+Warehouse staff/Viewer permission matrix, searchable member and invitation
+tables, and neutral `Unavailable` activity values until real activity tracking
+exists.
+
+Owners and Admins can invite Admin/Manager/Warehouse staff/Viewer roles, resend
+or cancel pending invitations, and remove other members after confirmation.
+Dialogs support validation and delivery/API errors, focus management, Escape,
+and explicit cancellation. Other roles see read-only Team state with no
+management controls. Workspace switches update the active workspace and reload
+its roster; the API remains the authorization boundary.
+
+Team search and shell controls are interactive, and the layout includes desktop
+and narrow-width navigation, horizontally scrollable tables/matrix, dark mode,
+and keyboard-visible focus. `frontend/src/TeamScreens.test.tsx` covers route
+loading, empty/error recovery, invitation and removal flows, role restrictions,
+search, dialogs, shell controls, and workspace isolation. Closure evidence is
+tracked in `docs/reports/milestone-9-team-closure.md`.

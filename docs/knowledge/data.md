@@ -51,3 +51,19 @@ cost-based margin null.
 ## Dashboard read model state
 
 Milestone 2 adds workspace-scoped `dashboard_states` in `004_dashboard_state.sql`. The table stores Dashboard UI/action state such as first-sync mode, Euronics retry, mismatch resolution, restock handoff, expanded low-stock items, and the current detail panel. Product counts still live in `products`; Dashboard on-hand adjustments update product persistence through the product store. Real connector, reservation, order, and inventory ledgers remain owned by their future modules.
+
+## Team memberships and invitations
+
+The Access module owns workspace membership and invitation reads/actions through
+`IAccessStore`; the API returns a workspace-scoped Team response and checks
+current membership and role for each request. Migration
+`008_team_management.sql` adds durable invitation UUIDs and an index for pending
+workspace invitations. Tokens remain hashed at rest; resend rotates the token,
+cancellation invalidates it, and removal takes effect on the next authorized
+request. The last Owner cannot be removed, and Owner cannot be invited.
+
+Owner/Admin manage Team invitations and members. Manager, WarehouseStaff, and
+Viewer cannot. Inventory detail redacts price data for WarehouseStaff and
+Viewer; the access matrix and generated endpoint contract are documented in
+[`milestone-9-team.md`](../plans/milestone-9-team.md) and
+[`access.openapi.json`](../../contracts/access.openapi.json).
