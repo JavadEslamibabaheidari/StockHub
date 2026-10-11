@@ -5,6 +5,7 @@ import { Inventory, InventoryEmpty, ProductDetail } from './InventoryScreens'
 import { OrderDetail, Orders, OrdersEmpty } from './OrdersScreens'
 import { Platforms } from './PlatformsScreens'
 import { Reservations } from './ReservationsScreens'
+import { Pricing } from './PricingScreens'
 
 const accessRouteHashes = [
   '#signup',
@@ -136,6 +137,7 @@ export default function App() {
     if (hash === '#order-cancel') return <OrderDetail mode="cancel" />
     if (hash === '#reservations') return <Reservations />
     if (hash === '#platforms') return <Platforms />
+    if (hash === '#pricing') return <Pricing />
     if (hash === '#invite') return <Invite />
     if (hash === '#forgot') return <ForgotPassword />
     if (hash === '#accept' || hash.startsWith('#accept?')) return <AcceptInvite />
