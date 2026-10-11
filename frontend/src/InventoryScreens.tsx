@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { toggleExplicitTheme } from './appearance'
 import {
   AccessApiClient,
   AccessApiError,
@@ -118,7 +119,7 @@ function Shell({ children, role, sync = 'Backend inventory · platform sync pend
             <label className="inventory-search"><span>Search</span><input placeholder="Search products, SKUs, orders..." /></label>
             <div className="inventory-user">
               <button className={sync.includes('failed') || sync.includes('failing') ? 'sync-alert' : 'sync-ok'} type="button" onClick={() => setPanel({ title: 'Sync status', body: sync })}>{sync}</button>
-              <button type="button" aria-label="Toggle appearance" onClick={() => document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'}>☾</button>
+              <button type="button" aria-label="Toggle appearance" onClick={toggleExplicitTheme}>☾</button>
               <button type="button" aria-label="Notifications" onClick={() => setPanel({ title: 'Notifications', body: 'Inventory notifications are collected in the Reports milestone.' })}>♧</button>
               <b>{identity.userInitials}</b><span>{identity.fullName}<small>{identity.role}</small></span>
             </div>

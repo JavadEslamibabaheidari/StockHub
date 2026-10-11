@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { toggleExplicitTheme } from './appearance'
 import { AccessApiClient, AccessApiError, type WorkspaceSummary } from './api/generated'
 
 type Panel = { title: string; body: string; tone?: 'ok' | 'warn' } | null
@@ -162,7 +163,7 @@ function Shell({
             <label className="inventory-search"><span>Search</span><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search products, SKUs, orders..." /></label>
             <div className="inventory-user">
               <button className="sync-alert" type="button" onClick={() => showPanel({ title: 'Sync status', body: '3 of 4 platforms synced. Euronics failed; retry and credential repair belong to Platforms milestone 6.', tone: 'warn' })}>3 of 4 synced · Euronics failed</button>
-              <button type="button" aria-label="Toggle appearance" onClick={() => document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'}>☾</button>
+              <button type="button" aria-label="Toggle appearance" onClick={toggleExplicitTheme}>☾</button>
               <button type="button" aria-label="Notifications" onClick={() => showPanel({ title: 'Notifications', body: '5 reservation alerts: 3 expired today and 2 platform sync warnings.' })}>5</button>
               <button className="reservation-account" type="button" onClick={() => setAccountOpen(!accountOpen)} aria-expanded={accountOpen}><b>{identity.userInitials}</b><span>{identity.fullName}<small>{identity.role}</small></span><span>⌄</span></button>
             </div>

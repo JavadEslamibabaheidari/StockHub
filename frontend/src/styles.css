@@ -1039,3 +1039,90 @@ h1 {
 @media(max-width:700px){.reports-grid{grid-template-columns:1fr}.reports-alert-fields{grid-template-columns:1fr}.reports-alert-fields fieldset{grid-column:auto;grid-row:auto}}
 @media(max-width:640px){.reports-page{padding:0}.reports-page .inventory-shell{display:block;min-height:100vh;border-radius:0}.reports-page .inventory-sidebar{display:none}.reports-page .inventory-main{padding:14px}.reports-page .inventory-top{align-items:stretch}.reports-page .inventory-search{width:100%}.reports-page .inventory-user{justify-content:flex-end}.reports-heading{align-items:flex-start!important;gap:10px}.reports-heading h1{font-size:28px}.reports-heading .primary-button{align-self:center;padding:0 10px;white-space:nowrap;font-size:10px}.reports-tabs{width:100%;justify-content:flex-start}.reports-tabs button{padding:0 11px;font-size:10px}.reports-period{align-items:flex-start;gap:8px;padding:13px}.reports-period h2{font-size:17px}.reports-period .status-pill{font-size:9px;white-space:nowrap}.reports-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.reports-metrics article{min-height:90px;padding:12px}.reports-metrics strong{font-size:19px}.reports-alert-card{padding:13px}.reports-save-row{bottom:5px}}
 @media(max-width:680px){.pricing-app,.pricing-collapsed{grid-template-columns:1fr}.pricing-sidebar{position:static;padding:9px 12px;border-right:0;border-bottom:1px solid var(--pr-line)}.pricing-brand{display:none}.pricing-workspace{width:max-content;max-width:100%}.pricing-sidebar nav{display:flex;overflow-x:auto;gap:3px}.pricing-sidebar nav a{flex:0 0 auto;min-height:35px;padding:0 8px;font-size:10px}.pricing-sidebottom{display:none}.pricing-content{padding:0 14px 24px}.pricing-top{min-height:57px}.pricing-search{width:42%}.pricing-search input{min-width:0;font-size:10px}.pricing-top-actions{gap:4px}.pricing-top-actions button{padding:0 6px;font-size:9px}.pricing-top-actions button:last-child{max-width:86px;overflow:hidden;white-space:nowrap}.pricing-heading{align-items:flex-end;padding:21px 0 17px}.pricing-heading h1{font-size:27px}.pricing-heading p:not(.pricing-eyebrow){max-width:270px;font-size:10px}.pricing-primary{padding:0 10px;font-size:10px}.pricing-list-panel,.pricing-editor-panel{padding:13px}.pricing-fields-2{gap:8px}}
+
+.settings-page .inventory-shell { grid-template-columns: 205px minmax(0,1fr); }
+.settings-workspace-wrap { position: relative; }
+.settings-page .inventory-main { min-width: 0; }
+.settings-top { justify-content: space-between; }
+.settings-crumb { color: #625e56; font-size: 12px; font-weight: 750; }
+.settings-identity { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; }
+.settings-identity b { display: grid; width: 30px; height: 30px; border-radius: 50%; background: #f2d1bf; color: #a65325; place-items: center; }
+.settings-identity span { display: grid; gap: 2px; }
+.settings-identity small { color: #6f665a; font-size: 10px; font-weight: 500; }
+.settings-content { max-width: 1050px; margin: 0 auto; padding: 0 24px 34px; }
+.settings-heading { padding: 26px 0 18px; }
+.settings-heading h1 { margin: 3px 0 5px; font-size: 31px; }
+.settings-heading p { margin: 0; color: #6f665a; font-size: 12px; }
+.inventory-eyebrow { color: #8a735d; font-size: 9px; font-weight: 850; letter-spacing: .1em; }
+.settings-tabs { display: flex; gap: 5px; padding: 4px; margin: 0 0 16px; width: fit-content; border: 1px solid #ded2c0; border-radius: 13px; background: #eee7db; }
+.settings-tabs button { min-height: 36px; padding: 0 17px; border: 0; border-radius: 9px; background: transparent; color: #625e56; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+.settings-tabs button[aria-pressed='true'] { background: #fbf7ef; color: #282721; box-shadow: 0 1px 3px #21180720; }
+.settings-tabs button:focus-visible, .settings-theme-options button:focus-visible, .settings-state button:focus-visible { outline: 3px solid #a65325; outline-offset: 2px; }
+.settings-billing { display: grid; gap: 13px; }
+.settings-notice { display: flex; align-items: flex-start; gap: 10px; padding: 13px 15px; border: 1px solid #d8c79f; border-radius: 15px; background: #f6edcf; color: #493c20; }
+.settings-notice > span { flex: 0 0 auto; font-size: 17px; }
+.settings-notice p { margin: 0; font-size: 11px; line-height: 1.55; }
+.settings-card { padding: 18px; border: 1px solid #ded2c0; border-radius: 17px; background: #fbf7ef; box-shadow: 0 1px 2px #21180710; }
+.settings-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
+.settings-card-heading h2 { margin: 0; font-size: 15px; }
+.settings-card-heading p { margin: 5px 0 0; color: #6f665a; font-size: 11px; line-height: 1.5; }
+.settings-unavailable { padding: 5px 9px; border-radius: 999px; background: #eee7db; color: #5e584e; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.settings-metrics { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; margin-top: 18px; }
+.settings-metric { display: grid; min-height: 65px; align-content: space-between; gap: 7px; padding: 10px; border-radius: 11px; background: #f1eadf; }
+.settings-metric span { color: #6f665a; font-size: 10px; }
+.settings-metric strong { color: #4b463f; font-size: 12px; }
+.settings-empty { margin: 14px 0 0; padding: 12px 13px; border-radius: 11px; background: #f1eadf; color: #544e44; font-size: 11px; line-height: 1.5; }
+.settings-profile-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 18px; margin: 14px 0 0; }
+.settings-profile-grid div { display: grid; grid-template-columns: minmax(105px,.7fr) minmax(0,1.3fr); gap: 12px; padding: 10px 0; border-top: 1px solid #e5dccd; font-size: 11px; }
+.settings-profile-grid dt { color: #6f665a; }
+.settings-profile-grid dd { min-width: 0; margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.settings-footnote { margin: 12px 0 0; color: #6f665a; font-size: 10px; line-height: 1.5; }
+.settings-state { margin: 0; padding: 21px; font-size: 12px; }
+.settings-error { border-color: #bd6a51; }
+.settings-error p { margin: 6px 0 12px; color: #7d3827; }
+.settings-state button { min-height: 34px; padding: 0 12px; border: 1px solid #b2622d; border-radius: 9px; background: #b2622d; color: white; font: inherit; font-weight: 750; cursor: pointer; }
+.settings-theme-options { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin-top: 18px; }
+.settings-theme-options button { display: grid; min-height: 145px; align-content: start; justify-items: start; gap: 9px; padding: 16px; border: 1px solid #d8cebd; border-radius: 14px; background: #f7f1e7; color: #282721; text-align: left; cursor: pointer; }
+.settings-theme-options button.selected { border-color: #a65325; box-shadow: inset 0 0 0 1px #a65325; background: #fff9f1; }
+.settings-theme-icon { display: grid; width: 33px; height: 33px; border-radius: 10px; background: #e8dcc8; color: #75401f; font-size: 20px; place-items: center; }
+.settings-theme-options strong { font-size: 13px; }
+.settings-theme-options small { color: #625e56; font-size: 10px; line-height: 1.5; }
+.settings-mobile-nav { display: none; }
+[data-theme='dark'] .settings-crumb, [data-theme='dark'] .settings-identity small, [data-theme='dark'] .settings-heading p, [data-theme='dark'] .settings-card-heading p, [data-theme='dark'] .settings-footnote, [data-theme='dark'] .settings-metric span, [data-theme='dark'] .settings-profile-grid dt { color: #cbbba8; }
+[data-theme='dark'] .settings-tabs { border-color: #514638; background: #29241e; }
+[data-theme='dark'] .settings-tabs button { color: #d9cdbd; }
+[data-theme='dark'] .settings-tabs button[aria-pressed='true'] { background: #42382c; color: #fff5e8; }
+[data-theme='dark'] .settings-notice { border-color: #75643c; background: #3b3423; color: #f5e4b5; }
+[data-theme='dark'] .settings-unavailable, [data-theme='dark'] .settings-empty, [data-theme='dark'] .settings-metric { background: #332d25; color: #eee2d2; }
+[data-theme='dark'] .settings-metric strong { color: #eee2d2; }
+[data-theme='dark'] .settings-profile-grid div { border-color: #514638; }
+[data-theme='dark'] .settings-theme-options button { border-color: #514638; background: #29241e; color: #f8f1e8; }
+[data-theme='dark'] .settings-theme-options button.selected { border-color: #e2a071; box-shadow: inset 0 0 0 1px #e2a071; background: #342a20; }
+[data-theme='dark'] .settings-theme-icon { background: #42382c; color: #f5c095; }
+[data-theme='dark'] .settings-theme-options small { color: #cbbba8; }
+@media(max-width:900px) { .settings-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media(max-width:640px) {
+  .settings-page { padding: 0; }
+  .settings-page .inventory-shell { display: block; min-height: 100vh; border-radius: 0; }
+  .settings-page .inventory-sidebar { display: none; }
+  .settings-page .inventory-main { padding: 12px 12px 0; }
+  .settings-page .inventory-top { min-height: 48px; padding: 0 2px; }
+  .settings-content { padding: 0 2px 22px; }
+  .settings-heading { padding: 20px 0 14px; }
+  .settings-heading h1 { font-size: 27px; }
+  .settings-tabs { width: 100%; }
+  .settings-tabs button { flex: 1; }
+  .settings-card { padding: 14px; }
+  .settings-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .settings-profile-grid { grid-template-columns: 1fr; }
+  .settings-theme-options { grid-template-columns: 1fr; gap: 8px; }
+  .settings-theme-options button { grid-template-columns: 36px minmax(0,1fr); grid-template-rows: auto auto; align-items: center; min-height: 70px; padding: 12px; column-gap: 10px; }
+  .settings-theme-icon { grid-row: span 2; }
+  .settings-theme-options small { grid-column: 2; }
+  .settings-mobile-nav { display: flex; gap: 4px; overflow-x: auto; margin: 0 -12px; padding: 7px 12px 12px; border-top: 1px solid #ded2c0; }
+  .settings-mobile-nav a { flex: 0 0 auto; padding: 8px 10px; border-radius: 9px; color: #625e56; font-size: 10px; text-decoration: none; }
+  .settings-mobile-nav a.active { background: #f2e4d3; color: #75401f; font-weight: 800; }
+  [data-theme='dark'] .settings-mobile-nav { border-color: #514638; }
+  [data-theme='dark'] .settings-mobile-nav a { color: #e5d7c6; }
+  [data-theme='dark'] .settings-mobile-nav a.active { background: #4c3929; color: #f0b181; }
+}

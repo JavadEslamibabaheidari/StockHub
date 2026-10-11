@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { AccessApiClient, AccessApiError, type PricingPreview, type PricingRule, type PricingRuleInput, type SessionResponse, type WorkspaceSummary } from './api/generated'
+import { getResolvedTheme, toggleExplicitTheme } from './appearance'
 
 const api = new AccessApiClient()
 const platforms = ['Amazon', 'Unieuro', 'Euronics', 'eBay'] as const
@@ -20,7 +21,7 @@ export function Pricing() {
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
-  const [theme, setTheme] = useState(() => typeof localStorage === 'undefined' ? 'light' : localStorage.getItem('stockhub-theme') || 'light')
+  const [theme, setTheme] = useState<'light' | 'dark'>(getResolvedTheme)
   const [menu, setMenu] = useState('')
   const [loading, setLoading] = useState(true)
   const dirty = useMemo(() => {
@@ -30,7 +31,6 @@ export function Pricing() {
     const { id: _id, ...input } = rule
     return JSON.stringify(draft) !== JSON.stringify(input)
   }, [draft, rules, selected])
-  useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem('stockhub-theme', theme) }, [theme])
   useEffect(() => { void load() }, [])
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => { if (dirty) { event.preventDefault(); event.returnValue = '' } }
@@ -84,7 +84,7 @@ export function Pricing() {
       <nav aria-label="Main navigation">{[['Dashboard','#dashboard','▦'],['Inventory','#inventory','◇'],['Orders','#orders','▤'],['Reservations','#reservations','◷'],['Platforms','#platforms','♧'],['Pricing rules','#pricing','€'],['Reports','#reports','▥'],['Team','#team','♧'],['Settings','#settings','⚙']].map(([label,href,icon])=><a key={href} className={href==='#pricing'?'selected':''} href={href}><i>{icon}</i>{label}</a>)}</nav>
       <div className="pricing-sidebottom"><strong>Pricing rules</strong><small>{rules.length} saved rule{rules.length===1?'':'s'}</small><a href="#settings">Upgrade plan</a><button onClick={()=>setCollapsed(value=>!value)}>{collapsed?'Expand':'Collapse'} sidebar</button></div>
     </aside>
-    <section className="pricing-content"><header className="pricing-top"><div className="pricing-search"><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search rules, platforms, scopes…" aria-label="Search pricing rules" /></div><div className="pricing-top-actions"><button onClick={()=>{setMenu(menu==='sync'?'':'sync')}} className="sync-pill">● &nbsp; Sync status</button><button aria-label="Toggle appearance" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?'☀':'☾'}</button><button aria-label="Notifications" onClick={()=>setMenu(menu==='notifications'?'':'notifications')}>♧</button><button onClick={()=>setMenu(menu==='account'?'':'account')}>{session?.fullName || 'Account'} ⌄</button></div>{menu==='account'&&<div className="pricing-popover top-pop"><button onClick={()=>void signOut()}>Sign out</button></div>}{menu==='notifications'&&<div className="pricing-popover top-pop"><strong>Platform sync</strong><p>Review connection health and recent sync activity.</p><a href="#platforms">Open platforms</a></div>}{menu==='sync'&&<div className="pricing-popover top-pop"><strong>Sync status</strong><p>Platform connection status is managed in Platforms.</p><a href="#platforms">Review platforms</a></div>}</header>
+    <section className="pricing-content"><header className="pricing-top"><div className="pricing-search"><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search rules, platforms, scopes…" aria-label="Search pricing rules" /></div><div className="pricing-top-actions"><button onClick={()=>{setMenu(menu==='sync'?'':'sync')}} className="sync-pill">● &nbsp; Sync status</button><button aria-label="Toggle appearance" onClick={() => { toggleExplicitTheme(); setTheme(getResolvedTheme()) }}>{theme === 'dark' ? '☀' : '☾'}</button><button aria-label="Notifications" onClick={()=>setMenu(menu==='notifications'?'':'notifications')}>♧</button><button onClick={()=>setMenu(menu==='account'?'':'account')}>{session?.fullName || 'Account'} ⌄</button></div>{menu==='account'&&<div className="pricing-popover top-pop"><button onClick={()=>void signOut()}>Sign out</button></div>}{menu==='notifications'&&<div className="pricing-popover top-pop"><strong>Platform sync</strong><p>Review connection health and recent sync activity.</p><a href="#platforms">Open platforms</a></div>}{menu==='sync'&&<div className="pricing-popover top-pop"><strong>Sync status</strong><p>Platform connection status is managed in Platforms.</p><a href="#platforms">Review platforms</a></div>}</header>
       <div className="pricing-heading"><div><p className="pricing-eyebrow">CATALOG · PRICING</p><h1>Pricing rules</h1><p>Set consistent marketplace prices with clear, ordered adjustments.</p></div><button className="pricing-primary" disabled={!canEdit} onClick={()=>chooseRule()}>＋ New rule</button></div>
       {error&&<p className="pricing-error" role="alert">{error}</p>}{notice&&<p className="pricing-notice" role="status">{notice}</p>}
       <div className="pricing-layout"><section className="pricing-list-panel"><div className="pricing-list-head"><div><h2>Rules</h2><span>{visible.length} of {rules.length}</span></div><small>Lower priority number runs first</small></div>
