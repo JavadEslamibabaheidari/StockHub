@@ -1,7 +1,7 @@
 # Milestone 9 Team
 
 Status: execution plan drafted from the approved mockup; GitHub milestone `9
-Team` (milestone #10) is open with zero issues. Do not begin implementation
+Team` (milestone #10) is open with issues #135–#138. Do not begin implementation
 until the plan and issue acceptance criteria are recorded in GitHub.
 
 ## Goal and mockup source
