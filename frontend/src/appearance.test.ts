@@ -60,4 +60,16 @@ describe('appearance preference', () => {
     expect(document.documentElement.dataset.appearance).toBe('dark')
     expect(document.documentElement.dataset.theme).toBe('dark')
   })
+
+  it('falls back to System when stored values are invalid', () => {
+    localStorage.setItem('stockhub-appearance', 'sepia')
+    const changeSystem = setSystemPreference(true)
+    initializeAppearance()
+
+    expect(getAppearancePreference()).toBe('system')
+    expect(document.documentElement.dataset.appearance).toBe('system')
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    changeSystem(false)
+    expect(document.documentElement.dataset.theme).toBe('light')
+  })
 })
