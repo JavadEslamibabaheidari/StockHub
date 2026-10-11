@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { toggleExplicitTheme } from './appearance'
+import { formatAbsoluteDateTime } from './formatters'
 import {
   AccessApiClient,
   AccessApiError,
@@ -39,10 +40,7 @@ type Panel = { title: string; body: string; tone?: 'ok' | 'warn' } | null
 type PendingAction = { kind: 'resend' | 'cancel' | 'remove'; id: string; label: string } | null
 const errorMessage = (error: unknown, fallback: string) => error instanceof AccessApiError ? error.problem.detail || fallback : fallback
 const initials = (value: string) => value.trim().split(/\s+/).slice(0, 2).map(part => part[0]?.toUpperCase()).join('') || 'SH'
-const formatDate = (value: string) => {
-  const date = new Date(value)
-  return Number.isNaN(date.valueOf()) ? 'Unavailable' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date)
-}
+const formatDate = formatAbsoluteDateTime
 const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
 
 function TeamShell({

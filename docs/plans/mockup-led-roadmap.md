@@ -1,6 +1,6 @@
 # StockHub Mockup-Led Roadmap
 
-Status: milestones 0–11 are closed in GitHub with PASS reports. Dark mode (`11 Dark mode`) is merged to `main`, deployed to the persistent local target, and has a verified PASS closure report. The unparented milestone remains last.
+Status: milestones 0–11 are closed in GitHub with PASS reports. M12 Design system is active on `main` after M11 closure; the unparented milestone remains last.
 
 ## Source of truth
 
@@ -65,18 +65,30 @@ No application implementation should start until the roadmap/spec is approved.
 
 ## Current milestone
 
-Milestones 0–10 are closed in GitHub with zero open issues. M10 Settings
-feature PR #147 merged at `3c4b655`; the dark-card contrast correction PR #148
-merged at `e280c0a`; closure evidence PR #150 merged at `32a3d12`. Issues
-#144–#146 and GitHub milestone #11 are closed. Settings execution and closure
-evidence are in [milestone-10-settings.md](milestone-10-settings.md) and
-[`milestone-10-settings-closure.md`](../reports/milestone-10-settings-closure.md).
+Milestones 0–11 are closed in GitHub with zero open issues. M10 Settings feature
+PR #147 merged at `3c4b655`; contrast correction PR #148 merged at `e280c0a`;
+closure PR #150 merged at `32a3d12`. M11 Dark mode PR #155 merged at
+`dceb8cf9adba52bca7c5964c427c49effee26e34`; PASS closure PR #158 merged to
+`main` at `17ae97645cf898bb68a73323e42f75da8e2eef1c`. Live `dev` remains at
+`21549b36342cb031dc94bc79b28ee502be5dbf9c` and does not contain M10–M12.
 
 M11 Dark mode PR #155 merged to `main` at
 `dceb8cf9adba52bca7c5964c427c49effee26e34` from source
 `75a8890539718d36afeab217edbfbee4efe786f4`; its published digest is deployed
 to the persistent local target. Live `dev` remains at
 `21549b36342cb031dc94bc79b28ee502be5dbf9c`.
+
+M12 Design system, GitHub milestone #13, is active. Live GitHub UI confirmed the
+milestone was open with zero issues; issues #159–#161 have since been created
+under it and assigned to the repository owner. The implementation plan is
+[milestone-12-design-system.md](milestone-12-design-system.md). Its scope is
+page 2 of the Design Review PDF: shared light/dark semantic tokens, typography,
+strict en-GB formats, an interactive design-system reference screen, and
+adoption across implemented application routes. The previous M11 closure hook
+passes against `main` at `17ae97645cf898bb68a73323e42f75da8e2eef1c`.
+The authenticated repository Projects page reports no linked projects; this
+board configuration gap is recorded in the M12 plan. The CLI tracking hook
+cannot verify live state with the configured GitHub credentials.
 
 Completed milestone `11 Dark mode`, GitHub milestone #12, delivered dark
 Dashboard, Inventory with quick view, and Product detail variants using M10's

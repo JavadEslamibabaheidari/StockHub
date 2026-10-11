@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { toggleExplicitTheme } from './appearance'
+import { formatQuantity } from './formatters'
 import { AccessApiClient, AccessApiError, type WorkspaceSummary } from './api/generated'
 
 type Panel = { title: string; body: string; tone?: 'ok' | 'warn' } | null
@@ -178,7 +179,7 @@ function PlatformCard({
       {errored && <div className="platform-error"><strong>{item.errorTitle}</strong><p>{item.errorBody}</p><button type="button" onClick={() => reconnect(item)}>Reconnect</button></div>}
       <div className="platform-stats">
         <span><small>Last sync</small><b>{item.lastSync}</b></span>
-        <span><small>Listed products</small><b>{item.listedProducts.toLocaleString()}</b></span>
+        <span><small>Listed products</small><b>{formatQuantity(item.listedProducts)}</b></span>
         <span><small>Orders this week</small><b>{item.ordersThisWeek}</b></span>
       </div>
       {!errored && <footer><button type="button" onClick={() => pause(item)}>{item.status === 'Paused' ? 'Resume sync' : 'Pause sync'}</button><button type="button" onClick={() => disconnect(item)}>Disconnect</button><button type="button" onClick={() => settings(item)}>Settings</button></footer>}

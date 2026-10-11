@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getAppearancePreference, getResolvedTheme, initializeAppearance, setAppearancePreference } from './appearance'
+import { getAppearancePreference, getResolvedTheme, initializeAppearance, previewAppearance, setAppearancePreference } from './appearance'
 
 function setSystemPreference(dark: boolean) {
   const listeners = new Set<(event: MediaQueryListEvent) => void>()
@@ -71,5 +71,32 @@ describe('appearance preference', () => {
     expect(document.documentElement.dataset.theme).toBe('dark')
     changeSystem(false)
     expect(document.documentElement.dataset.theme).toBe('light')
+  })
+
+  it('previews a theme without persisting it and restores the active preference', () => {
+    const changeSystem = setSystemPreference(true)
+    initializeAppearance()
+    previewAppearance('light')
+
+    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(document.documentElement.dataset.appearance).toBe('system')
+    expect(getAppearancePreference()).toBe('system')
+    expect(localStorage.getItem('stockhub-appearance')).toBeNull()
+
+    previewAppearance(null)
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    changeSystem(false)
+    expect(document.documentElement.dataset.theme).toBe('light')
+  })
+
+  it('clears a temporary preview when the user chooses a saved preference', () => {
+    setSystemPreference(false)
+    initializeAppearance()
+    previewAppearance('dark')
+    setAppearancePreference('light')
+
+    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(document.documentElement.dataset.appearance).toBe('light')
+    expect(localStorage.getItem('stockhub-appearance')).toBe('light')
   })
 })

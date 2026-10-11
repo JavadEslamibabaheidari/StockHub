@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { AccessApiClient, AccessApiError, type PricingPreview, type PricingRule, type PricingRuleInput, type SessionResponse, type WorkspaceSummary } from './api/generated'
 import { getResolvedTheme, toggleExplicitTheme } from './appearance'
+import { formatCurrency } from './formatters'
 
 const api = new AccessApiClient()
 const platforms = ['Amazon', 'Unieuro', 'Euronics', 'eBay'] as const
@@ -101,7 +102,7 @@ export function Pricing() {
           <div className="pricing-fields-2"><label className="pricing-field">Priority (1 runs first)<input type="number" min="1" max="999" required disabled={!canEdit||busy} value={draft.priority} onChange={e=>setDraft({...draft,priority:Number(e.target.value)})} /></label><label className="pricing-toggle"><input type="checkbox" disabled={!canEdit||busy} checked={draft.enabled} onChange={e=>setDraft({...draft,enabled:e.target.checked})} /> Rule is enabled</label></div>
           <div className="pricing-editor-actions"><button className="pricing-preview-button" type="button" disabled={busy||!draft.name.trim()} onClick={()=>void showPreview()}>{busy?'Working…':'Preview prices'}</button>{canEdit&&<button className="pricing-primary" type="submit" disabled={busy}>{selected?'Save changes':'Save rule'}</button>}{(selected||dirty)&&<button type="button" onClick={()=>chooseRule()}>Discard</button>}</div>
         </form>
-        {preview&&<div className="pricing-preview"><div><span>Estimated final price</span><strong>{preview.finalPrice==null?'—':new Intl.NumberFormat('en-IE',{style:'currency',currency:'EUR'}).format(preview.finalPrice)}</strong></div><p>{preview.productName?`${preview.productName} · `:''}{preview.affectedProducts} product{preview.affectedProducts===1?'':'s'} affected. {preview.explanation}</p>{preview.margin==null&&<small>Margin unavailable until product cost is recorded.</small>}</div>}
+        {preview&&<div className="pricing-preview"><div><span>Estimated final price</span><strong>{preview.finalPrice==null?'—':formatCurrency(preview.finalPrice,'EUR')}</strong></div><p>{preview.productName?`${preview.productName} · `:''}{preview.affectedProducts} product{preview.affectedProducts===1?'':'s'} affected. {preview.explanation}</p>{preview.margin==null&&<small>Margin unavailable until product cost is recorded.</small>}</div>}
         <p className="pricing-footnote">Rules run in priority order. Prices round to cents after each rule. VAT is 22%; marketplace fee assumptions are estimates. Margin stays blank until cost data is available.</p>
       </section></div>
     </section>

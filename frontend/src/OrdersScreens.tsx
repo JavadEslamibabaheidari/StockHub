@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { toggleExplicitTheme } from './appearance'
+import { formatCurrency } from './formatters'
 import {
   AccessApiClient,
   AccessApiError,
@@ -27,7 +28,7 @@ const nav = [
 ] as const
 
 function eur(value: number) {
-  return `€${value.toFixed(2)}`
+  return formatCurrency(value, 'EUR')
 }
 
 function problem(error: unknown, fallback: string) {

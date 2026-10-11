@@ -4,6 +4,7 @@ const preferenceKey = 'stockhub-appearance'
 const legacyKey = 'stockhub-theme'
 let preference: AppearancePreference = 'system'
 let mediaQuery: MediaQueryList | null = null
+let preview: 'light' | 'dark' | null = null
 
 function browserPreference(): AppearancePreference {
   try {
@@ -22,7 +23,7 @@ function systemTheme(): 'light' | 'dark' {
 function applyPreference(): void {
   if (typeof document === 'undefined') return
   document.documentElement.dataset.appearance = preference
-  document.documentElement.dataset.theme = preference === 'system' ? systemTheme() : preference
+  document.documentElement.dataset.theme = preview ?? (preference === 'system' ? systemTheme() : preference)
 }
 
 export function getAppearancePreference(): AppearancePreference {
@@ -35,6 +36,7 @@ export function getResolvedTheme(): 'light' | 'dark' {
 
 export function setAppearancePreference(next: AppearancePreference): void {
   preference = next
+  preview = null
   try {
     localStorage.setItem(preferenceKey, next)
     if (next === 'system') localStorage.removeItem(legacyKey)
@@ -45,12 +47,19 @@ export function setAppearancePreference(next: AppearancePreference): void {
   applyPreference()
 }
 
+/** Temporarily preview a theme without changing the stored browser preference. */
+export function previewAppearance(theme: 'light' | 'dark' | null): void {
+  preview = theme
+  applyPreference()
+}
+
 export function toggleExplicitTheme(): void {
   setAppearancePreference(getResolvedTheme() === 'dark' ? 'light' : 'dark')
 }
 
 export function initializeAppearance(): void {
   if (typeof window === 'undefined') return
+  preview = null
   preference = browserPreference()
   if (typeof window.matchMedia === 'function') {
     mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')

@@ -66,7 +66,7 @@ describe('Inventory quick view', () => {
     expect(dialog?.getAttribute('aria-modal')).toBe('true')
     expect(dialog?.textContent).toContain('Samsung Frame 55')
     expect(dialog?.textContent).toContain('10')
-    expect(dialog?.textContent).toContain('€1299.50')
+    expect(dialog?.textContent).toContain('€1,299.50')
     expect(dialog?.textContent).toContain('Euronics')
     expect(dialog?.textContent).toContain('Token expired')
     expect(dialog?.textContent).toContain('One platform needs attention.')
