@@ -1,6 +1,6 @@
 # StockHub Mockup-Led Roadmap
 
-Status: milestones 0–10 are closed in GitHub. Settings (`10 Settings`) is complete with its PASS closure report. Dark mode (`11 Dark mode`) is now in progress under GitHub milestone #12 with issues #151–#154.
+Status: milestones 0–10 are closed in GitHub with PASS reports. Dark mode (`11 Dark mode`) is merged to `main` and deployed to the persistent local target; GitHub milestone #12 remains in progress while its closure report and status gates are completed.
 
 ## Source of truth
 
@@ -72,12 +72,19 @@ merged at `e280c0a`; closure evidence PR #150 merged at `32a3d12`. Issues
 evidence are in [milestone-10-settings.md](milestone-10-settings.md) and
 [`milestone-10-settings-closure.md`](../reports/milestone-10-settings-closure.md).
 
+M11 Dark mode PR #155 merged to `main` at
+`dceb8cf9adba52bca7c5964c427c49effee26e34` from source
+`75a8890539718d36afeab217edbfbee4efe786f4`; its published digest is deployed
+to the persistent local target. Live `dev` remains at
+`21549b36342cb031dc94bc79b28ee502be5dbf9c`.
+
 The current milestone is `11 Dark mode`, GitHub milestone #12. It delivers
 dark Dashboard, Inventory with quick view, and Product detail variants using
 M10's shared Light/Dark/System preference. Issues #151–#154 track the screens,
 integration, accessibility review, and closure. Its execution plan is
 [milestone-11-dark-mode.md](milestone-11-dark-mode.md); implementation and
-deployment are in progress.
+deployment are merged and verified; the closure report and GitHub status gates
+remain in progress.
 Team execution and closure evidence are in
 [milestone-9-team.md](milestone-9-team.md) and
 [`milestone-9-team-closure.md`](../reports/milestone-9-team-closure.md). Pricing execution is tracked in
