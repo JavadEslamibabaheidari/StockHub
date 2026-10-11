@@ -35,8 +35,11 @@ Pricing rules is closed in [GitHub milestone 8](https://github.com/JavadEslamiba
 with zero open issues. Its execution plan is
 [plans/milestone-7-pricing.md](plans/milestone-7-pricing.md), and its PASS
 closure evidence is [reports/milestone-7-pricing-closure.md](reports/milestone-7-pricing-closure.md).
-Refreshed `main` is `2c43ca9927a0784838d6c512fafe129ed7439d3b`; `dev` remains
-`21549b36342cb031dc94bc79b28ee502be5dbf9c`. Main delivery run 38118474661
+Pricing implementation/deployment source SHA is
+`2c43ca9927a0784838d6c512fafe129ed7439d3b`; the closure evidence was merged
+to `main` by PR #124 at `7fb93507ea9b4969d774c2301fc37f12718094d8`.
+Refreshed `dev` remains `21549b36342cb031dc94bc79b28ee502be5dbf9c`. Main
+delivery run 38118474661
 published the immutable image and deployed it to the persistent local
 Kubernetes target, where migration, rollout, and `/ready` passed. Shared
 review-staging and production jobs were skipped and remain unverified. The
