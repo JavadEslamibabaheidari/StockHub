@@ -1,9 +1,10 @@
 # Milestone 9 Team
 
 Status: contract and issue plan merged by PR #139 to `main` at `df24987` from
-`codex/milestone-9-team` source `a1f252a`. GitHub milestone `9 Team` (#10) is
-open with implementation and integration issues #136–#138. Contract issue #135
-is closed.
+`codex/milestone-9-team` source `a1f252a`. API issue #136 merged by PR #140 to
+`main` at `cacea1a` from `codex/milestone-9-team-api` source `7430485`. GitHub
+milestone `9 Team` (#10) is open with issues #137 and #138. Issues #135 and #136
+are closed.
 
 ## Goal and mockup source
 
@@ -105,20 +106,20 @@ direct mockup links and acceptance criteria:
    - Close only after implementation issues are resolved by merged PRs and the
      milestone closure checker passes.
 
-The live Team issues in GitHub milestone #10 `9 Team` are:
+The open Team issues in GitHub milestone #10 `9 Team` are:
 
-- [#136 Implement workspace-scoped Team member and invitation management](https://github.com/JavadEslamibabaheidari/StockHub/issues/136)
 - [#137 Implement responsive Team screen and invitation interactions](https://github.com/JavadEslamibabaheidari/StockHub/issues/137)
 - [#138 Integrate, regress, and close Milestone 9 Team](https://github.com/JavadEslamibabaheidari/StockHub/issues/138)
 
-The contract gate is closed by merged PR #139. The milestone remains open.
+The contract and API gates are closed by merged PRs #139 and #140. The
+milestone remains open.
 
 ## Dependencies and execution
 
-Issue #135 is closed by merged PR #139, so implementation can proceed against
-the recorded contract. API/persistence work (#136) must land before the Team
-screen can complete its live action flows (#137). Integration, test ownership,
-review, and closure evidence stay with the coordinator.
+Issue #135 is closed by merged PR #139, and API/persistence work (#136) is
+closed by merged PR #140. The Team screen (#137) can now complete its live
+action flows against the merged API. Integration, test ownership, review, and
+closure evidence stay with the coordinator.
 
 ## Verification and closure gate
 
