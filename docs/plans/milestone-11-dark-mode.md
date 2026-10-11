@@ -1,6 +1,6 @@
 # Milestone 11 Dark mode
 
-Status: implementation merged; closure evidence in progress. The previous Settings milestone is complete: GitHub
+Status: implementation and closure evidence complete; report `PASS` and final tracking hooks verified. The previous Settings milestone is complete: GitHub
 milestone #11 is closed with zero open issues, the PASS report is on `main`,
 and the local closure hook passes. This plan covers roadmap milestone 11,
 GitHub milestone #12 `11 Dark mode`.
@@ -180,8 +180,8 @@ its acceptance criteria before integration/closure begins.
   published the source image. Persistent deployment run #38178865429 records
   the same SHA and digest, completed migration, 1/1 available rollout, and
   `/ready` HTTP 200. Review-staging and production were skipped and remain
-  unverified. GitHub issues #151–#154 and milestone #12 remain open pending the
-  final closure report and status gates.
+  unverified. GitHub issues #151–#154 are closed, milestone #12 is closed with
+  zero open issues, and the final closure hooks pass.
 - Previous milestone hook: PASS. M10 report
   `docs/reports/milestone-10-settings-closure.md` says PASS, GitHub milestone
   #11 is closed with zero open issues, and
