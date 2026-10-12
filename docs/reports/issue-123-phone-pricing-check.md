@@ -1,16 +1,24 @@
 # Issue #123 phone-width Pricing journey check
 
-Status: PASS for the local 390×844 browser acceptance journey. This report is
-evidence for the milestone issue; it does not certify hosted staging or
-production.
+Status: PASS for the local 390×844 browser acceptance journey and merged local
+deployment. This report does not certify hosted staging or production.
 
 ## Environment
 
-- Source branch: `codex/issue-123-responsive-journey`, based on the locally
-  available #65 implementation commit `8208185d54df358181640504cf808c81774213ff`.
+- Browser-tested worktree commit: `aa1fc74`, containing the tested CSS change on
+  the #65 implementation tree. PR #174 source branch
+  `codex/issue-123-responsive-main` at `bff2b87d5bd4f602a1e0dd2d6d0cea50bfcd2a59`
+  was rebased onto current main and merged at `892fdfb9ddf78ed1287599ebd527ad2eb6373a14`.
 - App: isolated Docker Compose project `stockhub-issue123`, served locally at
   `http://127.0.0.1:8181` with a new PostgreSQL database and a separate Data
   Protection key volume. No existing local database was used.
+- Published image: main delivery run [38188227025](https://github.com/JavadEslamibabaheidari/StockHub/actions/runs/38188227025)
+  published `ghcr.io/javadeslamibabaheidari/stockhub@sha256:e2217943fd1101bec373f86b8d3f306298ee907bbf599e22cd97f26cda9b48db`
+  for merge SHA `892fdfb9ddf78ed1287599ebd527ad2eb6373a14`.
+- Persistent local deployment: run [38188507403](https://github.com/JavadEslamibabaheidari/StockHub-Deployment/actions/runs/38188507403)
+  records the same SHA and digest; migration completed, rollout reached 1/1
+  available, and `http://127.0.0.1:8080/health` returned HTTP 200.
+- Hosted shared staging and production were skipped and remain unverified.
 - Browser viewport: 390×844 CSS pixels. At this browser's scrollbar settings,
   `innerWidth` was 390 and the document client width was 375.
 - Account and workspace were created through the app's sign-up and workspace
