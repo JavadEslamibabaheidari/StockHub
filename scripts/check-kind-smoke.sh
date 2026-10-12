@@ -61,6 +61,21 @@ workspace_id="$(printf '%s' "$workspace_response" | jq -r '.id')"
 [[ "$workspace_id" != null && -n "$workspace_id" ]]
 test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
   -c "$cookie_jar" -b "$cookie_jar" -X PUT "$api_url/workspaces/$workspace_id/active")" = 204
+session_before_restart="$(curl --fail --silent -c "$cookie_jar" -b "$cookie_jar" "$api_url/auth/session")"
+test "$(jq -r '.activeWorkspaceId' <<< "$session_before_restart")" = "$workspace_id"
+kill "$forward_pid" 2>/dev/null || true
+wait "$forward_pid" 2>/dev/null || true
+kubectl -n "$namespace" rollout restart deployment/stockhub
+kubectl -n "$namespace" rollout status deployment/stockhub --timeout=180s
+kubectl -n "$namespace" port-forward service/stockhub "$port:80" > /tmp/stockhub-kind-port-forward.log 2>&1 &
+forward_pid=$!
+for attempt in {1..30}; do
+  if curl --fail --silent "http://localhost:$port/ready" >/dev/null; then break; fi
+  [[ "$attempt" != 30 ]] || { cat /tmp/stockhub-kind-port-forward.log; exit 1; }
+  sleep 2
+done
+session_after_restart="$(curl --fail --silent -c "$cookie_jar" -b "$cookie_jar" "$api_url/auth/session")"
+test "$(jq -r '.activeWorkspaceId' <<< "$session_after_restart")" = "$workspace_id"
 test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
   -c "$cookie_jar" -b "$cookie_jar" "$api_url/workspaces/$workspace_id/onboarding")" = 200
 test "$(curl --silent --output /dev/null --write-out '%{http_code}' \

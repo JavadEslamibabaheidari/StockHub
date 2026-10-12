@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -28,6 +29,14 @@ builder.Services.AddSingleton<PostgresReportsStore>(_ => new PostgresReportsStor
 builder.Services.AddSingleton<PostgresPricingStore>(_ => new PostgresPricingStore(connectionString));
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<IRecoveryEmailSender, SmtpRecoveryEmailSender>();
+
+var dataProtectionKeysPath = builder.Configuration["Authentication:DataProtectionKeysPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+        .SetApplicationName("StockHub");
+}
 
 var authenticationBuilder = builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -858,7 +867,9 @@ app.MapGet(
             return Results.Unauthorized();
         }
 
-        if (!await IsWorkspaceMember(accessStore, userId, workspaceId, cancellationToken))
+        var membership = (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
+            .FirstOrDefault(item => item.Workspace.Id == workspaceId);
+        if (membership.Workspace is null)
         {
             return Results.Forbid();
         }
@@ -866,7 +877,7 @@ app.MapGet(
         var products = await productStore.ListAsync(workspaceId, cancellationToken);
         var state = await dashboardStore.GetAsync(workspaceId, cancellationToken);
         var orders = await orderStore.ListAsync(workspaceId, cancellationToken);
-        return Results.Ok(BuildDashboardSnapshot(state, products, orders));
+        return Results.Ok(BuildDashboardSnapshot(state, products, orders, membership.Workspace.BusinessName));
     })
     .RequireAuthorization()
     .WithTags("Dashboard");
@@ -973,7 +984,10 @@ app.MapPost(
         state = await dashboardStore.SaveAsync(state, cancellationToken);
         var products = await productStore.ListAsync(workspaceId, cancellationToken);
         var orders = await orderStore.ListAsync(workspaceId, cancellationToken);
-        return Results.Ok(new DashboardActionResultResponse(message, message, BuildDashboardSnapshot(state, products, orders)));
+        return Results.Ok(new DashboardActionResultResponse(
+            message,
+            message,
+            BuildDashboardSnapshot(state, products, orders, membership.Workspace.BusinessName)));
     })
     .RequireAuthorization()
     .WithTags("Dashboard");
@@ -1477,14 +1491,6 @@ static string NormalizeDashboardPlatform(string? platform) =>
         _ => "Amazon"
     };
 
-static async Task<bool> IsWorkspaceMember(
-    IAccessStore accessStore,
-    Guid userId,
-    Guid workspaceId,
-    CancellationToken cancellationToken) =>
-    (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
-    .Any(workspace => workspace.Workspace.Id == workspaceId);
-
 static async Task<(Workspace Workspace, WorkspaceRole Role)?> FindWorkspaceMembership(
     ClaimsPrincipal principal,
     IAccessStore accessStore,
@@ -1620,7 +1626,8 @@ static string InventoryStockStatus(int available) =>
 static DashboardSnapshotResponse BuildDashboardSnapshot(
     DashboardWorkspaceState state,
     IReadOnlyList<Product> products,
-    OrderListResponse orders)
+    OrderListResponse orders,
+    string workspaceName)
 {
     var mode = products.Count == 0 ? "first-use" : "live";
 
@@ -1632,7 +1639,7 @@ static DashboardSnapshotResponse BuildDashboardSnapshot(
         return new DashboardSnapshotResponse(
             mode,
             "Dashboard",
-            DateTimeOffset.UtcNow.ToString("dddd, dd MMMM") + " · Rossi Elettronica",
+            DateTimeOffset.UtcNow.ToString("dddd, dd MMMM") + $" · {workspaceName}",
             "No platforms connected",
             "neutral",
             [

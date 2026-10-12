@@ -49,7 +49,7 @@ current acceptance gate.
 
 ## Milestone 2 Dashboard
 
-Dashboard now has a dedicated `#dashboard` route implemented in `frontend/src/DashboardScreens.tsx`. Sign-in and workspace creation route to Dashboard when a workspace exists, while `#onboarding` remains available for the Access checklist. The Dashboard screens cover first use, first sync, and live operations. Visible controls either work inside Dashboard or open honest future-milestone handoffs. The frontend consumes Dashboard methods added to `frontend/src/api/generated.ts`; the Access contract check still guards the Access operations.
+Dashboard now has a dedicated `#dashboard` route implemented in `frontend/src/DashboardScreens.tsx`. Sign-in and workspace creation route to Dashboard when a workspace exists, while `#onboarding` remains available for the Access checklist. The Dashboard screens cover first use, first sync, and live operations. Visible controls either work inside Dashboard or open honest future-milestone handoffs. The frontend consumes Dashboard methods added to `frontend/src/api/generated.ts`; the Access contract check still guards the Access operations. The first-use Dashboard subtitle is built from the active authorized workspace, never a fixed demo business name.
 
 Local verification for the Dashboard branch used the Docker Compose app on port 18082 and browser-tested sign-in, first-use controls, first sync, product import, live dashboard actions, later-milestone handoff navigation, and sign-out.
 

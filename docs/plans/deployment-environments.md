@@ -100,6 +100,19 @@ The kind cluster and database PVC persist until the cluster is explicitly
 deleted. Back up needed data before deleting it. This local target does not
 expose a public production service.
 
+## Session key persistence
+
+StockHub encrypts session cookies with the ASP.NET Data Protection key ring.
+The local Compose project stores that key ring in its own named volume, and
+the local Kubernetes deployment stores it in the
+`stockhub-data-protection-keys` PVC. Keep the keys durable across app container
+and pod replacements; the Compose and kind smoke checks create a session,
+restart the app, and verify the same workspace session remains valid. Hosted
+staging and production must use durable key-ring storage with an approved
+encryption-at-rest mechanism, access controls, backup, and rotation plan before
+activation. A shared multi-replica target must make the same key ring available
+to every replica.
+
 ## Kubernetes delivery contract
 
 The root `Dockerfile` is the sole StockHub app image; it contains the API and

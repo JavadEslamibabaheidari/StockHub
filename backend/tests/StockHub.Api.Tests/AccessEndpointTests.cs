@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using StockHub.Api.Abstractions;
+using StockHub.Api.Contracts;
 using StockHub.Api.Domain;
 using StockHub.Api.Infrastructure;
 
@@ -18,6 +19,167 @@ namespace StockHub.Api.Tests;
 
 public sealed class AccessEndpointTests
 {
+    [Fact]
+    public async Task Signup_api_creates_personal_account_session_and_handles_duplicate_retry_safely()
+    {
+        using var factory = new AccessApiFactory();
+        using var client = factory.CreateAccessClient();
+
+        var first = await client.PostAsJsonAsync("/api/auth/sign-up", new
+        {
+            fullName = "Ada Lovelace",
+            email = "ada.personal@gmail.com",
+            password = "correct-horse-123"
+        });
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+        Assert.Equal("/api/auth/session", first.Headers.Location?.ToString());
+
+        var session = await client.GetFromJsonAsync<SessionResponse>("/api/auth/session");
+        Assert.NotNull(session);
+        Assert.Equal("ADA.PERSONAL@GMAIL.COM", session.Email);
+        Assert.Equal("Ada Lovelace", session.FullName);
+
+        var duplicate = await client.PostAsJsonAsync("/api/auth/sign-up", new
+        {
+            fullName = "Ada Retry",
+            email = "ADA.PERSONAL@gmail.com",
+            password = "correct-horse-123"
+        });
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+        var problem = await duplicate.Content.ReadAsStringAsync();
+        Assert.Contains("Try signing in or resetting your password", problem, StringComparison.Ordinal);
+
+        var afterRetry = await client.GetFromJsonAsync<SessionResponse>("/api/auth/session");
+        Assert.Equal(session.UserId, afterRetry?.UserId);
+        Assert.Equal("Ada Lovelace", afterRetry?.FullName);
+    }
+
+    [Fact]
+    public async Task Sign_out_revokes_the_current_session()
+    {
+        using var factory = new AccessApiFactory();
+        using var client = factory.CreateAccessClient();
+        await SignUpAsync(client, "Ada", "ada@example.test");
+
+        var signedOut = await client.PostAsync("/api/auth/sign-out", content: null);
+
+        Assert.Equal(HttpStatusCode.NoContent, signedOut.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/auth/session")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Persistent_data_protection_keys_keep_a_database_session_cookie_valid_across_host_restarts()
+    {
+        var keysPath = Path.Combine(Path.GetTempPath(), $"stockhub-dpkeys-{Guid.NewGuid():N}");
+        try
+        {
+            using var firstFactory = new AccessApiFactory(dataProtectionKeysPath: keysPath);
+            using var firstClient = firstFactory.CreateAccessClient();
+            var signup = await firstClient.PostAsJsonAsync("/api/auth/sign-up", new
+            {
+                fullName = "Ada Lovelace",
+                email = "ada.restart@example.test",
+                password = "correct-horse-123"
+            });
+            Assert.Equal(HttpStatusCode.Created, signup.StatusCode);
+            var sessionCookie = Assert.Single(signup.Headers.GetValues("Set-Cookie"))
+                .Split(';', 2)[0];
+
+            using var restartedFactory = new AccessApiFactory(
+                dataProtectionKeysPath: keysPath,
+                store: firstFactory.Store);
+            using var restartedClient = restartedFactory.CreateAccessClient();
+            restartedClient.DefaultRequestHeaders.Add("Cookie", sessionCookie);
+
+            var session = await restartedClient.GetAsync("/api/auth/session");
+
+            Assert.Equal(HttpStatusCode.OK, session.StatusCode);
+        }
+        finally
+        {
+            if (Directory.Exists(keysPath))
+            {
+                Directory.Delete(keysPath, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Password_reset_api_sends_a_single_use_link_and_revokes_existing_sessions()
+    {
+        using var factory = new AccessApiFactory();
+        using var client = factory.CreateAccessClient();
+        await SignUpAsync(client, "Ada", "ada.personal@gmail.com");
+
+        var unknown = await client.PostAsJsonAsync("/api/auth/password-reset/request", new { email = "unknown@example.test" });
+        var requested = await client.PostAsJsonAsync("/api/auth/password-reset/request", new { email = "ada.personal@gmail.com" });
+
+        Assert.Equal(HttpStatusCode.Accepted, unknown.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, requested.StatusCode);
+        Assert.Equal(await unknown.Content.ReadAsStringAsync(), await requested.Content.ReadAsStringAsync());
+        Assert.False(string.IsNullOrWhiteSpace(factory.EmailSender.PasswordResetToken));
+
+        var reset = await client.PostAsJsonAsync("/api/auth/password-reset/confirm", new
+        {
+            token = factory.EmailSender.PasswordResetToken,
+            newPassword = "new-correct-horse-456"
+        });
+        Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/auth/session")).StatusCode);
+
+        var replay = await client.PostAsJsonAsync("/api/auth/password-reset/confirm", new
+        {
+            token = factory.EmailSender.PasswordResetToken,
+            newPassword = "another-correct-horse-789"
+        });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, replay.StatusCode);
+
+        using var newSession = factory.CreateAccessClient();
+        var oldPassword = await newSession.PostAsJsonAsync("/api/auth/sign-in", new
+        {
+            email = "ada.personal@gmail.com",
+            password = "correct-horse-123"
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, oldPassword.StatusCode);
+
+        var newPassword = await newSession.PostAsJsonAsync("/api/auth/sign-in", new
+        {
+            email = "ada.personal@gmail.com",
+            password = "new-correct-horse-456"
+        });
+        Assert.Equal(HttpStatusCode.OK, newPassword.StatusCode);
+    }
+
+    [Fact]
+    public async Task Password_reset_api_reports_unconfigured_delivery_without_looking_up_an_account()
+    {
+        using var factory = new AccessApiFactory();
+        factory.EmailSender.Configured = false;
+        using var client = factory.CreateAccessClient();
+
+        var response = await client.PostAsJsonAsync("/api/auth/password-reset/request", new { email = "unknown@example.test" });
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Contains("not configured", await response.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task First_use_dashboard_uses_the_created_workspace_name()
+    {
+        using var factory = new AccessApiFactory();
+        using var client = factory.CreateAccessClient();
+        await SignUpAsync(client, "Ada", "ada@example.test");
+        var workspaceId = await CreateWorkspaceAsync(client, "M14 Isolated Test Shop");
+
+        var dashboard = await client.GetFromJsonAsync<DashboardSnapshotResponse>(
+            $"/api/workspaces/{workspaceId}/dashboard");
+
+        Assert.NotNull(dashboard);
+        Assert.Equal("first-use", dashboard.State);
+        Assert.Contains("M14 Isolated Test Shop", dashboard.Subtitle, StringComparison.Ordinal);
+        Assert.DoesNotContain("Rossi Elettronica", dashboard.Subtitle, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task Onboarding_api_round_trips_selection_and_enforces_workspace_membership()
     {
@@ -173,8 +335,12 @@ public sealed class AccessEndpointTests
     private sealed record TeamResponse(IReadOnlyList<object> Members, IReadOnlyList<object> Invitations, bool CanManage);
 }
 
-internal sealed class AccessApiFactory(bool googleConfigured = true) : WebApplicationFactory<Program>
+internal sealed class AccessApiFactory(
+    bool googleConfigured = true,
+    string? dataProtectionKeysPath = null,
+    InMemoryAccessStore? store = null) : WebApplicationFactory<Program>
 {
+    public InMemoryAccessStore Store { get; } = store ?? new InMemoryAccessStore();
     public CapturingRecoveryEmailSender EmailSender { get; } = new();
 
     public HttpClient CreateAccessClient() => CreateClient(new WebApplicationFactoryClientOptions
@@ -191,6 +357,7 @@ internal sealed class AccessApiFactory(bool googleConfigured = true) : WebApplic
             {
                 ["Database:ApplyMigrations"] = "false",
                 ["Application:PublicBaseUrl"] = "http://localhost",
+                ["Authentication:DataProtectionKeysPath"] = dataProtectionKeysPath,
                 ["Authentication:Google:ClientId"] = googleConfigured ? "test-client-id" : string.Empty,
                 ["Authentication:Google:ClientSecret"] = googleConfigured ? "test-client-secret" : string.Empty
             }));
@@ -198,7 +365,13 @@ internal sealed class AccessApiFactory(bool googleConfigured = true) : WebApplic
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<IAccessStore>();
-            services.AddSingleton<IAccessStore, InMemoryAccessStore>();
+            services.AddSingleton<IAccessStore>(Store);
+            services.RemoveAll<IProductStore>();
+            services.AddSingleton<IProductStore, EmptyProductStore>();
+            services.RemoveAll<IDashboardStore>();
+            services.AddSingleton<IDashboardStore, InMemoryDashboardStore>();
+            services.RemoveAll<IOrderStore>();
+            services.AddSingleton<IOrderStore, EmptyOrderStore>();
             services.RemoveAll<IRecoveryEmailSender>();
             services.AddSingleton<IRecoveryEmailSender>(EmailSender);
             services.AddTransient<IStartupFilter, ExternalIdentityTestStartupFilter>();
@@ -206,13 +379,58 @@ internal sealed class AccessApiFactory(bool googleConfigured = true) : WebApplic
     }
 }
 
+internal sealed class EmptyProductStore : IProductStore
+{
+    public Task<IReadOnlyList<Product>> ListAsync(Guid workspaceId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Product>>([]);
+
+    public Task<IReadOnlyList<Product>> UpsertAsync(Guid workspaceId, IReadOnlyList<ProductRequest> products, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Product>>([]);
+
+    public Task<Product?> UpdateOnHandAsync(Guid workspaceId, Guid productId, int onHand, CancellationToken cancellationToken) =>
+        Task.FromResult<Product?>(null);
+}
+
+internal sealed class EmptyOrderStore : IOrderStore
+{
+    public Task<DashboardImportResponse> ImportAsync(Guid workspaceId, DashboardImportRequest request, CancellationToken cancellationToken) =>
+        Task.FromResult(new DashboardImportResponse(0, 0));
+
+    public Task<OrderListResponse> ListAsync(Guid workspaceId, CancellationToken cancellationToken) =>
+        Task.FromResult(new OrderListResponse(0, "No orders yet", []));
+
+    public Task<OrderDetailResponse?> GetAsync(Guid workspaceId, Guid orderId, CancellationToken cancellationToken) =>
+        Task.FromResult<OrderDetailResponse?>(null);
+
+    public Task<OrderDetailResponse?> ApplyActionAsync(Guid workspaceId, Guid orderId, OrderActionRequest request, CancellationToken cancellationToken) =>
+        Task.FromResult<OrderDetailResponse?>(null);
+
+    public Task<IReadOnlyDictionary<Guid, int>> ReservedByProductAsync(Guid workspaceId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyDictionary<Guid, int>>(new Dictionary<Guid, int>());
+
+    public Task<IReadOnlyList<ReportOrderRecord>> LoadReportOrdersAsync(Guid workspaceId, DateTimeOffset start, DateTimeOffset endExclusive, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<ReportOrderRecord>>([]);
+
+    public Task<IReadOnlyList<ReportProductSalesRecord>> LoadReportProductSalesAsync(Guid workspaceId, DateTimeOffset start, DateTimeOffset endExclusive, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<ReportProductSalesRecord>>([]);
+}
+
 internal sealed class CapturingRecoveryEmailSender : IRecoveryEmailSender
 {
-    public bool IsConfigured => true;
+    public bool Configured { get; set; } = true;
+    public bool IsConfigured => Configured;
     public bool FailInvitations { get; set; }
     public string? InvitationToken { get; private set; }
+    public string? PasswordResetToken { get; private set; }
 
-    public Task SendPasswordResetAsync(string recipient, Uri resetLink, CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task SendPasswordResetAsync(string recipient, Uri resetLink, CancellationToken cancellationToken)
+    {
+        var marker = "#reset?token=";
+        PasswordResetToken = resetLink.Fragment.StartsWith(marker, StringComparison.Ordinal)
+            ? Uri.UnescapeDataString(resetLink.Fragment[marker.Length..])
+            : null;
+        return Task.CompletedTask;
+    }
 
     public Task SendInvitationAsync(string recipient, Uri invitationLink, string workspaceName, WorkspaceRole role, CancellationToken cancellationToken)
     {
