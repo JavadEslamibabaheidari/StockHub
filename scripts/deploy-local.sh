@@ -12,6 +12,13 @@ commit="$2"
 [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || usage
 
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+build_dir=""
+backup_tmp=""
+cleanup() {
+  [[ -z "$backup_tmp" ]] || rm -f -- "$backup_tmp"
+  [[ -z "$build_dir" ]] || rm -rf -- "$build_dir"
+}
+trap cleanup EXIT
 export DOCKER_CONTEXT="${STOCKHUB_DOCKER_CONTEXT:-desktop-linux}"
 if [[ "$target" != dev ]]; then
   release_tag="${STOCKHUB_RELEASE_TAG:-}"
@@ -42,7 +49,6 @@ compose=(docker compose --project-name "$target-stockhub" --env-file "$config" -
 
 if ! docker image inspect "$STOCKHUB_IMAGE" >/dev/null 2>&1; then
   build_dir="$(mktemp -d)"
-  trap 'rm -rf "$build_dir"' EXIT
   git -C "$repo" archive "$commit" | tar -x -C "$build_dir"
   docker build -t "$STOCKHUB_IMAGE" "$build_dir"
 fi
@@ -54,7 +60,13 @@ if [[ "$target" == prod ]]; then
   backup_dir="$state_dir/backups"
   mkdir -p "$backup_dir"
   chmod 700 "$backup_dir"
-  "${compose[@]}" exec -T postgres pg_dump -U stockhub stockhub | gzip > "$backup_dir/stockhub-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
+  backup_tmp="$(mktemp "$backup_dir/.stockhub-backup.XXXXXX")"
+  umask 077
+  "${compose[@]}" exec -T postgres pg_dump -U stockhub stockhub | gzip > "$backup_tmp"
+  chmod 600 "$backup_tmp"
+  backup_file="$backup_dir/stockhub-$(date -u +%Y%m%dT%H%M%SZ)-$$.sql.gz"
+  mv -- "$backup_tmp" "$backup_file"
+  backup_tmp=""
 fi
 "${compose[@]}" run --rm --no-deps stockhub dotnet StockHub.Api.dll --migrate-only
 "${compose[@]}" up -d --no-build stockhub
