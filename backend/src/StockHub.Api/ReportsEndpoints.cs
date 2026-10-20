@@ -23,7 +23,7 @@ public static class ReportsEndpoints
             if (membership.Workspace is null) return Results.Forbid();
             context.HttpContext.Items["reportCurrency"] = membership.Workspace.Currency;
             context.HttpContext.Items["reportCanEdit"] = membership.Role is WorkspaceRole.Owner or WorkspaceRole.Admin or WorkspaceRole.Manager;
-            if (context.HttpContext.Request.Method == "PUT" && !(bool)context.HttpContext.Items["reportCanEdit"]!) return Results.Forbid();
+            if (context.HttpContext.Request.Method is "PUT" or "DELETE" && !(bool)context.HttpContext.Items["reportCanEdit"]!) return Results.Forbid();
             return await next(context);
         });
 
@@ -65,14 +65,30 @@ public static class ReportsEndpoints
             await store.SetReorderAsync(workspaceId,productId,input.Listed,ct);
             return Results.Ok(new ReorderListItem(productId,input.Listed));
         });
-        group.MapGet("/alert-settings", async (Guid workspaceId, HttpContext context, PostgresReportsStore store, CancellationToken ct) =>
-            Results.Ok(new AlertSettings(await store.GetAlertsAsync(workspaceId,ct),(bool)context.Items["reportCanEdit"]!,"notConfigured")));
-        group.MapPut("/alert-settings", async (Guid workspaceId, AlertSettingsInput input, PostgresReportsStore store, CancellationToken ct) =>
+        group.MapGet("/alert-settings", async (Guid workspaceId, HttpContext context, PostgresReportsStore store, IRecoveryEmailSender email, CancellationToken ct) =>
+            Results.Ok(new AlertSettings(await store.GetAlertsAsync(workspaceId,ct),(bool)context.Items["reportCanEdit"]!,
+                new(email.IsConfigured?"available":"unavailable","available",await store.HasSlackWebhookAsync(workspaceId,ct)?"available":"unavailable"),["syncFailure"],await store.GetDeliveryStatusAsync(workspaceId,ct))));
+        group.MapPut("/alert-settings", async (Guid workspaceId, AlertSettingsInput input, PostgresReportsStore store, IRecoveryEmailSender email, CancellationToken ct) =>
         {
             var error = ReportValidation.Alerts(input);
             if (error is not null) return Results.BadRequest(new Problem("Invalid alert settings",error,"alert_settings_invalid"));
             await store.SaveAlertsAsync(workspaceId,input.Alerts,ct);
-            return Results.Ok(new AlertSettings(input.Alerts,true,"notConfigured"));
+            return Results.Ok(new AlertSettings(input.Alerts,true,new(email.IsConfigured?"available":"unavailable","available",await store.HasSlackWebhookAsync(workspaceId,ct)?"available":"unavailable"),["syncFailure"],await store.GetDeliveryStatusAsync(workspaceId,ct)));
+        });
+        group.MapPut("/alert-settings/slack", async (Guid workspaceId, SlackWebhookInput input, PostgresReportsStore store, CancellationToken ct) =>
+        {
+            if (!Uri.TryCreate(input.WebhookUrl,UriKind.Absolute,out var webhook)
+                || webhook.Scheme!="https" || webhook.Host!="hooks.slack.com" || webhook.Port!=443
+                || !webhook.AbsolutePath.StartsWith("/services/",StringComparison.Ordinal)
+                || !string.IsNullOrEmpty(webhook.Query) || !string.IsNullOrEmpty(webhook.Fragment) || !string.IsNullOrEmpty(webhook.UserInfo))
+                return Results.BadRequest(new Problem("Invalid Slack webhook","Enter a valid Slack incoming webhook URL.","slack_webhook_invalid"));
+            await store.SaveSlackWebhookAsync(workspaceId,webhook,ct);
+            return Results.Ok(new SlackWebhookStatus(true));
+        });
+        group.MapDelete("/alert-settings/slack", async (Guid workspaceId, PostgresReportsStore store, CancellationToken ct) =>
+        {
+            await store.RemoveSlackWebhookAsync(workspaceId,ct);
+            return Results.NoContent();
         });
     }
 
