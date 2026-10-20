@@ -74,7 +74,12 @@ export type ReportAlertFrequency = 'instant' | 'hourly' | 'daily';
 export type ReportAlertChannels = { email: boolean; inApp: boolean; slack: boolean };
 export type ReportAlertRule = { key: ReportAlertKey; enabled: boolean; threshold: number | null; channels: ReportAlertChannels; frequency: ReportAlertFrequency };
 export type ReportAlertSettingsInput = { alerts: ReportAlertRule[] };
-export type ReportAlertSettings = ReportAlertSettingsInput & { canEdit: boolean; deliveryStatus: 'notConfigured' };
+export type AlertChannelAvailability = { email: 'unavailable' | 'available'; inApp: 'unavailable' | 'available'; slack: 'unavailable' | 'available' };
+export type AlertChannelDeliveryStatus = { channel: 'inApp' | 'email' | 'slack'; pending: number; delivered: number; failed: number };
+export type ReportAlertSettings = ReportAlertSettingsInput & { canEdit: boolean; channels: AlertChannelAvailability; unavailableRules: ReportAlertKey[]; delivery: AlertChannelDeliveryStatus[] };
+export type SlackWebhookStatus = { configured: boolean };
+export type BusinessNotification = { id: string; title: string; body: string; createdAt: string; readAt: string | null };
+export type BusinessNotificationList = { notifications: BusinessNotification[]; unreadCount: number };
 
 export class AccessApiError extends Error { constructor(public readonly status: number, public readonly problem: Problem) { super(problem.detail); } }
 export class AccessApiClient {
@@ -114,6 +119,10 @@ export class AccessApiClient {
   setReportsReorderListItem(workspaceId: string, productId: string, listed: boolean) { return this.request<ReportsReorderListItem>(`/api/workspaces/${workspaceId}/reports/reorder-list/${productId}`, { method: 'PUT', body: JSON.stringify({ listed }) }); }
   reportAlertSettings(workspaceId: string) { return this.request<ReportAlertSettings>(`/api/workspaces/${workspaceId}/reports/alert-settings`); }
   updateReportAlertSettings(workspaceId: string, settings: ReportAlertSettingsInput) { return this.request<ReportAlertSettings>(`/api/workspaces/${workspaceId}/reports/alert-settings`, { method: 'PUT', body: JSON.stringify(settings) }); }
+  saveSlackWebhook(workspaceId: string, webhookUrl: string) { return this.request<SlackWebhookStatus>(`/api/workspaces/${workspaceId}/reports/alert-settings/slack`, { method: 'PUT', body: JSON.stringify({ webhookUrl }) }); }
+  removeSlackWebhook(workspaceId: string) { return this.request<void>(`/api/workspaces/${workspaceId}/reports/alert-settings/slack`, { method: 'DELETE' }); }
+  notifications(workspaceId: string) { return this.request<BusinessNotificationList>(`/api/workspaces/${workspaceId}/notifications`); }
+  markNotificationRead(workspaceId: string, notificationId: string) { return this.request<void>(`/api/workspaces/${workspaceId}/notifications/${notificationId}/read`, { method: 'POST' }); }
   invite(workspaceId: string, request: InvitationRequest) { return this.request<{ status: string }>(`/api/workspaces/${workspaceId}/invitations`, { method: 'POST', body: JSON.stringify(request) }); }
   team(workspaceId: string) { return this.request<TeamResponse>(`/api/workspaces/${workspaceId}/team`); }
   resendInvitation(workspaceId: string, invitationId: string) { return this.request<{ status: string }>(`/api/workspaces/${workspaceId}/invitations/${invitationId}/resend`, { method: 'POST' }); }

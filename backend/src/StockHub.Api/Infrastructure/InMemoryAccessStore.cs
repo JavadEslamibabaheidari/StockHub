@@ -181,6 +181,12 @@ public sealed class InMemoryAccessStore : IAccessStore
         return Task.FromResult<IReadOnlyList<(Workspace, WorkspaceRole)>>(result);
     }
 
+    public Task<IReadOnlyList<Guid>> ListWorkspaceIdsAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<IReadOnlyList<Guid>>(_workspaces.Keys.Order().ToArray());
+    }
+
     public Task<(Workspace Workspace, WorkspaceRole Role)> CreateWorkspaceAsync(
         Guid userId,
         CreateWorkspaceRequest request,

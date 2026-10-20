@@ -337,6 +337,17 @@ public sealed class PostgresAccessStore(string connectionString) : IAccessStore
         return result;
     }
 
+    public async Task<IReadOnlyList<Guid>> ListWorkspaceIdsAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new NpgsqlCommand("SELECT id FROM workspaces ORDER BY id", connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var ids = new List<Guid>();
+        while (await reader.ReadAsync(cancellationToken)) ids.Add(reader.GetGuid(0));
+        return ids;
+    }
+
     public async Task<(Workspace Workspace, WorkspaceRole Role)> CreateWorkspaceAsync(
         Guid userId,
         CreateWorkspaceRequest request,
@@ -876,7 +887,7 @@ public static class PostgresDatabaseInitializer
 
         try
         {
-            foreach (var migrationName in new[] { "001_access.sql", "002_auth_completion.sql", "003_onboarding_products.sql", "004_dashboard_state.sql", "005_orders.sql", "006_pricing.sql", "007_reports.sql", "008_team_management.sql", "009_onboarding_selection.sql" })
+            foreach (var migrationName in new[] { "001_access.sql", "002_auth_completion.sql", "003_onboarding_products.sql", "004_dashboard_state.sql", "005_orders.sql", "006_pricing.sql", "007_reports.sql", "008_team_management.sql", "009_onboarding_selection.sql", "010_business_notifications.sql" })
             {
                 var migrationPath = Path.Combine(AppContext.BaseDirectory, "Database", "Migrations", migrationName);
                 if (!File.Exists(migrationPath))
