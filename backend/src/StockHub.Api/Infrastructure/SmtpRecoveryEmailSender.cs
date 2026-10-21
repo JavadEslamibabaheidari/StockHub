@@ -42,6 +42,16 @@ public sealed class SmtpRecoveryEmailSender(IConfiguration configuration) : IRec
             cancellationToken);
     }
 
+    public Task SendBusinessAlertAsync(string recipient, string title, string body, CancellationToken cancellationToken)
+    {
+        if (!MailAddress.TryCreate(recipient, out var address)
+            || !string.Equals(address.Address, recipient.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Alert recipient email is invalid.");
+        }
+        return SendAsync(address.Address, title, body, cancellationToken);
+    }
+
     private async Task SendAsync(string recipient, string subject, string body, CancellationToken cancellationToken)
     {
         if (!IsConfigured)

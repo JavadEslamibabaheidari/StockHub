@@ -25,17 +25,19 @@ builder.Services.AddSingleton<IAccessStore>(_ => new PostgresAccessStore(connect
 builder.Services.AddSingleton<IProductStore>(_ => new PostgresProductStore(connectionString));
 builder.Services.AddSingleton<IDashboardStore>(_ => new PostgresDashboardStore(connectionString));
 builder.Services.AddSingleton<IOrderStore>(_ => new PostgresOrderStore(connectionString));
-builder.Services.AddSingleton<PostgresReportsStore>(_ => new PostgresReportsStore(connectionString));
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<PostgresReportsStore>(services => new PostgresReportsStore(connectionString, services.GetRequiredService<IDataProtectionProvider>()));
+builder.Services.AddSingleton<IBusinessNotificationStore>(services => services.GetRequiredService<PostgresReportsStore>());
+builder.Services.AddHostedService<ReportsAlertWorker>();
 builder.Services.AddSingleton<PostgresPricingStore>(_ => new PostgresPricingStore(connectionString));
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<IRecoveryEmailSender, SmtpRecoveryEmailSender>();
 
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("StockHub");
 var dataProtectionKeysPath = builder.Configuration["Authentication:DataProtectionKeysPath"];
 if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
 {
-    builder.Services.AddDataProtection()
-        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
-        .SetApplicationName("StockHub");
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
 }
 
 var authenticationBuilder = builder.Services
@@ -162,6 +164,7 @@ app.UseAuthorization();
 
 app.MapPricing();
 app.MapReports();
+app.MapNotifications();
 
 app.MapPost(
     "/api/auth/sign-up",

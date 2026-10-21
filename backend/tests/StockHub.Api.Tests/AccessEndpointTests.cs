@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using StockHub.Api.Abstractions;
 using StockHub.Api.Contracts;
 using StockHub.Api.Domain;
@@ -333,6 +334,36 @@ public sealed class AccessEndpointTests
     private sealed record WorkspaceResponse(Guid Id);
     private sealed record SessionResponse(Guid UserId, string FullName, string Email, Guid? ActiveWorkspaceId, IReadOnlyList<object> Workspaces);
     private sealed record TeamResponse(IReadOnlyList<object> Members, IReadOnlyList<object> Invitations, bool CanManage);
+
+    [Fact]
+    public async Task Notifications_require_membership_and_scope_reads_to_the_authenticated_user()
+    {
+        using var factory = new AccessApiFactory();
+        using var client = factory.CreateAccessClient();
+        var signUp = await client.PostAsJsonAsync("/api/auth/sign-up", new { fullName = "Ada Lovelace", email = "notifications@example.test", password = "correct-horse-123" });
+        Assert.Equal(HttpStatusCode.Created, signUp.StatusCode);
+        var workspaceId = await CreateWorkspaceAsync(client, "Notification workspace");
+        var session = await client.GetFromJsonAsync<SessionResponse>("/api/auth/session");
+        Assert.NotNull(session);
+
+        using var allowed = await client.GetAsync($"/api/workspaces/{workspaceId}/notifications");
+        Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
+        Assert.Equal(workspaceId, factory.Notifications.LastWorkspaceId);
+        Assert.Equal(session.UserId, factory.Notifications.LastRecipientId);
+
+        using var forbidden = await client.GetAsync($"/api/workspaces/{Guid.NewGuid()}/notifications");
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal(1, factory.Notifications.ReadListCalls);
+
+        using var markForbidden = await client.PostAsync($"/api/workspaces/{Guid.NewGuid()}/notifications/{Guid.NewGuid()}/read", null);
+        Assert.Equal(HttpStatusCode.Forbidden, markForbidden.StatusCode);
+        Assert.Equal(0, factory.Notifications.MarkReadCalls);
+
+        using var unsafeSlack = await client.PutAsJsonAsync($"/api/workspaces/{workspaceId}/reports/alert-settings/slack", new { webhookUrl = "https://example.test/services/not-a-slack-hook" });
+        Assert.Equal(HttpStatusCode.BadRequest, unsafeSlack.StatusCode);
+        using var nonStandardPortSlack = await client.PutAsJsonAsync($"/api/workspaces/{workspaceId}/reports/alert-settings/slack", new { webhookUrl = "https://hooks.slack.com:8443/services/test/token" });
+        Assert.Equal(HttpStatusCode.BadRequest, nonStandardPortSlack.StatusCode);
+    }
 }
 
 internal sealed class AccessApiFactory(
@@ -341,6 +372,7 @@ internal sealed class AccessApiFactory(
     InMemoryAccessStore? store = null) : WebApplicationFactory<Program>
 {
     public InMemoryAccessStore Store { get; } = store ?? new InMemoryAccessStore();
+    public InMemoryBusinessNotificationStore Notifications { get; } = new();
     public CapturingRecoveryEmailSender EmailSender { get; } = new();
 
     public HttpClient CreateAccessClient() => CreateClient(new WebApplicationFactoryClientOptions
@@ -364,8 +396,11 @@ internal sealed class AccessApiFactory(
 
         builder.ConfigureTestServices(services =>
         {
+            services.RemoveAll<IHostedService>();
             services.RemoveAll<IAccessStore>();
             services.AddSingleton<IAccessStore>(Store);
+            services.RemoveAll<IBusinessNotificationStore>();
+            services.AddSingleton<IBusinessNotificationStore>(Notifications);
             services.RemoveAll<IProductStore>();
             services.AddSingleton<IProductStore, EmptyProductStore>();
             services.RemoveAll<IDashboardStore>();
@@ -376,6 +411,31 @@ internal sealed class AccessApiFactory(
             services.AddSingleton<IRecoveryEmailSender>(EmailSender);
             services.AddTransient<IStartupFilter, ExternalIdentityTestStartupFilter>();
         });
+    }
+}
+
+internal sealed class InMemoryBusinessNotificationStore : IBusinessNotificationStore
+{
+    public Guid LastWorkspaceId { get; private set; }
+    public Guid LastRecipientId { get; private set; }
+    public int ReadListCalls { get; private set; }
+    public int MarkReadCalls { get; private set; }
+
+    public Task<IReadOnlyList<BusinessNotification>> ListNotificationsAsync(Guid workspaceId, Guid recipientId, CancellationToken cancellationToken) =>
+        RecordList(workspaceId, recipientId);
+
+    private Task<IReadOnlyList<BusinessNotification>> RecordList(Guid workspaceId, Guid recipientId)
+    {
+        LastWorkspaceId = workspaceId; LastRecipientId = recipientId; ReadListCalls++;
+        return Task.FromResult<IReadOnlyList<BusinessNotification>>([]);
+    }
+
+    public Task<int> CountUnreadNotificationsAsync(Guid workspaceId, Guid recipientId, CancellationToken cancellationToken) => Task.FromResult(0);
+
+    public Task<bool> MarkNotificationReadAsync(Guid workspaceId, Guid recipientId, Guid notificationId, CancellationToken cancellationToken)
+    {
+        LastWorkspaceId = workspaceId; LastRecipientId = recipientId; MarkReadCalls++;
+        return Task.FromResult(false);
     }
 }
 
@@ -446,6 +506,8 @@ internal sealed class CapturingRecoveryEmailSender : IRecoveryEmailSender
             : null;
         return Task.CompletedTask;
     }
+
+    public Task SendBusinessAlertAsync(string recipient, string title, string body, CancellationToken cancellationToken) => Task.CompletedTask;
 }
 
 internal sealed class ExternalIdentityTestStartupFilter : IStartupFilter
