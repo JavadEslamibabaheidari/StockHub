@@ -277,4 +277,31 @@ public sealed class PostgresAccessStoreTests
         Assert.Equal("Dashboard action saved.", loaded.DetailPanel);
     }
 
+    [Fact]
+    public async Task Onboarding_selection_round_trips_and_is_workspace_scoped()
+    {
+        var connectionString = Environment.GetEnvironmentVariable("STOCKHUB_POSTGRES_TEST_CONNECTION");
+        if (string.IsNullOrWhiteSpace(connectionString)) return;
+
+        await PostgresDatabaseInitializer.ApplyAsync(connectionString, CancellationToken.None);
+        var store = new PostgresAccessStore(connectionString);
+        var suffix = Guid.NewGuid().ToString("N");
+        var user = await store.CreateUserAsync("Onboarding Owner", $"onboarding-{suffix}@example.com", "hash", CancellationToken.None);
+        var first = await store.CreateWorkspaceAsync(user.Id, new CreateWorkspaceRequest("Onboarding One", "IT", "EUR", null), $"onboarding-one-{suffix}", CancellationToken.None);
+        var second = await store.CreateWorkspaceAsync(user.Id, new CreateWorkspaceRequest("Onboarding Two", "IT", "EUR", null), $"onboarding-two-{suffix}", CancellationToken.None);
+
+        Assert.Null(await store.GetSelectedOnboardingActionAsync(user.Id, first.Workspace.Id, CancellationToken.None));
+        await store.RecordOnboardingActionAsync(user.Id, first.Workspace.Id, "import-products", CancellationToken.None);
+        await store.RecordOnboardingActionAsync(user.Id, first.Workspace.Id, "connect-platform", CancellationToken.None);
+
+        var recreatedStore = new PostgresAccessStore(connectionString);
+        Assert.Equal("connect-platform", await recreatedStore.GetSelectedOnboardingActionAsync(user.Id, first.Workspace.Id, CancellationToken.None));
+        Assert.Null(await recreatedStore.GetSelectedOnboardingActionAsync(user.Id, second.Workspace.Id, CancellationToken.None));
+        await Assert.ThrowsAsync<ArgumentException>(() => recreatedStore.RecordOnboardingActionAsync(
+            user.Id,
+            first.Workspace.Id,
+            "unknown",
+            CancellationToken.None));
+    }
+
 }

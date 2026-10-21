@@ -49,7 +49,7 @@ current acceptance gate.
 
 ## Milestone 2 Dashboard
 
-Dashboard now has a dedicated `#dashboard` route implemented in `frontend/src/DashboardScreens.tsx`. Sign-in and workspace creation route to Dashboard when a workspace exists, while `#onboarding` remains available for the Access checklist. The Dashboard screens cover first use, first sync, and live operations. Visible controls either work inside Dashboard or open honest future-milestone handoffs. The frontend consumes Dashboard methods added to `frontend/src/api/generated.ts`; the Access contract check still guards the Access operations.
+Dashboard now has a dedicated `#dashboard` route implemented in `frontend/src/DashboardScreens.tsx`. Sign-in and workspace creation route to Dashboard when a workspace exists, while `#onboarding` remains available for the Access checklist. The Dashboard screens cover first use, first sync, and live operations. Visible controls either work inside Dashboard or open honest future-milestone handoffs. The frontend consumes Dashboard methods added to `frontend/src/api/generated.ts`; the Access contract check still guards the Access operations. The first-use Dashboard subtitle is built from the active authorized workspace, never a fixed demo business name.
 
 Local verification for the Dashboard branch used the Docker Compose app on port 18082 and browser-tested sign-in, first-use controls, first sync, product import, live dashboard actions, later-milestone handoff navigation, and sign-out.
 
@@ -194,3 +194,8 @@ aligned and tabular; Reports marks numeric columns explicitly.
 boundary behavior. The branch verification record and remaining delivery gates
 are in `docs/plans/milestone-12-design-system.md` until the GitHub closure report
 is merged.
+
+The Onboarding route reads the active workspace's persisted selected action
+from the Access API and reopens that step after navigation or workspace
+switching. A selected handoff remains uncompleted until its owning capability
+confirms completion; the frontend must not infer completion from selection.

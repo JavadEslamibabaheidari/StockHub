@@ -11,6 +11,7 @@ public sealed class InMemoryAccessStore : IAccessStore
     private readonly ConcurrentDictionary<Guid, Session> _sessions = new();
     private readonly ConcurrentDictionary<Guid, Workspace> _workspaces = new();
     private readonly ConcurrentDictionary<(Guid UserId, Guid WorkspaceId), Membership> _memberships = new();
+    private readonly ConcurrentDictionary<(Guid UserId, Guid WorkspaceId), string> _onboardingSelections = new();
     private readonly ConcurrentDictionary<(Guid UserId, string Key), Guid> _idempotency = new();
     private readonly ConcurrentDictionary<string, Invitation> _invitations = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, (Guid UserId, DateTimeOffset ExpiresAt)> _passwordResets = new(StringComparer.Ordinal);
@@ -178,6 +179,12 @@ public sealed class InMemoryAccessStore : IAccessStore
             .ToArray();
 
         return Task.FromResult<IReadOnlyList<(Workspace, WorkspaceRole)>>(result);
+    }
+
+    public Task<IReadOnlyList<Guid>> ListWorkspaceIdsAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<IReadOnlyList<Guid>>(_workspaces.Keys.Order().ToArray());
     }
 
     public Task<(Workspace Workspace, WorkspaceRole Role)> CreateWorkspaceAsync(
@@ -375,7 +382,25 @@ public sealed class InMemoryAccessStore : IAccessStore
         Guid userId,
         Guid workspaceId,
         string actionKey,
-        CancellationToken cancellationToken) => Task.CompletedTask;
+        CancellationToken cancellationToken)
+    {
+        if (!OnboardingTask.IsSupportedAction(actionKey))
+        {
+            throw new ArgumentException("Unsupported onboarding action.", nameof(actionKey));
+        }
+
+        _onboardingSelections[(userId, workspaceId)] = actionKey;
+        return Task.CompletedTask;
+    }
+
+    public Task<string?> GetSelectedOnboardingActionAsync(
+        Guid userId,
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        _onboardingSelections.TryGetValue((userId, workspaceId), out var actionKey);
+        return Task.FromResult(actionKey);
+    }
 
     private static string Slugify(string value)
     {

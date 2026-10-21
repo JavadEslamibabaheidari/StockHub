@@ -40,6 +40,8 @@ public interface IAccessStore
         Guid userId,
         CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<Guid>> ListWorkspaceIdsAsync(CancellationToken cancellationToken);
+
     Task<(Workspace Workspace, WorkspaceRole Role)> CreateWorkspaceAsync(
         Guid userId,
         CreateWorkspaceRequest request,
@@ -79,5 +81,10 @@ public interface IAccessStore
         Guid userId,
         Guid workspaceId,
         string actionKey,
+        CancellationToken cancellationToken);
+
+    Task<string?> GetSelectedOnboardingActionAsync(
+        Guid userId,
+        Guid workspaceId,
         CancellationToken cancellationToken);
 }

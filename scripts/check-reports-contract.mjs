@@ -7,6 +7,9 @@ const requiredPaths = [
   '/api/workspaces/{workspaceId}/reports/reorder-list',
   '/api/workspaces/{workspaceId}/reports/reorder-list/{productId}',
   '/api/workspaces/{workspaceId}/reports/alert-settings',
+  '/api/workspaces/{workspaceId}/notifications',
+  '/api/workspaces/{workspaceId}/notifications/{notificationId}/read',
+  '/api/workspaces/{workspaceId}/reports/alert-settings/slack',
 ];
 const missingPaths = requiredPaths.filter((path) => !spec.paths[path]);
 if (missingPaths.length) {
@@ -21,6 +24,10 @@ const requiredOperations = [
   'setReportsReorderListItem',
   'getReportAlertSettings',
   'updateReportAlertSettings',
+  'getBusinessNotifications',
+  'markBusinessNotificationRead',
+  'configureReportSlackWebhook',
+  'removeReportSlackWebhook',
 ];
 const operationIds = Object.values(spec.paths).flatMap((path) => Object.values(path).map((operation) => operation.operationId));
 const missingOperations = requiredOperations.filter((operation) => !operationIds.includes(operation));
@@ -30,7 +37,7 @@ if (missingOperations.length) {
 }
 
 const client = readFileSync(new URL('../frontend/src/api/generated.ts', import.meta.url), 'utf8');
-const clientOperations = ['dailyReport', 'weeklyReport', 'reportsReorderList', 'setReportsReorderListItem', 'reportAlertSettings', 'updateReportAlertSettings'];
+const clientOperations = ['dailyReport', 'weeklyReport', 'reportsReorderList', 'setReportsReorderListItem', 'reportAlertSettings', 'updateReportAlertSettings', 'notifications', 'markNotificationRead', 'saveSlackWebhook', 'removeSlackWebhook'];
 const missingClientOperations = clientOperations.filter((operation) => !client.includes(`${operation}(`));
 if (missingClientOperations.length) {
   console.error(`Missing Reports client operations: ${missingClientOperations.join(', ')}`);

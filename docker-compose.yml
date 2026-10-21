@@ -25,6 +25,7 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-stockhub};Username=${POSTGRES_USER:-stockhub};Password=${POSTGRES_PASSWORD:-stockhub-local-only}
       Database__ApplyMigrations: "true"
+      Authentication__DataProtectionKeysPath: /home/app/.aspnet/DataProtection-Keys
       Authentication__SecureCookies: "false"
       Authentication__Google__ClientId: ${STOCKHUB_GOOGLE_CLIENT_ID:-}
       Authentication__Google__ClientSecret: ${STOCKHUB_GOOGLE_CLIENT_SECRET:-}
@@ -37,6 +38,9 @@ services:
       Email__Smtp__UseTls: ${STOCKHUB_SMTP_USE_TLS:-true}
     ports:
       - "${STOCKHUB_PORT:-8080}:8080"
+    volumes:
+      - stockhub-data-protection:/home/app/.aspnet/DataProtection-Keys
 
 volumes:
   stockhub-postgres:
+  stockhub-data-protection:

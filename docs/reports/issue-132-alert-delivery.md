@@ -1,0 +1,64 @@
+# M14 issue #132 business alert delivery evidence
+
+Status: implementation and isolated local verification complete; PR, published
+image, and deployment reconciliation pending.
+
+## Implementation
+
+- Alert evaluation reads product and reservation state through the owning
+  `IProductStore` and `IOrderStore` interfaces. Workspace members are taken
+  from the Access module; delivery records and per-workspace settings live in
+  Reports-owned PostgreSQL tables from migration `010_business_notifications`.
+- In-app notifications are durable and scoped to workspace and recipient.
+  Instant, hourly, and daily delivery frequencies have incident/bucket
+  deduplication. The worker claims jobs with a lease, supports parallel-safe
+  `SKIP LOCKED` dispatch, and records pending, delivered, or dead status.
+- SMTP alerts are enabled only when host, port, sender, and public base URL are
+  configured. Slack incoming hooks are workspace scoped, HTTPS-only, and
+  encrypted using ASP.NET Data Protection. The local Compose project persists
+  its Data Protection key ring. Channel state remains unavailable until real
+  runtime configuration is supplied.
+- Failures use exponential retry (30 seconds initially, capped at one hour),
+  and become dead after eight attempts. In-app insertion and job completion are
+  atomic. External channels are at-least-once if the provider accepts a message
+  while the database completion write fails.
+- Sync-failure delivery stays explicitly unavailable until Platforms exposes
+  persisted synchronization status.
+
+## Verification
+
+Run from the issue branch checkout on 2026-10-20:
+
+- `cd frontend && npm test -- --run`: 68 tests passed.
+- `cd frontend && npm run contract:check`: Access and Reports generated
+  OpenAPI/client checks passed.
+- `cd frontend && npm run build`: TypeScript and production Vite build passed.
+- `cd backend && STOCKHUB_POSTGRES_TEST_CONNECTION='Host=127.0.0.1;Port=5542;Database=stockhub;Username=stockhub;Password=stockhub-ci'
+  dotnet test tests/StockHub.Api.Tests/StockHub.Api.Tests.csproj --no-restore
+  -m:1 /nodeReuse:false`: 53 tests passed with PostgreSQL-backed tests enabled.
+- Disposable Compose project `stockhub-m14-132` rebuilt from the edited source
+  and started healthy on `127.0.0.1:8184` with an isolated PostgreSQL volume.
+- Signed up a disposable test account, created a real workspace and product,
+  enabled instant low-stock in-app delivery, and observed the persisted
+  notification naming `E2E Low Stock Product`. Mark-read returned HTTP 204 and
+  the next list response reported zero unread notifications.
+- A second account attempting to read the first workspace's notifications
+  received HTTP 403.
+- After another worker evaluation, PostgreSQL still contained one in-app job
+  and one notification for the active low-stock incident, confirming repeat
+  evaluation did not enqueue duplicates.
+- With an intentionally unreachable SMTP host at `127.0.0.1:1`, the email job
+  remained pending with attempt count 1 and a 30-second retry delay, then
+  attempt count 2 with another retry scheduled. It was not counted as
+  delivered. The independent in-app job was delivered.
+- PostgreSQL inspection confirmed migration `010_business_notifications`, one
+  delivered in-app job and notification for the low-stock incident, and the
+  failed email retry state.
+
+## Deployment limits and remaining evidence
+
+This is non-production local Docker/PostgreSQL evidence. It does not prove a
+real SMTP provider, Slack workspace, shared staging, or production delivery.
+The M14 plan requires the implementation PR, required CI checks, published
+image, deployment record, GitHub issue reconciliation, and tracking hooks
+before issue #132 can close or the next issue can start.

@@ -642,6 +642,24 @@ h1 {
 .search-results { left: 0; right: 0; top: 44px; display: grid; gap: 4px; }
 .notification-menu, .account-menu { right: 32px; top: 58px; width: 220px; }
 .notification-menu p { margin: 4px 0 0; color: var(--color-text-secondary); }
+.notification-menu { width: min(360px, calc(100vw - 24px)); max-height: min(70vh, 520px); overflow: auto; }
+.notification-menu article { padding: 10px 0; border-top: 1px solid var(--color-border); }
+.notification-menu article > b { font-size: 12px; }
+.notification-menu article > p { margin: 4px 0; font-size: 11px; line-height: 1.45; }
+.notification-menu article > small { color: var(--color-text-secondary); font-size: 10px; }
+.notification-menu article > button { display: block; margin-top: 7px; padding: 0; border: 0; background: none; color: var(--color-sage); font: inherit; font-size: 10px; font-weight: 800; cursor: pointer; }
+.notification-menu article.is-read { opacity: .72; }
+.reports-notification-menu { position: relative; }
+.reports-notification-menu > button { position: relative; }
+.reports-notification-menu .notification-menu { right: 0; top: 44px; z-index: 20; }
+.reports-channel-status { display: inline-block; margin-top: 5px; color: var(--color-warning); font-size: 10px; }
+.reports-slack-config { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent); }
+.reports-slack-config label { display: grid; flex: 1 1 260px; gap: 5px; font-size: 10px; font-weight: 800; }
+.reports-slack-config input { min-width: 0; height: 34px; padding: 0 9px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: inherit; font: inherit; font-weight: 500; }
+.reports-slack-config button { min-height: 34px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: inherit; font: inherit; font-size: 10px; font-weight: 800; cursor: pointer; }
+.reports-slack-config button:disabled { opacity: .5; cursor: not-allowed; }
+.reports-slack-config [role=alert] { color: var(--color-error); font-size: 10px; }
+.reports-slack-config [role=status],.reports-slack-config small { color: var(--color-text-secondary); font-size: 10px; }
 .account-button, .icon-button { display: inline-flex; align-items: center; gap: 8px; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .icon-button { justify-content: center; width: 34px; height: 34px; border-radius: 999px; background: var(--color-surface); }
 .sidebar-bottom button { grid-column: 1/-1; padding: 0; border: 0; background: transparent; color: var(--color-text-secondary); font: inherit; text-align: left; cursor: pointer; }
@@ -1313,7 +1331,7 @@ h1 {
 @media(max-width:1050px){.reports-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.reports-alert-fields{grid-template-columns:1fr 1fr}.reports-alert-fields fieldset{grid-column:1/-1;grid-row:2}}
 @media(max-width:700px){.reports-grid{grid-template-columns:1fr}.reports-alert-fields{grid-template-columns:1fr}.reports-alert-fields fieldset{grid-column:auto;grid-row:auto}}
 @media(max-width:640px){.reports-page{padding:0}.reports-page .inventory-shell{display:block;min-height:100vh;border-radius:0}.reports-page .inventory-sidebar{display:none}.reports-page .inventory-main{padding:14px}.reports-page .inventory-top{align-items:stretch}.reports-page .inventory-search{width:100%}.reports-page .inventory-user{justify-content:flex-end}.reports-heading{align-items:flex-start!important;gap:10px}.reports-heading h1{font-size:28px}.reports-heading .primary-button{align-self:center;padding:0 10px;white-space:nowrap;font-size:10px}.reports-tabs{width:100%;justify-content:flex-start}.reports-tabs button{padding:0 11px;font-size:10px}.reports-period{align-items:flex-start;gap:8px;padding:13px}.reports-period h2{font-size:17px}.reports-period .status-pill{font-size:9px;white-space:nowrap}.reports-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.reports-metrics article{min-height:90px;padding:12px}.reports-metrics strong{font-size:19px}.reports-alert-card{padding:13px}.reports-save-row{bottom:5px}}
-@media(max-width:680px){.pricing-app,.pricing-collapsed{grid-template-columns:1fr}.pricing-sidebar{position:static;padding:9px 12px;border-right:0;border-bottom:1px solid var(--pr-line)}.pricing-brand{display:none}.pricing-workspace{width:max-content;max-width:100%}.pricing-sidebar nav{display:flex;overflow-x:auto;gap:3px}.pricing-sidebar nav a{flex:0 0 auto;min-height:35px;padding:0 8px;font-size:10px}.pricing-sidebottom{display:none}.pricing-content{padding:0 14px 24px}.pricing-top{min-height:57px}.pricing-search{width:42%}.pricing-search input{min-width:0;font-size:10px}.pricing-top-actions{gap:4px}.pricing-top-actions button{padding:0 6px;font-size:9px}.pricing-top-actions button:last-child{max-width:86px;overflow:hidden;white-space:nowrap}.pricing-heading{align-items:flex-end;padding:21px 0 17px}.pricing-heading h1{font-size:27px}.pricing-heading p:not(.pricing-eyebrow){max-width:270px;font-size:10px}.pricing-primary{padding:0 10px;font-size:10px}.pricing-list-panel,.pricing-editor-panel{padding:13px}.pricing-fields-2{gap:8px}}
+@media(max-width:680px){.pricing-app,.pricing-collapsed{grid-template-columns:1fr}.pricing-sidebar{position:static;min-width:0;padding:9px 12px;border-right:0;border-bottom:1px solid var(--pr-line)}.pricing-brand{display:none}.pricing-workspace{width:max-content;max-width:100%}.pricing-sidebar nav{display:flex;overflow-x:auto;gap:3px}.pricing-sidebar nav a{flex:0 0 auto;min-height:35px;padding:0 8px;font-size:10px}.pricing-sidebottom{display:none}.pricing-content{padding:0 14px 24px}.pricing-top{min-height:57px;flex-wrap:wrap;justify-content:flex-end;gap:6px;padding:8px 0}.pricing-search{flex:1 1 100%;width:auto}.pricing-search input{min-width:0;font-size:10px}.pricing-top-actions{gap:4px}.pricing-top-actions button{padding:0 6px;font-size:9px}.pricing-top-actions button:last-child{max-width:86px;overflow:hidden;white-space:nowrap}.pricing-heading{align-items:flex-end;padding:21px 0 17px}.pricing-heading h1{font-size:27px}.pricing-heading p:not(.pricing-eyebrow){max-width:270px;font-size:10px}.pricing-primary{padding:0 10px;font-size:10px}.pricing-list-panel,.pricing-editor-panel{padding:13px}.pricing-fields-2{gap:8px}}
 
 .settings-page .inventory-shell { grid-template-columns: 205px minmax(0,1fr); }
 .settings-workspace-wrap { position: relative; }

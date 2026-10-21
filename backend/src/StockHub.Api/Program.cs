@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -24,10 +25,20 @@ builder.Services.AddSingleton<IAccessStore>(_ => new PostgresAccessStore(connect
 builder.Services.AddSingleton<IProductStore>(_ => new PostgresProductStore(connectionString));
 builder.Services.AddSingleton<IDashboardStore>(_ => new PostgresDashboardStore(connectionString));
 builder.Services.AddSingleton<IOrderStore>(_ => new PostgresOrderStore(connectionString));
-builder.Services.AddSingleton<PostgresReportsStore>(_ => new PostgresReportsStore(connectionString));
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<PostgresReportsStore>(services => new PostgresReportsStore(connectionString, services.GetRequiredService<IDataProtectionProvider>()));
+builder.Services.AddSingleton<IBusinessNotificationStore>(services => services.GetRequiredService<PostgresReportsStore>());
+builder.Services.AddHostedService<ReportsAlertWorker>();
 builder.Services.AddSingleton<PostgresPricingStore>(_ => new PostgresPricingStore(connectionString));
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<IRecoveryEmailSender, SmtpRecoveryEmailSender>();
+
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("StockHub");
+var dataProtectionKeysPath = builder.Configuration["Authentication:DataProtectionKeysPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+}
 
 var authenticationBuilder = builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -44,6 +55,12 @@ var authenticationBuilder = builder.Services
         options.Events.OnRedirectToLogin = context =>
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
 
             return Task.CompletedTask;
         };
@@ -147,6 +164,7 @@ app.UseAuthorization();
 
 app.MapPricing();
 app.MapReports();
+app.MapNotifications();
 
 app.MapPost(
     "/api/auth/sign-up",
@@ -567,12 +585,8 @@ app.MapGet(
             return Results.Forbid();
         }
 
-        return Results.Ok(new[]
-        {
-            new OnboardingTask("import-products", "Import products", "available", "inventory"),
-            new OnboardingTask("connect-platform", "Connect a platform", "available", "platforms"),
-            new OnboardingTask("invite-team", "Invite your team", "available", "team")
-        });
+        var selectedAction = await store.GetSelectedOnboardingActionAsync(userId, workspaceId, cancellationToken);
+        return Results.Ok(OnboardingTask.CreateChecklist(selectedAction));
     })
     .RequireAuthorization()
     .WithTags("Onboarding");
@@ -597,6 +611,14 @@ app.MapPost(
         if (!isMember)
         {
             return Results.Forbid();
+        }
+
+        if (!OnboardingTask.IsSupportedAction(request.Key))
+        {
+            return Results.Problem(
+                "Choose one of the available onboarding steps.",
+                statusCode: StatusCodes.Status400BadRequest,
+                extensions: new Dictionary<string, object?> { ["code"] = "onboarding_action_invalid" });
         }
 
         await store.RecordOnboardingActionAsync(userId, workspaceId, request.Key, cancellationToken);
@@ -848,7 +870,9 @@ app.MapGet(
             return Results.Unauthorized();
         }
 
-        if (!await IsWorkspaceMember(accessStore, userId, workspaceId, cancellationToken))
+        var membership = (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
+            .FirstOrDefault(item => item.Workspace.Id == workspaceId);
+        if (membership.Workspace is null)
         {
             return Results.Forbid();
         }
@@ -856,7 +880,7 @@ app.MapGet(
         var products = await productStore.ListAsync(workspaceId, cancellationToken);
         var state = await dashboardStore.GetAsync(workspaceId, cancellationToken);
         var orders = await orderStore.ListAsync(workspaceId, cancellationToken);
-        return Results.Ok(BuildDashboardSnapshot(state, products, orders));
+        return Results.Ok(BuildDashboardSnapshot(state, products, orders, membership.Workspace.BusinessName));
     })
     .RequireAuthorization()
     .WithTags("Dashboard");
@@ -963,7 +987,10 @@ app.MapPost(
         state = await dashboardStore.SaveAsync(state, cancellationToken);
         var products = await productStore.ListAsync(workspaceId, cancellationToken);
         var orders = await orderStore.ListAsync(workspaceId, cancellationToken);
-        return Results.Ok(new DashboardActionResultResponse(message, message, BuildDashboardSnapshot(state, products, orders)));
+        return Results.Ok(new DashboardActionResultResponse(
+            message,
+            message,
+            BuildDashboardSnapshot(state, products, orders, membership.Workspace.BusinessName)));
     })
     .RequireAuthorization()
     .WithTags("Dashboard");
@@ -1467,14 +1494,6 @@ static string NormalizeDashboardPlatform(string? platform) =>
         _ => "Amazon"
     };
 
-static async Task<bool> IsWorkspaceMember(
-    IAccessStore accessStore,
-    Guid userId,
-    Guid workspaceId,
-    CancellationToken cancellationToken) =>
-    (await accessStore.ListWorkspacesAsync(userId, cancellationToken))
-    .Any(workspace => workspace.Workspace.Id == workspaceId);
-
 static async Task<(Workspace Workspace, WorkspaceRole Role)?> FindWorkspaceMembership(
     ClaimsPrincipal principal,
     IAccessStore accessStore,
@@ -1610,7 +1629,8 @@ static string InventoryStockStatus(int available) =>
 static DashboardSnapshotResponse BuildDashboardSnapshot(
     DashboardWorkspaceState state,
     IReadOnlyList<Product> products,
-    OrderListResponse orders)
+    OrderListResponse orders,
+    string workspaceName)
 {
     var mode = products.Count == 0 ? "first-use" : "live";
 
@@ -1622,7 +1642,7 @@ static DashboardSnapshotResponse BuildDashboardSnapshot(
         return new DashboardSnapshotResponse(
             mode,
             "Dashboard",
-            DateTimeOffset.UtcNow.ToString("dddd, dd MMMM") + " · Rossi Elettronica",
+            DateTimeOffset.UtcNow.ToString("dddd, dd MMMM") + $" · {workspaceName}",
             "No platforms connected",
             "neutral",
             [
