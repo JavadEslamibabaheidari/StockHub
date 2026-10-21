@@ -9,19 +9,27 @@
       "get": {
         "operationId": "getDailyReport",
         "parameters": [
-          { "$ref": "#/components/parameters/WorkspaceId" }
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
         ],
         "responses": {
           "200": {
             "description": "Daily report for the most recent complete UTC day.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/DailyReport" }
+                "schema": {
+                  "$ref": "#/components/schemas/DailyReport"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Problem" },
-          "403": { "$ref": "#/components/responses/Problem" }
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
         }
       }
     },
@@ -29,19 +37,27 @@
       "get": {
         "operationId": "getWeeklyReport",
         "parameters": [
-          { "$ref": "#/components/parameters/WorkspaceId" }
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
         ],
         "responses": {
           "200": {
             "description": "Weekly report for the most recent complete Monday-through-Sunday UTC week.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/WeeklyReport" }
+                "schema": {
+                  "$ref": "#/components/schemas/WeeklyReport"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Problem" },
-          "403": { "$ref": "#/components/responses/Problem" }
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
         }
       }
     },
@@ -49,19 +65,27 @@
       "get": {
         "operationId": "getReportsReorderList",
         "parameters": [
-          { "$ref": "#/components/parameters/WorkspaceId" }
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
         ],
         "responses": {
           "200": {
             "description": "Products currently added to the workspace reorder handoff.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ReorderList" }
+                "schema": {
+                  "$ref": "#/components/schemas/ReorderList"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Problem" },
-          "403": { "$ref": "#/components/responses/Problem" }
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
         }
       }
     },
@@ -69,19 +93,26 @@
       "put": {
         "operationId": "setReportsReorderListItem",
         "parameters": [
-          { "$ref": "#/components/parameters/WorkspaceId" },
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
           {
             "name": "productId",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "format": "uuid" }
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/ReorderListInput" }
+              "schema": {
+                "$ref": "#/components/schemas/ReorderListInput"
+              }
             }
           }
         },
@@ -90,14 +121,24 @@
             "description": "Current workspace reorder-list state for the product.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ReorderListItem" }
+                "schema": {
+                  "$ref": "#/components/schemas/ReorderListItem"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/Problem" },
-          "401": { "$ref": "#/components/responses/Problem" },
-          "403": { "$ref": "#/components/responses/Problem" },
-          "404": { "$ref": "#/components/responses/Problem" }
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
         }
       }
     },
@@ -105,31 +146,43 @@
       "get": {
         "operationId": "getReportAlertSettings",
         "parameters": [
-          { "$ref": "#/components/parameters/WorkspaceId" }
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
         ],
         "responses": {
           "200": {
             "description": "Current workspace alert preferences. These preferences do not indicate delivery status.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AlertSettings" }
+                "schema": {
+                  "$ref": "#/components/schemas/AlertSettings"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Problem" },
-          "403": { "$ref": "#/components/responses/Problem" }
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
         }
       },
       "put": {
         "operationId": "updateReportAlertSettings",
         "parameters": [
-          { "$ref": "#/components/parameters/WorkspaceId" }
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/AlertSettingsInput" }
+              "schema": {
+                "$ref": "#/components/schemas/AlertSettingsInput"
+              }
             }
           }
         },
@@ -138,13 +191,142 @@
             "description": "Saved preferences for the active workspace; no message delivery is implied.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AlertSettings" }
+                "schema": {
+                  "$ref": "#/components/schemas/AlertSettings"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/Problem" },
-          "401": { "$ref": "#/components/responses/Problem" },
-          "403": { "$ref": "#/components/responses/Problem" }
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/notifications": {
+      "get": {
+        "operationId": "getBusinessNotifications",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "In-app notifications for the authenticated user in this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessNotificationList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/notifications/{notificationId}/read": {
+      "post": {
+        "operationId": "markBusinessNotificationRead",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The authenticated user marked this workspace notification as read."
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/reports/alert-settings/slack": {
+      "put": {
+        "operationId": "configureReportSlackWebhook",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlackWebhookInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Slack webhook stored encrypted for this workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlackWebhookStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeReportSlackWebhook",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Workspace Slack webhook removed."
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
         }
       }
     }
@@ -155,7 +337,10 @@
         "name": "workspaceId",
         "in": "path",
         "required": true,
-        "schema": { "type": "string", "format": "uuid" }
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
       }
     },
     "responses": {
@@ -163,7 +348,9 @@
         "description": "Request rejected using the StockHub problem response.",
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/Problem" }
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
           }
         }
       }
@@ -171,208 +358,708 @@
     "schemas": {
       "Problem": {
         "type": "object",
-        "required": ["title", "detail"],
+        "required": [
+          "title",
+          "detail"
+        ],
         "properties": {
-          "title": { "type": "string" },
-          "detail": { "type": "string" },
-          "code": { "type": "string", "nullable": true }
+          "title": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          }
         }
       },
       "ReportPeriod": {
         "type": "object",
-        "required": ["start", "endExclusive", "label", "timeZone", "currency"],
+        "required": [
+          "start",
+          "endExclusive",
+          "label",
+          "timeZone",
+          "currency"
+        ],
         "properties": {
-          "start": { "type": "string", "format": "date" },
-          "endExclusive": { "type": "string", "format": "date" },
-          "label": { "type": "string" },
-          "timeZone": { "type": "string", "enum": ["UTC"] },
-          "currency": { "type": "string", "minLength": 3, "maxLength": 3 }
+          "start": {
+            "type": "string",
+            "format": "date"
+          },
+          "endExclusive": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string"
+          },
+          "timeZone": {
+            "type": "string",
+            "enum": [
+              "UTC"
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          }
         }
       },
       "ReportSummary": {
         "type": "object",
-        "required": ["revenue", "orderCount", "unitCount", "averageOrderValue"],
+        "required": [
+          "revenue",
+          "orderCount",
+          "unitCount",
+          "averageOrderValue"
+        ],
         "properties": {
-          "revenue": { "type": "number", "format": "decimal", "minimum": 0 },
-          "orderCount": { "type": "integer", "minimum": 0 },
-          "unitCount": { "type": "integer", "minimum": 0 },
-          "averageOrderValue": { "type": "number", "format": "decimal", "minimum": 0 }
+          "revenue": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0
+          },
+          "orderCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unitCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "averageOrderValue": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0
+          }
         }
       },
       "UnavailableMetric": {
         "type": "object",
-        "required": ["available", "count", "estimatedValue", "explanation"],
+        "required": [
+          "available",
+          "count",
+          "estimatedValue",
+          "explanation"
+        ],
         "properties": {
-          "available": { "type": "boolean" },
-          "count": { "type": "integer", "nullable": true, "minimum": 0 },
-          "estimatedValue": { "type": "number", "format": "decimal", "nullable": true, "minimum": 0 },
-          "explanation": { "type": "string" }
+          "available": {
+            "type": "boolean"
+          },
+          "count": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
+          "estimatedValue": {
+            "type": "number",
+            "format": "decimal",
+            "nullable": true,
+            "minimum": 0
+          },
+          "explanation": {
+            "type": "string"
+          }
         }
       },
       "PlatformSales": {
         "type": "object",
-        "required": ["platform", "orderCount", "unitCount", "revenue", "share"],
+        "required": [
+          "platform",
+          "orderCount",
+          "unitCount",
+          "revenue",
+          "share"
+        ],
         "properties": {
-          "platform": { "type": "string" },
-          "orderCount": { "type": "integer", "minimum": 0 },
-          "unitCount": { "type": "integer", "minimum": 0 },
-          "revenue": { "type": "number", "format": "decimal", "minimum": 0 },
-          "share": { "type": "number", "minimum": 0, "maximum": 100 }
+          "platform": {
+            "type": "string"
+          },
+          "orderCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unitCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "revenue": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0
+          },
+          "share": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
         }
       },
       "ProductSales": {
         "type": "object",
-        "required": ["productId", "name", "sku", "unitCount", "revenue"],
+        "required": [
+          "productId",
+          "name",
+          "sku",
+          "unitCount",
+          "revenue"
+        ],
         "properties": {
-          "productId": { "type": "string", "format": "uuid" },
-          "name": { "type": "string" },
-          "sku": { "type": "string" },
-          "unitCount": { "type": "integer", "minimum": 0 },
-          "revenue": { "type": "number", "format": "decimal", "minimum": 0 }
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "unitCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "revenue": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0
+          }
         }
       },
       "LostSale": {
         "type": "object",
-        "required": ["orderNumber", "productName", "platform", "expiredAt", "value"],
+        "required": [
+          "orderNumber",
+          "productName",
+          "platform",
+          "expiredAt",
+          "value"
+        ],
         "properties": {
-          "orderNumber": { "type": "string" },
-          "productName": { "type": "string" },
-          "platform": { "type": "string" },
-          "expiredAt": { "type": "string", "format": "date-time" },
-          "value": { "type": "number", "format": "decimal", "minimum": 0 }
+          "orderNumber": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "expiredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "value": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0
+          }
         }
       },
       "RestockSuggestion": {
         "type": "object",
-        "required": ["productId", "name", "sku", "available", "averageUnitsPerDay", "daysUntilStockout", "suggestedUnits", "onReorderList"],
+        "required": [
+          "productId",
+          "name",
+          "sku",
+          "available",
+          "averageUnitsPerDay",
+          "daysUntilStockout",
+          "suggestedUnits",
+          "onReorderList"
+        ],
         "properties": {
-          "productId": { "type": "string", "format": "uuid" },
-          "name": { "type": "string" },
-          "sku": { "type": "string" },
-          "available": { "type": "integer", "minimum": 0 },
-          "averageUnitsPerDay": { "type": "number", "minimum": 0 },
-          "daysUntilStockout": { "type": "number", "nullable": true, "minimum": 0 },
-          "suggestedUnits": { "type": "integer", "minimum": 0 },
-          "onReorderList": { "type": "boolean" }
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "available": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "averageUnitsPerDay": {
+            "type": "number",
+            "minimum": 0
+          },
+          "daysUntilStockout": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0
+          },
+          "suggestedUnits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "onReorderList": {
+            "type": "boolean"
+          }
         }
       },
       "DailyReport": {
         "type": "object",
-        "required": ["period", "summary", "expiredReservations", "salesByPlatform", "lostSales", "topProducts", "bottomProducts", "restockSuggestions"],
+        "required": [
+          "period",
+          "summary",
+          "expiredReservations",
+          "salesByPlatform",
+          "lostSales",
+          "topProducts",
+          "bottomProducts",
+          "restockSuggestions"
+        ],
         "properties": {
-          "period": { "$ref": "#/components/schemas/ReportPeriod" },
-          "summary": { "$ref": "#/components/schemas/ReportSummary" },
-          "expiredReservations": { "$ref": "#/components/schemas/UnavailableMetric" },
-          "salesByPlatform": { "type": "array", "items": { "$ref": "#/components/schemas/PlatformSales" } },
-          "lostSales": { "type": "array", "items": { "$ref": "#/components/schemas/LostSale" } },
-          "topProducts": { "type": "array", "description": "Top five products by units sold in this report period, ordered from most to fewest.", "items": { "$ref": "#/components/schemas/ProductSales" } },
-          "bottomProducts": { "type": "array", "description": "Five products with the fewest units sold during the trailing 30 days, including products with zero sales.", "items": { "$ref": "#/components/schemas/ProductSales" } },
-          "restockSuggestions": { "type": "array", "items": { "$ref": "#/components/schemas/RestockSuggestion" } }
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ReportSummary"
+          },
+          "expiredReservations": {
+            "$ref": "#/components/schemas/UnavailableMetric"
+          },
+          "salesByPlatform": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlatformSales"
+            }
+          },
+          "lostSales": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LostSale"
+            }
+          },
+          "topProducts": {
+            "type": "array",
+            "description": "Top five products by units sold in this report period, ordered from most to fewest.",
+            "items": {
+              "$ref": "#/components/schemas/ProductSales"
+            }
+          },
+          "bottomProducts": {
+            "type": "array",
+            "description": "Five products with the fewest units sold during the trailing 30 days, including products with zero sales.",
+            "items": {
+              "$ref": "#/components/schemas/ProductSales"
+            }
+          },
+          "restockSuggestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RestockSuggestion"
+            }
+          }
         }
       },
       "RevenueByDay": {
         "type": "object",
-        "required": ["date", "revenue"],
+        "required": [
+          "date",
+          "revenue"
+        ],
         "properties": {
-          "date": { "type": "string", "format": "date" },
-          "revenue": { "type": "number", "format": "decimal", "minimum": 0 }
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "revenue": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0
+          }
         }
       },
       "WeeklyPlatformSales": {
         "allOf": [
-          { "$ref": "#/components/schemas/PlatformSales" },
+          {
+            "$ref": "#/components/schemas/PlatformSales"
+          },
           {
             "type": "object",
-            "required": ["changePercent"],
-            "properties": { "changePercent": { "type": "number", "nullable": true } }
+            "required": [
+              "changePercent"
+            ],
+            "properties": {
+              "changePercent": {
+                "type": "number",
+                "nullable": true
+              }
+            }
           }
         ]
       },
       "WeeklyReport": {
         "type": "object",
-        "required": ["period", "summary", "revenueChangePercent", "expiredReservations", "revenueByDay", "salesByPlatform", "topProducts", "bottomProducts", "restockSuggestions"],
+        "required": [
+          "period",
+          "summary",
+          "revenueChangePercent",
+          "expiredReservations",
+          "revenueByDay",
+          "salesByPlatform",
+          "topProducts",
+          "bottomProducts",
+          "restockSuggestions"
+        ],
         "properties": {
-          "period": { "$ref": "#/components/schemas/ReportPeriod" },
-          "summary": { "$ref": "#/components/schemas/ReportSummary" },
-          "revenueChangePercent": { "type": "number", "format": "decimal", "nullable": true, "description": "Percent change in revenue from the previous complete Monday-through-Sunday UTC week; null when the previous week has no revenue." },
-          "expiredReservations": { "$ref": "#/components/schemas/UnavailableMetric" },
-          "revenueByDay": { "type": "array", "items": { "$ref": "#/components/schemas/RevenueByDay" }, "minItems": 7, "maxItems": 7 },
-          "salesByPlatform": { "type": "array", "items": { "$ref": "#/components/schemas/WeeklyPlatformSales" } },
-          "topProducts": { "type": "array", "description": "Top five products by units sold in this report period, ordered from most to fewest.", "items": { "$ref": "#/components/schemas/ProductSales" } },
-          "bottomProducts": { "type": "array", "description": "Five products with the fewest units sold during the trailing 30 days, including products with zero sales.", "items": { "$ref": "#/components/schemas/ProductSales" } },
-          "restockSuggestions": { "type": "array", "items": { "$ref": "#/components/schemas/RestockSuggestion" } }
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ReportSummary"
+          },
+          "revenueChangePercent": {
+            "type": "number",
+            "format": "decimal",
+            "nullable": true,
+            "description": "Percent change in revenue from the previous complete Monday-through-Sunday UTC week; null when the previous week has no revenue."
+          },
+          "expiredReservations": {
+            "$ref": "#/components/schemas/UnavailableMetric"
+          },
+          "revenueByDay": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RevenueByDay"
+            },
+            "minItems": 7,
+            "maxItems": 7
+          },
+          "salesByPlatform": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeeklyPlatformSales"
+            }
+          },
+          "topProducts": {
+            "type": "array",
+            "description": "Top five products by units sold in this report period, ordered from most to fewest.",
+            "items": {
+              "$ref": "#/components/schemas/ProductSales"
+            }
+          },
+          "bottomProducts": {
+            "type": "array",
+            "description": "Five products with the fewest units sold during the trailing 30 days, including products with zero sales.",
+            "items": {
+              "$ref": "#/components/schemas/ProductSales"
+            }
+          },
+          "restockSuggestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RestockSuggestion"
+            }
+          }
         }
       },
       "ReorderList": {
         "type": "object",
-        "required": ["productIds"],
-        "properties": { "productIds": { "type": "array", "items": { "type": "string", "format": "uuid" } } }
+        "required": [
+          "productIds"
+        ],
+        "properties": {
+          "productIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
       },
       "ReorderListInput": {
         "type": "object",
-        "required": ["listed"],
-        "properties": { "listed": { "type": "boolean" } }
+        "required": [
+          "listed"
+        ],
+        "properties": {
+          "listed": {
+            "type": "boolean"
+          }
+        }
       },
       "ReorderListItem": {
         "type": "object",
-        "required": ["productId", "listed"],
+        "required": [
+          "productId",
+          "listed"
+        ],
         "properties": {
-          "productId": { "type": "string", "format": "uuid" },
-          "listed": { "type": "boolean" }
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "listed": {
+            "type": "boolean"
+          }
         }
       },
       "AlertKey": {
         "type": "string",
-        "enum": ["lowStock", "outOfStock", "syncFailure", "oversellingRisk"]
+        "enum": [
+          "lowStock",
+          "outOfStock",
+          "syncFailure",
+          "oversellingRisk"
+        ]
       },
       "AlertFrequency": {
         "type": "string",
-        "enum": ["instant", "hourly", "daily"]
+        "enum": [
+          "instant",
+          "hourly",
+          "daily"
+        ]
       },
       "AlertChannels": {
         "type": "object",
-        "required": ["email", "inApp", "slack"],
+        "required": [
+          "email",
+          "inApp",
+          "slack"
+        ],
         "properties": {
-          "email": { "type": "boolean" },
-          "inApp": { "type": "boolean" },
-          "slack": { "type": "boolean" }
+          "email": {
+            "type": "boolean"
+          },
+          "inApp": {
+            "type": "boolean"
+          },
+          "slack": {
+            "type": "boolean"
+          }
         }
       },
       "AlertRule": {
         "type": "object",
-        "required": ["key", "enabled", "threshold", "channels", "frequency"],
+        "required": [
+          "key",
+          "enabled",
+          "threshold",
+          "channels",
+          "frequency"
+        ],
         "properties": {
-          "key": { "$ref": "#/components/schemas/AlertKey" },
-          "enabled": { "type": "boolean" },
-          "threshold": { "type": "integer", "nullable": true, "minimum": 0, "maximum": 100000, "description": "Null is rejected on update. Key-specific constraints are enforced by the API (outOfStock is fixed at 0, syncFailure is measured in minutes)." },
-          "channels": { "$ref": "#/components/schemas/AlertChannels" },
-          "frequency": { "$ref": "#/components/schemas/AlertFrequency" }
+          "key": {
+            "$ref": "#/components/schemas/AlertKey"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "threshold": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "Null is rejected on update. Key-specific constraints are enforced by the API (outOfStock is fixed at 0, syncFailure is measured in minutes)."
+          },
+          "channels": {
+            "$ref": "#/components/schemas/AlertChannels"
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/AlertFrequency"
+          }
         }
       },
       "AlertSettingsInput": {
         "type": "object",
-        "required": ["alerts"],
+        "required": [
+          "alerts"
+        ],
         "properties": {
           "alerts": {
             "type": "array",
             "minItems": 4,
             "maxItems": 4,
-            "items": { "$ref": "#/components/schemas/AlertRule" }
+            "items": {
+              "$ref": "#/components/schemas/AlertRule"
+            }
           }
         }
       },
       "AlertSettings": {
         "allOf": [
-          { "$ref": "#/components/schemas/AlertSettingsInput" },
+          {
+            "$ref": "#/components/schemas/AlertSettingsInput"
+          },
           {
             "type": "object",
-            "required": ["canEdit", "deliveryStatus"],
+            "required": [
+              "canEdit",
+              "channels",
+              "unavailableRules",
+              "delivery"
+            ],
             "properties": {
-              "canEdit": { "type": "boolean" },
-              "deliveryStatus": { "type": "string", "enum": ["notConfigured"] }
+              "canEdit": {
+                "type": "boolean"
+              },
+              "channels": {
+                "$ref": "#/components/schemas/AlertChannelAvailability"
+              },
+              "unavailableRules": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AlertKey"
+                }
+              },
+              "delivery": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AlertChannelDeliveryStatus"
+                }
+              }
             }
           }
         ]
+      },
+      "AlertChannelAvailability": {
+        "type": "object",
+        "required": [
+          "email",
+          "inApp",
+          "slack"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "enum": [
+              "available",
+              "unavailable"
+            ]
+          },
+          "inApp": {
+            "type": "string",
+            "enum": [
+              "available",
+              "unavailable"
+            ]
+          },
+          "slack": {
+            "type": "string",
+            "enum": [
+              "available",
+              "unavailable"
+            ]
+          }
+        }
+      },
+      "BusinessNotification": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "body",
+          "createdAt",
+          "readAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "readAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "BusinessNotificationList": {
+        "type": "object",
+        "required": [
+          "notifications",
+          "unreadCount"
+        ],
+        "properties": {
+          "notifications": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/BusinessNotification"
+            }
+          },
+          "unreadCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "SlackWebhookInput": {
+        "type": "object",
+        "required": [
+          "webhookUrl"
+        ],
+        "properties": {
+          "webhookUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "HTTPS Slack incoming webhook URL. The API validates the Slack host and stores the value encrypted."
+          }
+        }
+      },
+      "SlackWebhookStatus": {
+        "type": "object",
+        "required": [
+          "configured"
+        ],
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AlertChannelDeliveryStatus": {
+        "type": "object",
+        "required": [
+          "channel",
+          "pending",
+          "delivered",
+          "failed"
+        ],
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "inApp",
+              "email",
+              "slack"
+            ]
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "delivered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
       }
     }
   }
