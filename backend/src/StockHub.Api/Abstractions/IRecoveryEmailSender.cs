@@ -9,4 +9,6 @@ public interface IRecoveryEmailSender
     Task SendPasswordResetAsync(string recipient, Uri resetLink, CancellationToken cancellationToken);
 
     Task SendInvitationAsync(string recipient, Uri invitationLink, string workspaceName, WorkspaceRole role, CancellationToken cancellationToken);
+
+    Task SendBusinessAlertAsync(string recipient, string title, string body, CancellationToken cancellationToken);
 }
