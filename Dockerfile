@@ -15,11 +15,8 @@ RUN dotnet publish backend/src/StockHub.Api/StockHub.Api.csproj \
     --no-restore \
     --output /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
 WORKDIR /app
-RUN apt-get update \
-    && apt-get install --no-install-recommends --yes curl libssl3t64 \
-    && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /home/app/.aspnet/DataProtection-Keys \
     && chown -R "$APP_UID":"$APP_UID" /home/app/.aspnet
 COPY --from=backend-build /app/publish ./
@@ -27,6 +24,6 @@ COPY --from=frontend-build /src/frontend/dist ./wwwroot
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=12 \
-    CMD curl --fail --silent http://localhost:8080/health || exit 1
+    CMD wget --quiet --output-document=/dev/null http://127.0.0.1:8080/health || exit 1
 USER $APP_UID
 ENTRYPOINT ["dotnet", "StockHub.Api.dll"]
