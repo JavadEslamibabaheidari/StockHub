@@ -20,6 +20,8 @@ WORKDIR /app
 RUN apt-get update \
     && apt-get install --no-install-recommends --yes curl libssl3t64 \
     && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /home/app/.aspnet/DataProtection-Keys \
+    && chown -R "$APP_UID":"$APP_UID" /home/app/.aspnet
 COPY --from=backend-build /app/publish ./
 COPY --from=frontend-build /src/frontend/dist ./wwwroot
 ENV ASPNETCORE_URLS=http://+:8080

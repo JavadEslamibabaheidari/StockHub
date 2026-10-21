@@ -87,3 +87,36 @@ mail test service belongs only in test/Compose configuration.
 - Real Google callback, external inbox delivery, deployed app verification, and
   provider secret setup remain open. Milestone stays open until those live checks
   pass.
+
+## Verification update (2026-10-12, issues #35 and #65)
+
+- PR #170 merged issue #35's onboarding persistence/readback, validation, API
+  tests, and frontend consumption to `main` at SHA
+  `39eb728ad958b2f01e9cc4894987614e16c4e873`. Migration
+  `009_onboarding_selection.sql` preserves prior action history. Its persistent
+  local deployment run #38185661756 recorded image digest
+  `sha256:0c54de86147fc256a7fdf89637f2b2bef10a136029677f3dbea7fa0288428632`.
+  The issue remains open for live Google OIDC and real email delivery.
+- API tests now cover personal-address signup, duplicate retry, session
+  creation, sign-out revocation, password-reset enumeration-safe responses,
+  one-use reset/session revocation, unavailable email configuration, and the
+  onboarding/invitation/OIDC scenarios above. The targeted Access endpoint
+  suite passes 10/10.
+- A browser journey ran at `http://127.0.0.1:5179` against a disposable
+  Compose/PostgreSQL stack on port 8180. Signup created a test-only account,
+  workspace creation reached Dashboard, sign-in succeeded, account-menu
+  sign-out returned to sign-in, and recovery showed the actionable
+  unconfigured-email error. The Dashboard first-use subtitle initially showed
+  the fixed sample business `Rossi Elettronica` instead of the created
+  workspace. The API now derives this label from the authorized workspace and
+  has an endpoint regression test.
+- Recreating the API container also invalidated a persisted database session
+  because its ASP.NET Data Protection keys were ephemeral. Compose now stores
+  the key ring on a dedicated named volume and Kubernetes uses a dedicated PVC.
+  Compose and Kubernetes smoke checks verify the cookie survives an API
+  restart; a focused test verifies cookie validation across hosts using the
+  configured key ring.
+- The disposable account/database volume were removed after browser review.
+  Real Google and SMTP verification and hosted staging/production remain
+  unverified pending external credentials/infrastructure. The local
+  PostgreSQL-backed PR gate remains authoritative for migration coverage.

@@ -337,6 +337,17 @@ public sealed class PostgresAccessStore(string connectionString) : IAccessStore
         return result;
     }
 
+    public async Task<IReadOnlyList<Guid>> ListWorkspaceIdsAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new NpgsqlCommand("SELECT id FROM workspaces ORDER BY id", connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var ids = new List<Guid>();
+        while (await reader.ReadAsync(cancellationToken)) ids.Add(reader.GetGuid(0));
+        return ids;
+    }
+
     public async Task<(Workspace Workspace, WorkspaceRole Role)> CreateWorkspaceAsync(
         Guid userId,
         CreateWorkspaceRequest request,
@@ -749,14 +760,45 @@ public sealed class PostgresAccessStore(string connectionString) : IAccessStore
         string actionKey,
         CancellationToken cancellationToken)
     {
+        if (!OnboardingTask.IsSupportedAction(actionKey))
+        {
+            throw new ArgumentException("Unsupported onboarding action.", nameof(actionKey));
+        }
+
         await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
         await using var command = new NpgsqlCommand(
             "INSERT INTO onboarding_actions(user_id, workspace_id, action_key) VALUES (@user, @workspace, @key) ON CONFLICT (user_id, workspace_id, action_key) DO UPDATE SET requested_at = now()",
-            connection);
+            connection,
+            transaction);
         command.Parameters.AddWithValue("user", userId);
         command.Parameters.AddWithValue("workspace", workspaceId);
         command.Parameters.AddWithValue("key", actionKey);
         await command.ExecuteNonQueryAsync(cancellationToken);
+
+        await using var selectionCommand = new NpgsqlCommand(
+            "INSERT INTO onboarding_selections(user_id, workspace_id, selected_action_key) VALUES (@user, @workspace, @key) ON CONFLICT (user_id, workspace_id) DO UPDATE SET selected_action_key = EXCLUDED.selected_action_key, selected_at = now()",
+            connection,
+            transaction);
+        selectionCommand.Parameters.AddWithValue("user", userId);
+        selectionCommand.Parameters.AddWithValue("workspace", workspaceId);
+        selectionCommand.Parameters.AddWithValue("key", actionKey);
+        await selectionCommand.ExecuteNonQueryAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    public async Task<string?> GetSelectedOnboardingActionAsync(
+        Guid userId,
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var command = new NpgsqlCommand(
+            "SELECT selected_action_key FROM onboarding_selections WHERE user_id = @user AND workspace_id = @workspace",
+            connection);
+        command.Parameters.AddWithValue("user", userId);
+        command.Parameters.AddWithValue("workspace", workspaceId);
+        return (string?)await command.ExecuteScalarAsync(cancellationToken);
     }
 
     private async Task<NpgsqlConnection> OpenConnectionAsync(CancellationToken cancellationToken)
@@ -845,7 +887,7 @@ public static class PostgresDatabaseInitializer
 
         try
         {
-            foreach (var migrationName in new[] { "001_access.sql", "002_auth_completion.sql", "003_onboarding_products.sql", "004_dashboard_state.sql", "005_orders.sql", "006_pricing.sql", "007_reports.sql", "008_team_management.sql" })
+            foreach (var migrationName in new[] { "001_access.sql", "002_auth_completion.sql", "003_onboarding_products.sql", "004_dashboard_state.sql", "005_orders.sql", "006_pricing.sql", "007_reports.sql", "008_team_management.sql", "009_onboarding_selection.sql", "010_business_notifications.sql" })
             {
                 var migrationPath = Path.Combine(AppContext.BaseDirectory, "Database", "Migrations", migrationName);
                 if (!File.Exists(migrationPath))

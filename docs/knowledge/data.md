@@ -36,6 +36,13 @@ and tenant foreign keys. The application store is behind `IAccessStore` so the
 PostgreSQL adapter can be introduced without sharing domain entities across
 the API/frontend boundary.
 
+The encrypted authentication cookie also depends on ASP.NET Data Protection
+keys. Local Compose projects keep a dedicated named key-ring volume, and the
+local Kubernetes deployment keeps a dedicated PVC, so an API restart does not
+invalidate persisted sessions. Hosted environments must provide durable,
+encrypted key-ring storage shared by app replicas; do not use an ephemeral
+container filesystem for this key material.
+
 
 ## Pricing rules
 
@@ -50,7 +57,7 @@ cost-based margin null.
 
 ## Dashboard read model state
 
-Milestone 2 adds workspace-scoped `dashboard_states` in `004_dashboard_state.sql`. The table stores Dashboard UI/action state such as first-sync mode, Euronics retry, mismatch resolution, restock handoff, expanded low-stock items, and the current detail panel. Product counts still live in `products`; Dashboard on-hand adjustments update product persistence through the product store. Real connector, reservation, order, and inventory ledgers remain owned by their future modules.
+Milestone 2 adds workspace-scoped `dashboard_states` in `004_dashboard_state.sql`. The table stores Dashboard UI/action state such as first-sync mode, Euronics retry, mismatch resolution, restock handoff, expanded low-stock items, and the current detail panel. Product counts still live in `products`; Dashboard on-hand adjustments update product persistence through the product store. The first-use Dashboard response uses the member's persisted workspace name. Real connector, reservation, order, and inventory ledgers remain owned by their future modules.
 
 ## Team memberships and invitations
 
@@ -67,3 +74,13 @@ Viewer cannot. Inventory detail redacts price data for WarehouseStaff and
 Viewer; the access matrix and generated endpoint contract are documented in
 [`milestone-9-team.md`](../plans/milestone-9-team.md) and
 [`access.openapi.json`](../../contracts/access.openapi.json).
+
+## Onboarding selection state
+
+The Access follow-up stores the user's latest selected next step per user and
+workspace in onboarding_selections, introduced by
+009_onboarding_selection.sql. It is presentation/workflow state, not evidence
+that the owning capability completed. The older onboarding_actions table
+continues to record requested actions. The API only accepts the three defined
+handoffs: import-products, connect-platform, and invite-team; reads are
+workspace-membership checked, and selection state is isolated per workspace.

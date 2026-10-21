@@ -1,3 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: stockhub-data-protection-keys
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 64Mi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,6 +44,8 @@ spec:
               value: http://+:8080
             - name: ASPNETCORE_ENVIRONMENT
               value: Production
+            - name: Authentication__DataProtectionKeysPath
+              value: /home/app/.aspnet/DataProtection-Keys
             - name: Database__ApplyMigrations
               value: "false"
             - name: ConnectionStrings__Postgres
@@ -126,7 +138,8 @@ spec:
               mountPath: /tmp
       volumes:
         - name: data-protection
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: stockhub-data-protection-keys
         - name: temp
           emptyDir: {}
 ---
