@@ -15,7 +15,7 @@ RUN dotnet publish backend/src/StockHub.Api/StockHub.Api.csproj \
     --no-restore \
     --output /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0-alpine AS runtime
 WORKDIR /app
 RUN mkdir -p /home/app/.aspnet/DataProtection-Keys \
     && chown -R "$APP_UID":"$APP_UID" /home/app/.aspnet
